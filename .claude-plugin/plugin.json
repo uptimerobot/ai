@@ -1,0 +1,18 @@
+{
+  "name": "uptimerobot-ai",
+  "description": "UptimeRobot shared AI tooling: skills, commands, agents, and rules for working across UptimeRobot repositories with Claude Code.",
+  "version": "0.1.0",
+  "author": {
+    "name": "UptimeRobot"
+  },
+  "homepage": "https://github.com/uptimerobot/ai",
+  "repository": "https://github.com/uptimerobot/ai",
+  "license": "UNLICENSED",
+  "keywords": [
+    "uptimerobot",
+    "claude-code",
+    "skills",
+    "commands",
+    "agents"
+  ]
+}
