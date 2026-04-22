@@ -1,0 +1,19 @@
+{
+  "name": "uptimerobot-ai",
+  "description": "UptimeRobot shared AI tooling: skills, commands, agents, and rules for working across UptimeRobot repositories with Cursor.",
+  "version": "0.1.0",
+  "author": {
+    "name": "UptimeRobot"
+  },
+  "homepage": "https://github.com/uptimerobot/ai",
+  "repository": "https://github.com/uptimerobot/ai",
+  "license": "UNLICENSED",
+  "keywords": [
+    "uptimerobot",
+    "cursor",
+    "rules",
+    "skills",
+    "commands",
+    "agents"
+  ]
+}
