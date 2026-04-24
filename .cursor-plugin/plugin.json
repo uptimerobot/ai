@@ -1,19 +1,31 @@
 {
-  "name": "uptimerobot-ai",
-  "description": "UptimeRobot shared AI tooling: skills, commands, agents, and rules for working across UptimeRobot repositories with Cursor.",
+  "name": "uptimerobot",
+  "displayName": "UptimeRobot",
+  "tagline": "Monitor your infrastructure without leaving Cursor",
+  "description": "Monitor websites, APIs, and servers — create monitors, triage incidents, and query uptime stats all from Cursor. Supports HTTP, keyword, ping, port, heartbeat, DNS, API, and UDP monitors.",
+  "icon": "assets/logo.png",
+  "logo": "assets/logo.png",
   "version": "0.1.0",
   "author": {
-    "name": "UptimeRobot"
+    "name": "UptimeRobot",
+    "email": "support@uptimerobot.com",
+    "url": "https://uptimerobot.com"
   },
   "homepage": "https://github.com/uptimerobot/ai",
   "repository": "https://github.com/uptimerobot/ai",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "categories": ["devops", "monitoring", "infrastructure"],
   "keywords": [
-    "uptimerobot",
-    "cursor",
-    "rules",
-    "skills",
-    "commands",
-    "agents"
-  ]
+    "monitoring",
+    "uptime",
+    "website-monitoring",
+    "incidents",
+    "alerts",
+    "heartbeat",
+    "status-page",
+    "devops"
+  ],
+  "rules": "rules",
+  "skills": "skills",
+  "mcpServers": "mcp.json"
 }

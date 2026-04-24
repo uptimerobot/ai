@@ -1,18 +1,31 @@
 {
-  "name": "uptimerobot-ai",
-  "description": "UptimeRobot shared AI tooling: skills, commands, agents, and rules for working across UptimeRobot repositories with Claude Code.",
+  "name": "uptimerobot",
   "version": "0.1.0",
+  "description": "Monitor websites, APIs, and servers — create monitors, triage incidents, and query uptime stats from Claude Code. Supports HTTP, keyword, ping, port, heartbeat, DNS, API, and UDP monitors.",
   "author": {
-    "name": "UptimeRobot"
+    "name": "UptimeRobot",
+    "email": "support@uptimerobot.com",
+    "url": "https://uptimerobot.com"
   },
   "homepage": "https://github.com/uptimerobot/ai",
   "repository": "https://github.com/uptimerobot/ai",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "keywords": [
-    "uptimerobot",
-    "claude-code",
-    "skills",
-    "commands",
-    "agents"
-  ]
+    "monitoring",
+    "uptime",
+    "website-monitoring",
+    "incidents",
+    "alerts",
+    "heartbeat",
+    "status-page",
+    "devops"
+  ],
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "UptimeRobot API key",
+      "description": "Get it from Integrations & API in your dashboard. Use the Main API key for read/write or the Read-only API key for listing/stats only.",
+      "sensitive": true
+    }
+  }
 }
