@@ -1,0 +1,47 @@
+# UptimeRobot
+
+> UptimeRobot monitors websites, APIs, servers, DNS, and services from a global checker network. It records up/down state and response times, opens incidents when targets fail, and sends alerts through configurable contacts (email, SMS, Slack, webhooks, and more). A remote MCP server exposes the full monitor lifecycle to AI agents.
+
+UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availability, minimum interval, and monitor counts depend on the active plan. The MCP server enforces plan limits and returns error code `-28002` when a request exceeds them.
+
+## MCP
+
+- [MCP server](https://mcp.uptimerobot.com/mcp): Remote HTTP MCP endpoint. Authenticate with `Authorization: Bearer <API_KEY>`. API keys come from the UptimeRobot dashboard under Integrations & API (Main = read/write, Read-only = reads only).
+- [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, error codes, and agent conventions.
+- [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor plugin, skills, and this file.
+- [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect Claude Code to your UptimeRobot API key.
+
+## Monitors
+
+- [Create monitor skill (HTTP)](https://uptimerobot.com/skills/create-http-monitor/SKILL.md): Full URL + optional method, auth, headers, success codes.
+- [Create monitor skill (KEYWORD)](https://uptimerobot.com/skills/create-keyword-monitor/SKILL.md): Check page content for presence/absence of a keyword.
+- [Create monitor skill (PING)](https://uptimerobot.com/skills/create-ping-monitor/SKILL.md): ICMP ping to hostname or IP.
+- [Create monitor skill (PORT)](https://uptimerobot.com/skills/create-port-monitor/SKILL.md): TCP port connectivity.
+- [Create monitor skill (HEARTBEAT)](https://uptimerobot.com/skills/create-heartbeat-monitor/SKILL.md): Target pings a generated URL on a schedule (cron/job monitoring).
+- [Create monitor skill (DNS)](https://uptimerobot.com/skills/create-dns-monitor/SKILL.md): Validate DNS records against expected values.
+- [Create monitor skill (API)](https://uptimerobot.com/skills/create-api-monitor/SKILL.md): Assertion-based API response checks.
+- [Create monitor skill (UDP)](https://uptimerobot.com/skills/create-udp-monitor/SKILL.md): UDP port with optional payload and packet-loss threshold.
+- [Manage monitors skill](https://uptimerobot.com/skills/manage-monitors/SKILL.md): List, inspect, pause, resume monitors.
+- [Update monitor skill](https://uptimerobot.com/skills/update-monitor/SKILL.md): Rename, retarget, retag, swap alert contacts, and tweak type-specific settings on an existing monitor.
+- [List integrations skill](https://uptimerobot.com/skills/list-integrations/SKILL.md): Discover alert-contact IDs to attach to monitors.
+- [Bulk pause skill](https://uptimerobot.com/skills/bulk-pause/SKILL.md): Pause and resume many monitors at once during deploys.
+
+## Observability
+
+- [Incidents skill](https://uptimerobot.com/skills/incidents/SKILL.md): List and inspect downtime incidents with checker IPs, logs, traceroute.
+- [Incident response skill](https://uptimerobot.com/skills/incident-response/SKILL.md): End-to-end downtime triage and recovery verification.
+- [Stats skill](https://uptimerobot.com/skills/stats/SKILL.md): Aggregated uptime percentages and per-monitor response-time time series.
+- [Errors skill](https://uptimerobot.com/skills/errors/SKILL.md): MCP error codes, recovery, and rate-limit handling.
+
+## Product
+
+- [Pricing](https://uptimerobot.com/pricing/): Free, Solo, Team, Enterprise tiers.
+- [Features](https://uptimerobot.com/features/): Monitor types, alert contacts, status pages.
+- [Public API v3](https://uptimerobot.com/api/v3): REST alternative to MCP for non-agent integrations.
+- [Help center](https://uptimerobot.com/help/): End-user documentation.
+
+## Optional
+
+- [Status page builder](https://uptimerobot.com/status-pages/): Hosted public status pages.
+- [Heartbeat / cron monitoring](https://uptimerobot.com/cron-job-monitoring/): Deeper background on the heartbeat model.
+- [Contact](https://uptimerobot.com/contact): Support and feature requests.
