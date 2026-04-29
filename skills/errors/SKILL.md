@@ -57,9 +57,13 @@ Fix the payload and resend.
 
 Do not retry. Call `list-monitors` (or `list-integrations`) to discover valid IDs and retry with a correct one. If the user typed the ID, it may belong to a different UptimeRobot account.
 
-### `-31001` / `-31002` auth
+### `-31001` unauthenticated
 
-Do not retry the call. For `-31001`, ask the user to check `UPTIMEROBOT_API_KEY` and regenerate if needed. For `-31002`, the key is almost certainly read-only — ask for a Main API key from **Integrations & API** in the UptimeRobot dashboard.
+Do not retry the call. Immediately invoke the `uptimerobot:setup` skill — it collects a valid API key from the user, configures the MCP server, and validates the connection. Do not ask the user to manually check env vars or regenerate keys; the setup skill handles that flow.
+
+### `-31002` access denied
+
+Do not retry the call. The key is almost certainly read-only. Ask the user for their **Main API key** from **Integrations & API** in the UptimeRobot dashboard, then re-run the `uptimerobot:setup` skill to apply it.
 
 ### HTTP 429 rate limit
 
@@ -73,7 +77,8 @@ Cap at ~5 attempts; if still throttled, surface the issue to the user. Bulk loop
 
 ## Never do
 
-- **Never retry** `-28001`, `-28002`, `-29001`, `-30001`, `-30003`, `-31001`, `-31002` — they are deterministic client errors.
+- **Never retry** `-28001`, `-28002`, `-29001`, `-30001`, `-30003`, `-31002` — they are deterministic client errors.
+- **`-31001`** is also non-retryable, but instead of surfacing it, invoke `uptimerobot:setup`.
 - **Never swallow errors silently.** Users need to know why an automation didn't land.
 - **Never echo the API key** in error summaries or logs.
 
