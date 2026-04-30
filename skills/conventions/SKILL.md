@@ -1,4 +1,5 @@
 ---
+name: conventions
 description: Conventions and gotchas for every UptimeRobot MCP tool call — monitor types, URL formats, HEARTBEAT URL handling, discovery-before-writes, pagination, time ranges, error codes, and output style. Use whenever you call any uptimerobot:* tool.
 ---
 
