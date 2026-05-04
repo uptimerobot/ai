@@ -6,6 +6,8 @@ tags: [stats, uptime, response-time, metrics, uptimerobot]
 
 # Stats
 
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+
 Two tools:
 
 - `get-monitor-stats` — account-wide aggregated counts and uptime percentage.

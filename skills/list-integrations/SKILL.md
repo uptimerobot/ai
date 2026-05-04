@@ -6,6 +6,8 @@ tags: [integrations, alert-contacts, notifications, list, uptimerobot]
 
 # List integrations
 
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+
 Wraps the `list-integrations` MCP tool. Returns every alert-contact integration on the account — the destinations that can be attached to a monitor via `assignedAlertContacts`.
 
 Use this whenever the user says "alert me on Slack", "page on-call", "email the team", etc. — you need the integration's numeric `id` before `create-monitor` or `update-monitor` will accept it.

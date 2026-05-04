@@ -6,6 +6,8 @@ tags: [monitoring, health, summary, uptime, downtime, uptimerobot]
 
 # Monitor health summary
 
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+
 A fast overview of your monitoring account's current state. Combines account-wide stats, live down/paused lists, and recent incident activity into a single report.
 
 Use this when the user asks "how's everything looking?", "give me a health check", "what's our monitoring status?", or "morning standup brief".
