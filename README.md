@@ -2,13 +2,13 @@
 
 This repo is UptimeRobot's single source of truth for AI agent integrations. It publishes:
 
-- **`llms.txt`** and **`AGENTS.md`** — discovery and orientation for LLMs and coding agents.
-- **`.claude-plugin/`** and **`.cursor-plugin/`** — installable plugin manifests for Claude Code and Cursor.
-- **`skills/`** — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
-- **`rules/`** — shared rules loaded by both Cursor and Claude Code.
-- **`mcp.json`** — Cursor-format MCP server config (dot-less filename).
-- **`.mcp.json`** — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
-- **`assets/logo.png`** — marketplace logo (referenced from the Cursor manifest; the Claude Code manifest does not declare an icon).
+- `**llms.txt**` and `**AGENTS.md**` — discovery and orientation for LLMs and coding agents.
+- `**.claude-plugin/**` and `**.cursor-plugin/**` — installable plugin manifests for Claude Code and Cursor.
+- `**skills/**` — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
+- `**rules/**` — shared rules loaded by both Cursor and Claude Code.
+- `**mcp.json**` — Cursor-format MCP server config (dot-less filename).
+- `**.mcp.json**` — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
+- `**assets/logo.png**` — marketplace logo (referenced from the Cursor manifest; the Claude Code manifest does not declare an icon).
 
 Both `mcp.json` files are now identical — they register the same `mcp-remote` launcher that proxies to `https://mcp.uptimerobot.com/mcp` and runs the OAuth browser flow. The two filenames exist only because Claude Code and Cursor each expect their own convention.
 
@@ -24,7 +24,7 @@ Browse the Claude Code plugin marketplace, find **UptimeRobot**, and enable it. 
 
 #### Manual / scripted install
 
-For setups that don't go through the marketplace (dotfiles, dev environments), see [`skills/setup/SKILL.md`](skills/setup/SKILL.md). Short version:
+For setups that don't go through the marketplace (dotfiles, dev environments), see `[skills/setup/SKILL.md](skills/setup/SKILL.md)`. Short version:
 
 ```bash
 claude mcp add uptimerobot -- npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp
@@ -87,41 +87,30 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 
 ## What the plugin provides
 
-Ten tools via MCP — full list and payloads in [`AGENTS.md`](AGENTS.md) and [`skills/`](skills/):
+Ten tools via MCP — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
 
-| Tool | Purpose |
-| -- | -- |
-| `create-monitor` | Create HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, or UDP monitors |
-| `update-monitor` | Change name, URL, interval, alert contacts, tags, HTTP settings |
-| `update-monitor-status` | Pause or resume a monitor |
-| `list-monitors` | Paginated list with search + state filters |
-| `get-monitor-details` | Full config + current state for one monitor |
-| `get-monitor-stats` | Aggregated up/down/paused counts + uptime % |
-| `get-response-times` | Time-series response-time data with buckets |
-| `list-incidents` | Incidents across monitors, with time range + monitor filter |
-| `get-incident-details` | Per-incident checker locations, logs, traceroute |
-| `list-integrations` | Available alert-contact integrations |
+
+| Tool                    | Purpose                                                                |
+| ----------------------- | ---------------------------------------------------------------------- |
+| `create-monitor`        | Create HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, or UDP monitors |
+| `update-monitor`        | Change name, URL, interval, alert contacts, tags, HTTP settings        |
+| `update-monitor-status` | Pause or resume a monitor                                              |
+| `list-monitors`         | Paginated list with search + state filters                             |
+| `get-monitor-details`   | Full config + current state for one monitor                            |
+| `get-monitor-stats`     | Aggregated up/down/paused counts + uptime %                            |
+| `get-response-times`    | Time-series response-time data with buckets                            |
+| `list-incidents`        | Incidents across monitors, with time range + monitor filter            |
+| `get-incident-details`  | Per-incident checker locations, logs, traceroute                       |
+| `list-integrations`     | Available alert-contact integrations                                   |
+
 
 ## Plan requirements
 
-UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns error code `-28002` (`subscription_limit_exceeded`) when a call would exceed them. See [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
-
-## Marketplace submission readiness
-
-Checklist for Cursor Marketplace review (tracked against [`cursor.com/docs/reference/plugins`](https://cursor.com/docs/reference/plugins)):
-
-- [x] Cursor manifest present at `.cursor-plugin/plugin.json` with only documented fields, explicit `rules` / `skills` / `mcpServers` paths, and a `logo` reference.
-- [x] `mcp.json` at repo root (Cursor format) registering the `mcp-remote` launcher.
-- [x] `.mcp.json` at repo root (Claude Code format) — do not rename.
-- [x] `assets/logo.png` present and referenced from the Cursor manifest (`.cursor-plugin/plugin.json`).
-- [x] No secrets committed. Auth is handled at runtime via the OAuth browser flow (`mcp-remote`).
-- [x] [`LICENSE`](LICENSE) present (MIT).
-- [x] Rule files (`rules/*.mdc`) carry YAML frontmatter with `description` and `alwaysApply`.
-- [x] Skill files (`skills/*/SKILL.md`) carry YAML frontmatter with `name` and `description`.
+UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns error code `-28002` (`subscription_limit_exceeded`) when a call would exceed them. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
 
 ## Contributing
 
-This repo is generated / curated. File issues at https://github.com/uptimerobot/ai/issues. For MCP server bugs, use https://uptimerobot.com/contact.
+This repo is generated / curated. File issues at [https://github.com/uptimerobot/ai/issues](https://github.com/uptimerobot/ai/issues). For MCP server bugs, use [https://uptimerobot.com/contact](https://uptimerobot.com/contact).
 
 ## License
 
