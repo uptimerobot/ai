@@ -18,9 +18,18 @@ The same content is mirrored under `uptimerobot.com/` for crawler discovery (`up
 
 ### Claude Code
 
-#### From the Marketplace (recommended)
+#### From the marketplace (once published)
 
-Browse the Claude Code plugin marketplace, find **UptimeRobot**, and enable it. The MCP server auto-registers via `.mcp.json` as soon as the plugin loads. The first time it connects, a browser opens for you to log into UptimeRobot and authorize access (OAuth) — there's no API key to paste. Tokens are cached locally, so you only do this once.
+UptimeRobot is being submitted to Anthropic's **community** plugin marketplace. Once accepted, add that marketplace once and install:
+
+```bash
+/plugin marketplace add anthropics/claude-plugins-community
+/plugin install uptimerobot@claude-community
+```
+
+Or run `/plugin`, open the **Discover** tab, find **UptimeRobot**, and install it. (The community marketplace must be added first — it isn't built in. Only Anthropic's curated official marketplace shows up in `/plugin` with no setup.)
+
+The MCP server auto-registers via `.mcp.json` as soon as the plugin loads. The first time it connects, a browser opens for you to log into UptimeRobot and authorize access (OAuth) — there's no API key to paste. Tokens are cached locally, so you only do this once.
 
 #### Manual / scripted install
 
