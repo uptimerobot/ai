@@ -4,7 +4,7 @@ This repo is UptimeRobot's single source of truth for AI agent integrations. It 
 
 - `**llms.txt**` and `**AGENTS.md**` — discovery and orientation for LLMs and coding agents.
 - `**.claude-plugin/**` and `**.cursor-plugin/**` — installable plugin manifests for Claude Code and Cursor.
-- `**skills/**` — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
+- `**skills/**` — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows. The `discover-monitors` skill scans an installed project for monitorable resources (pages, GET endpoints, health checks, cron jobs) and proposes monitors to create.
 - `**rules/**` — shared rules loaded by both Cursor and Claude Code.
 - `**mcp.json**` — Cursor-format MCP server config (dot-less filename).
 - `**.mcp.json**` — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
@@ -30,6 +30,17 @@ UptimeRobot is being submitted to Anthropic's **community** plugin marketplace. 
 Or run `/plugin`, open the **Discover** tab, find **UptimeRobot**, and install it. (The community marketplace must be added first — it isn't built in. Only Anthropic's curated official marketplace shows up in `/plugin` with no setup.)
 
 The MCP server auto-registers via `.mcp.json` as soon as the plugin loads. The first time it connects, a browser opens for you to log into UptimeRobot and authorize access (OAuth) — there's no API key to paste. Tokens are cached locally, so you only do this once.
+
+#### Load from a local clone
+
+Until the marketplace listing is live, clone this repo and point Claude Code at it with `--plugin-dir`:
+
+```bash
+git clone https://github.com/uptimerobot/ai.git
+claude --plugin-dir ./ai
+```
+
+`--plugin-dir` takes the plugin root (the directory containing `.claude-plugin/plugin.json`) — no marketplace needed. The skills, rules, and MCP server all load for that session. After editing the plugin, run `/reload-plugins` to pick up changes without restarting.
 
 #### Manual / scripted install
 
