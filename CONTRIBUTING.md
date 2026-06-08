@@ -91,10 +91,26 @@ Hooks wire commands or scripts to lifecycle events (`PreToolUse`,
 `PostToolUse`, `SessionStart`, `SessionEnd`). Keep the hook set minimal —
 hooks run on every matching event.
 
-## MCP servers (`mcp.json`)
+## MCP servers (`mcp.json` / `.mcp.json`)
 
-Add MCP servers here to expose them through the plugin. Prefer referencing
-scripts via `${CLAUDE_PLUGIN_ROOT}` / `${CURSOR_PLUGIN_ROOT}`.
+The UptimeRobot server is registered as an `mcp-remote` launcher that proxies to
+`https://mcp.uptimerobot.com/mcp` and authenticates via OAuth (browser flow on
+first use). No API key or env var is injected into the config — keep it that way:
+
+```json
+{
+  "mcpServers": {
+    "uptimerobot": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@latest", "https://mcp.uptimerobot.com/mcp"]
+    }
+  }
+}
+```
+
+`mcp.json` (Cursor) and `.mcp.json` (Claude Code) must stay identical. When adding
+other MCP servers, prefer referencing scripts via `${CLAUDE_PLUGIN_ROOT}` /
+`${CURSOR_PLUGIN_ROOT}` and never commit secrets.
 
 ## Testing a change
 

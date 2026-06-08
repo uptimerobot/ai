@@ -19,13 +19,5 @@
     "heartbeat",
     "status-page",
     "devops"
-  ],
-  "userConfig": {
-    "api_key": {
-      "type": "string",
-      "title": "UptimeRobot API key",
-      "description": "Get it from Integrations & API in your dashboard. Use the Main API key for read/write or the Read-only API key for listing/stats only.",
-      "sensitive": true
-    }
-  }
+  ]
 }

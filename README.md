@@ -6,11 +6,11 @@ This repo is UptimeRobot's single source of truth for AI agent integrations. It 
 - **`.claude-plugin/`** and **`.cursor-plugin/`** — installable plugin manifests for Claude Code and Cursor.
 - **`skills/`** — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
 - **`rules/`** — shared rules loaded by both Cursor and Claude Code.
-- **`mcp.json`** — Cursor-format MCP server config (dot-less filename, uses `${env:...}` interpolation).
+- **`mcp.json`** — Cursor-format MCP server config (dot-less filename).
 - **`.mcp.json`** — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
 - **`assets/logo.png`** — marketplace logo (referenced from the Cursor manifest; the Claude Code manifest does not declare an icon).
 
-Both `mcp.json` files point at the same remote server (`https://mcp.uptimerobot.com/mcp`) and carry the same API key header — the two filenames exist because Claude Code and Cursor each expect their own convention.
+Both `mcp.json` files are now identical — they register the same `mcp-remote` launcher that proxies to `https://mcp.uptimerobot.com/mcp` and runs the OAuth browser flow. The two filenames exist only because Claude Code and Cursor each expect their own convention.
 
 The same content is mirrored under `uptimerobot.com/` for crawler discovery (`uptimerobot.com/llms.txt`, `uptimerobot.com/AGENTS.md`, etc.).
 
@@ -20,65 +20,66 @@ The same content is mirrored under `uptimerobot.com/` for crawler discovery (`up
 
 #### From the Marketplace (recommended)
 
-Browse the Claude Code plugin marketplace, find **UptimeRobot**, and enable it. Claude Code will prompt you for your UptimeRobot API key at enable time (defined via `userConfig` in the plugin manifest) and store it securely in your OS keychain — no shell env var needed. The MCP server auto-registers via `.mcp.json` as soon as the plugin loads.
+Browse the Claude Code plugin marketplace, find **UptimeRobot**, and enable it. The MCP server auto-registers via `.mcp.json` as soon as the plugin loads. The first time it connects, a browser opens for you to log into UptimeRobot and authorize access (OAuth) — there's no API key to paste. Tokens are cached locally, so you only do this once.
 
-Get your API key from the UptimeRobot dashboard: **Integrations & API** → **Main API key** (read/write) or **Read-only API key**.
+#### Manual / scripted install
 
-#### Manual / CI install
-
-For scripted setups that don't go through the marketplace (CI, dotfiles, dev-containers), see [`skills/setup/SKILL.md`](skills/setup/SKILL.md). Short version:
+For setups that don't go through the marketplace (dotfiles, dev environments), see [`skills/setup/SKILL.md`](skills/setup/SKILL.md). Short version:
 
 ```bash
-claude mcp add uptimerobot --transport http https://mcp.uptimerobot.com/mcp \
-  -H "Authorization: Bearer YOUR_API_KEY"
+claude mcp add uptimerobot -- npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp
 ```
 
-Then quit and relaunch Claude Code. Run `/plugin` to confirm `uptimerobot MCP Server` shows ✓ connected.
+Then quit and relaunch Claude Code, completing the OAuth browser flow when it appears. Run `/plugin` to confirm `uptimerobot MCP Server` shows ✓ connected.
 
 ### Cursor
 
 #### From the Marketplace (once published)
 
-Browse the [Cursor Marketplace](https://cursor.com/marketplace), find **UptimeRobot**, click **Add to Cursor**, and provide your API key when prompted.
+Browse the [Cursor Marketplace](https://cursor.com/marketplace), find **UptimeRobot**, and click **Add to Cursor**. Authorize through the OAuth browser flow when the MCP server first connects — no API key needed.
 
 #### Local install (for development and pre-submission testing)
 
 Follow [Cursor's plugin docs](https://cursor.com/docs/plugins):
 
 ```bash
-# 1. Clone or symlink this repo into Cursor's local plugin folder
+# Clone or symlink this repo into Cursor's local plugin folder
 git clone https://github.com/uptimerobot/ai.git ~/.cursor/plugins/local/uptimerobot-ai
-
-# 2. Launch Cursor with UPTIMEROBOT_API_KEY in the environment (macOS)
-export UPTIMEROBOT_API_KEY=ur_mainKey_...
-open -a "Cursor"
-
-# Linux: launch Cursor from the same terminal where you exported the variable.
-# Windows: set the environment variable via System Properties → Environment Variables,
-#          then restart Cursor.
 ```
 
-After Cursor is open, run **Developer: Reload Window** from the command palette.
+Launch Cursor and run **Developer: Reload Window** from the command palette.
 
 Verify the plugin is discovered:
 
 - **Settings → Rules, Skills, Subagents** — the `uptimerobot.mdc` rule and every `skills/*/SKILL.md` entry should be listed.
-- **Settings → Tools & MCPs** — `uptimerobot` should appear with 10 tools once the MCP server connects.
-
-Get your API key from the UptimeRobot dashboard: **Integrations & API** → **Main API key** (read/write) or **Read-only API key**.
+- **Settings → Tools & MCPs** — `uptimerobot` should appear with 10 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
 
 ### Other agents / direct MCP
 
-Any MCP-compatible client can connect directly:
+Any MCP-compatible client can connect via the same `mcp-remote` launcher (OAuth on first use):
 
 ```json
 {
   "mcpServers": {
     "uptimerobot": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@latest", "https://mcp.uptimerobot.com/mcp"]
+    }
+  }
+}
+```
+
+#### Headless / CI (no browser)
+
+Where the OAuth browser flow can't run, connect over plain HTTP with a Main API key from the dashboard (**Integrations & API**) instead:
+
+```json
+{
+  "mcpServers": {
+    "uptimerobot": {
+      "type": "http",
       "url": "https://mcp.uptimerobot.com/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
     }
   }
 }
@@ -110,10 +111,10 @@ UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availabilit
 Checklist for Cursor Marketplace review (tracked against [`cursor.com/docs/reference/plugins`](https://cursor.com/docs/reference/plugins)):
 
 - [x] Cursor manifest present at `.cursor-plugin/plugin.json` with only documented fields, explicit `rules` / `skills` / `mcpServers` paths, and a `logo` reference.
-- [x] `mcp.json` at repo root (Cursor format) using `${env:UPTIMEROBOT_API_KEY}` interpolation.
-- [x] `.mcp.json` at repo root (Claude Code format) — unchanged, do not rename.
+- [x] `mcp.json` at repo root (Cursor format) registering the `mcp-remote` launcher.
+- [x] `.mcp.json` at repo root (Claude Code format) — do not rename.
 - [x] `assets/logo.png` present and referenced from the Cursor manifest (`.cursor-plugin/plugin.json`).
-- [x] No secrets committed. Auth is passed at runtime via the `UPTIMEROBOT_API_KEY` environment variable.
+- [x] No secrets committed. Auth is handled at runtime via the OAuth browser flow (`mcp-remote`).
 - [x] [`LICENSE`](LICENSE) present (MIT).
 - [x] Rule files (`rules/*.mdc`) carry YAML frontmatter with `description` and `alwaysApply`.
 - [x] Skill files (`skills/*/SKILL.md`) carry YAML frontmatter with `name` and `description`.

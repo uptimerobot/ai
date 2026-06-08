@@ -6,10 +6,10 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 
 ## MCP
 
-- [MCP server](https://mcp.uptimerobot.com/mcp): Remote HTTP MCP endpoint. Authenticate with `Authorization: Bearer <API_KEY>`. API keys come from the UptimeRobot dashboard under Integrations & API (Main = read/write, Read-only = reads only).
+- [MCP server](https://mcp.uptimerobot.com/mcp): Remote HTTP MCP endpoint. Connect via `mcp-remote` (`npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp`) and authorize through the OAuth browser flow on first use — no API key to paste. (Headless/CI can use an `Authorization: Bearer <API_KEY>` header instead.)
 - [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, error codes, and agent conventions.
 - [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor plugin, skills, and this file.
-- [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect Claude Code to your UptimeRobot API key.
+- [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect and authorize Claude Code with UptimeRobot via OAuth.
 
 ## Monitors
 

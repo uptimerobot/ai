@@ -62,7 +62,7 @@ Covered in its own skill: [`update-monitor`](../update-monitor/SKILL.md) — ren
 ## Common mistakes
 
 - Skipping `get-monitor-details` after a status change. Replication lag can mean the next `list-monitors` call still shows the old state.
-- Using a read-only API key for `update-monitor-status` — returns `-31002 access_denied`.
+- Calling `update-monitor-status` when the authorized account lacks write access — returns `-31002 access_denied`.
 - Forgetting that resume counts against the active-monitor cap — `-28001 monitor_limit_exceeded`.
 
 ## Related

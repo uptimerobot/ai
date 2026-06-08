@@ -213,7 +213,7 @@ Pausing is a separate tool — `update-monitor-status` with `{ "status": "PAUSED
 - Treating `assignedAlertContacts` / `tagNames` as patches. They overwrite — always read-modify-write.
 - Passing `alertContactId` as a number. It's a string in every response and must be a string on write.
 - Asking for a monitor-group rename. MCP has no group endpoints — use tags.
-- Updating with a read-only API key — returns `-31002 access_denied`. Use the Main API Key (see [`setup`](../setup/SKILL.md)).
+- Updating when the authorized account lacks write access — returns `-31002 access_denied`. Re-authenticate with a write-capable account (see [`setup`](../setup/SKILL.md)).
 - Skipping the post-write `get-monitor-details`. A follow-up `list-monitors` can still show the old values due to replication lag.
 
 ## Related
