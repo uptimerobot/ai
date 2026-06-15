@@ -8,7 +8,7 @@ This repo is UptimeRobot's single source of truth for AI agent integrations. It 
 - `**rules/**` — shared rules loaded by both Cursor and Claude Code.
 - `**mcp.json**` — Cursor-format MCP server config (dot-less filename).
 - `**.mcp.json**` — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
-- `**assets/logo.png**` — marketplace logo (referenced from the Cursor manifest; the Claude Code manifest does not declare an icon).
+- `**assets/logo.png**` — marketplace logo, declared as the `icon` in both the Cursor and Claude Code manifests.
 
 Both `mcp.json` files are now identical — they register the same `mcp-remote` launcher that proxies to `https://mcp.uptimerobot.com/mcp` and runs the OAuth browser flow. The two filenames exist only because Claude Code and Cursor each expect their own convention.
 
@@ -131,6 +131,10 @@ UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availabilit
 ## Contributing
 
 This repo is generated / curated. File issues at [https://github.com/uptimerobot/ai/issues](https://github.com/uptimerobot/ai/issues). For MCP server bugs, use [https://uptimerobot.com/contact](https://uptimerobot.com/contact).
+
+## Privacy
+
+See the [UptimeRobot Privacy Policy](https://uptimerobot.com/privacy/).
 
 ## License
 
