@@ -4,7 +4,7 @@ This repo is UptimeRobot's single source of truth for AI agent integrations. It 
 
 - `**llms.txt**` and `**AGENTS.md**` — discovery and orientation for LLMs and coding agents.
 - `**.claude-plugin/**` and `**.cursor-plugin/**` — installable plugin manifests for Claude Code and Cursor.
-- `**skills/**` — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
+- `**skills/**` — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows. The `discover-monitors` skill scans an installed project for monitorable resources (pages, GET endpoints, health checks, cron jobs) and proposes monitors to create.
 - `**rules/**` — shared rules loaded by both Cursor and Claude Code.
 - `**mcp.json**` — Cursor-format MCP server config (dot-less filename).
 - `**.mcp.json**` — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
