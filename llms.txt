@@ -10,6 +10,7 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 - [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, error codes, and agent conventions.
 - [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor plugin, skills, and this file.
 - [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect Claude Code to your UptimeRobot API key.
+- [Discover monitors skill](https://uptimerobot.com/skills/discover-monitors/SKILL.md): Scan a repo for monitorable resources (pages, GET endpoints, health checks, cron jobs), then propose and create monitors after confirmation.
 
 ## Monitors
 
