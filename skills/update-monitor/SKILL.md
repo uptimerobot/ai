@@ -6,6 +6,8 @@ tags: [monitors, update, alert-contacts, tags, headers, auth, threshold, uptimer
 
 # Update an existing monitor
 
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+
 Uses the `update-monitor` tool. All updates are **partial** — only send the fields you want to change. Monitor `type` is immutable; delete and recreate if you need a different type.
 
 ## Before you call
@@ -211,7 +213,7 @@ Pausing is a separate tool — `update-monitor-status` with `{ "status": "PAUSED
 - Treating `assignedAlertContacts` / `tagNames` as patches. They overwrite — always read-modify-write.
 - Passing `alertContactId` as a number. It's a string in every response and must be a string on write.
 - Asking for a monitor-group rename. MCP has no group endpoints — use tags.
-- Updating with a read-only API key — returns `-31002 access_denied`. Use the Main API Key (see [`setup`](../setup/SKILL.md)).
+- Updating when the authorized account lacks write access — returns `-31002 access_denied`. Re-authenticate with a write-capable account (see [`setup`](../setup/SKILL.md)).
 - Skipping the post-write `get-monitor-details`. A follow-up `list-monitors` can still show the old values due to replication lag.
 
 ## Related

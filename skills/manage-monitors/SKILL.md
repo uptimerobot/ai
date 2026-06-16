@@ -6,6 +6,8 @@ tags: [monitoring, list, pause, resume, uptimerobot]
 
 # Manage monitors
 
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+
 Covers monitor discovery and status control:
 
 - `list-monitors` — paginated discovery with search + state filters.
@@ -60,7 +62,7 @@ Covered in its own skill: [`update-monitor`](../update-monitor/SKILL.md) — ren
 ## Common mistakes
 
 - Skipping `get-monitor-details` after a status change. Replication lag can mean the next `list-monitors` call still shows the old state.
-- Using a read-only API key for `update-monitor-status` — returns `-31002 access_denied`.
+- Calling `update-monitor-status` when the authorized account lacks write access — returns `-31002 access_denied`.
 - Forgetting that resume counts against the active-monitor cap — `-28001 monitor_limit_exceeded`.
 
 ## Related

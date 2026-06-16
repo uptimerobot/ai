@@ -21,10 +21,10 @@ Plans: **Free, Solo, Team, Enterprise**. Availability of specific monitor types 
 Use the remote MCP server:
 
 - URL: `https://mcp.uptimerobot.com/mcp`
-- Transport: HTTP (streamable)
-- Auth: `Authorization: Bearer <API_KEY>` where `API_KEY` is a Main API key (read/write) or a Read-only API key from the UptimeRobot dashboard (**Integrations & API**).
+- Transport: HTTP (streamable), launched via `mcp-remote` (`npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp`).
+- Auth: **OAuth**. On first connection `mcp-remote` opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, connect over plain HTTP with an `Authorization: Bearer <API_KEY>` header instead.)
 
-All ten tools operate on the account that owns the API key. There is no account impersonation.
+All ten tools operate on the authorized account. There is no account impersonation.
 
 First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SKILL.md`](skills/setup/SKILL.md).
 
@@ -82,8 +82,8 @@ Write/list tools that return pages (`list-monitors`, `list-incidents`, `list-int
 
 ## Authorization model
 
-- **Main API key** → read + write on all tools.
-- **Read-only API key** → only the `readOnlyHint: true` tools (`list-*`, `get-*`). Any write call returns `-31002` (`access_denied`).
+- The OAuth grant inherits the authorized account's permissions: an account with write access can call every tool; an account limited to reads gets only the `readOnlyHint: true` tools (`list-*`, `get-*`) and any write call returns `-31002` (`access_denied`).
+- For the headless/CI Bearer-header alternative, a **Main API key** grants read + write, while a **Read-only API key** is limited to reads.
 
 ## Error handling
 
@@ -96,8 +96,8 @@ Errors come back as JSON-RPC errors with numeric `code`. Map them like this:
 | `-29001` | `invalid_parameters` | No | Fix the payload (includes blacklisted URLs and forbidden fields for a type). |
 | `-30001` | `monitor_not_found` | No | Monitor doesn't exist or belongs to another account. |
 | `-30003` | `resource_not_found` | No | A referenced alert contact / maintenance window doesn't exist. |
-| `-31001` | `user_not_found` | No | Auth missing / wrong. Re-check the Bearer token. |
-| `-31002` | `access_denied` | No | Read-only key used for a write call. |
+| `-31001` | `user_not_found` | No | OAuth grant missing / expired / revoked. Invoke the `setup` skill to re-authenticate. |
+| `-31002` | `access_denied` | No | Authorized account lacks write permission for the call. |
 | HTTP 429 | rate limit | Yes | Backoff with jitter and retry. |
 
 See [`skills/errors/SKILL.md`](skills/errors/SKILL.md) for recovery recipes.

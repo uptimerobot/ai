@@ -17,8 +17,8 @@ The UptimeRobot MCP server returns structured JSON-RPC errors with numeric codes
 | `-29001` | `invalid_parameters` | No | Payload failed validation. Includes blacklisted URLs, forbidden fields for a monitor type, wrong enum values, string too long, etc. The error message usually lists the offending fields. |
 | `-30001` | `monitor_not_found` | No | Monitor ID doesn't exist or isn't owned by this account. |
 | `-30003` | `resource_not_found` | No | A referenced resource (alert contact, maintenance window, tag) doesn't exist. |
-| `-31001` | `user_not_found` | No | Authentication failed. Missing / wrong / revoked Bearer token. |
-| `-31002` | `access_denied` | No | Common cause: a read-only API key was used for a write tool. Also triggered when the account doesn't have permission for the requested action. |
+| `-31001` | `user_not_found` | No | Authentication failed. The OAuth grant is missing, expired, or revoked. |
+| `-31002` | `access_denied` | No | The authorized account doesn't have permission for the requested action (e.g. a write tool with read-only access). |
 | `-32603` | `internal` | Maybe | Unexpected server error. One retry with backoff is fine; escalate on repeat. |
 | HTTP `429` | rate limit | Yes | Back off with exponential delay + jitter, then retry. |
 
@@ -57,9 +57,13 @@ Fix the payload and resend.
 
 Do not retry. Call `list-monitors` (or `list-integrations`) to discover valid IDs and retry with a correct one. If the user typed the ID, it may belong to a different UptimeRobot account.
 
-### `-31001` / `-31002` auth
+### `-31001` unauthenticated
 
-Do not retry the call. For `-31001`, ask the user to check `UPTIMEROBOT_API_KEY` and regenerate if needed. For `-31002`, the key is almost certainly read-only — ask for a Main API key from **Integrations & API** in the UptimeRobot dashboard.
+Do not retry the call. Immediately invoke the `uptimerobot:setup` skill — it re-runs the OAuth flow (clearing the cached grant and reopening the browser) and validates the connection. Do not ask the user to manually check tokens; the setup skill handles that flow.
+
+### `-31002` access denied
+
+Do not retry the call. The authorized account lacks write permission for this action. Invoke the `uptimerobot:setup` skill to re-authenticate with an account that has write access.
 
 ### HTTP 429 rate limit
 
@@ -73,9 +77,10 @@ Cap at ~5 attempts; if still throttled, surface the issue to the user. Bulk loop
 
 ## Never do
 
-- **Never retry** `-28001`, `-28002`, `-29001`, `-30001`, `-30003`, `-31001`, `-31002` — they are deterministic client errors.
+- **Never retry** `-28001`, `-28002`, `-29001`, `-30001`, `-30003`, `-31002` — they are deterministic client errors.
+- **`-31001`** is also non-retryable, but instead of surfacing it, invoke `uptimerobot:setup`.
 - **Never swallow errors silently.** Users need to know why an automation didn't land.
-- **Never echo the API key** in error summaries or logs.
+- **Never echo credentials or tokens** in error summaries or logs.
 
 ## Related
 

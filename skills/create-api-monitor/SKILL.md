@@ -6,6 +6,8 @@ tags: [monitoring, api, assertions, json, create, uptimerobot]
 
 # Create an API monitor
 
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+
 Use when the user needs to validate the **content** of an HTTP response — not just the status code, but specific JSON fields or header values. For simple "status 200" checks, use `HTTP`. For a single keyword in the body, use `KEYWORD`.
 
 **Tool:** `create-monitor`

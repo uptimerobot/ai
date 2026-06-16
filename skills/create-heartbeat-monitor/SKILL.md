@@ -6,6 +6,8 @@ tags: [monitoring, heartbeat, cron, job-monitoring, create, uptimerobot]
 
 # Create a HEARTBEAT monitor
 
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+
 Use when the user wants to monitor a scheduled job / cron / background worker / backup script. The target system must send periodic HTTP requests to a URL that UptimeRobot generates. If pings stop arriving for longer than the interval (plus optional grace period), the monitor goes down.
 
 This is the **inverse** of the other monitor types: UptimeRobot does not probe anything, it waits for incoming pings.
