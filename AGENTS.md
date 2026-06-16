@@ -28,8 +28,6 @@ All ten tools operate on the authorized account. There is no account impersonati
 
 First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SKILL.md`](skills/setup/SKILL.md).
 
-Onboarding an existing codebase: [`skills/discover-monitors/SKILL.md`](skills/discover-monitors/SKILL.md) scans the repo for monitorable resources (public pages, GET endpoints, health checks, cron jobs), resolves their live URLs, and proposes monitors to create after the user confirms.
-
 ## Tools (all 10)
 
 ### Write tools
