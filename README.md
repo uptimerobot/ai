@@ -31,9 +31,26 @@ Or run `/plugin`, open the **Discover** tab, find **UptimeRobot**, and install i
 
 The MCP server auto-registers via `.mcp.json` as soon as the plugin loads. The first time it connects, a browser opens for you to log into UptimeRobot and authorize access (OAuth) — there's no API key to paste. Tokens are cached locally, so you only do this once.
 
-#### Manual / scripted install
+#### Local clone (manual plugin install)
 
-For setups that don't go through the marketplace (dotfiles, dev environments), see `[skills/setup/SKILL.md](skills/setup/SKILL.md)`. Short version:
+To run the full plugin (skills, rules, commands, and the auto-registered MCP server) straight from a local checkout — no marketplace required — clone the repo and load it with the `--plugin-dir` flag:
+
+```bash
+git clone https://github.com/uptimerobot/ai.git
+claude --plugin-dir ./ai
+```
+
+`--plugin-dir <path>` loads the plugin from a directory (the one containing `.claude-plugin/plugin.json`) for that session only. The flag is repeatable and also accepts a `.zip`. Use an absolute path if you launch Claude Code from elsewhere:
+
+```bash
+claude --plugin-dir /absolute/path/to/ai
+```
+
+On first connection a browser opens for the OAuth flow. Run `/plugin` to confirm the plugin is loaded and `uptimerobot MCP Server` shows ✓ connected.
+
+#### MCP server only (scripted)
+
+If you just want the MCP tools without the rest of the plugin (dotfiles, CI bootstrap), see `[skills/setup/SKILL.md](skills/setup/SKILL.md)`. Short version:
 
 ```bash
 claude mcp add uptimerobot -- npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp
