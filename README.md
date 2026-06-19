@@ -134,13 +134,40 @@ Ten tools via MCP — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[s
 
 UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns error code `-28002` (`subscription_limit_exceeded`) when a call would exceed them. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
 
+## Troubleshooting
+
+### Tools not showing up in Claude / Cursor
+
+The MCP handshake sometimes completes after the client captures its tool list at session start, so the tools appear absent even though the server is connected. Fix: fully quit the client (close the terminal, not just `/exit`) and relaunch. Run `claude mcp list` to confirm `uptimerobot` shows `✓ Connected` before relaunching.
+
+### Authentication problems
+
+| Symptom | Fix |
+| --- | --- |
+| OAuth browser didn't open | Copy the authorization URL `mcp-remote` prints in the terminal and open it manually |
+| Tools return `-31001 user_not_found` | Clear cached tokens with `rm -rf ~/.mcp-auth`, then fully quit and relaunch to re-run the OAuth flow |
+| Write tools return `-31002 access_denied` | Re-authenticate (`rm -rf ~/.mcp-auth`) with an account that has write permission |
+
+### API error codes
+
+| Code | Meaning | What to do |
+| --- | --- | --- |
+| `-28001` | Monitor limit reached | Delete unused monitors or upgrade your plan |
+| `-28002` | Subscription limit | Interval too aggressive for your plan, or monitor type not included — loosen the interval or upgrade |
+| `-29001` | Invalid parameters | The error message names the offending fields; fix them and retry |
+| `-31001` | Authentication failed | See Authentication problems above |
+| HTTP `429` | Rate limit | Back off and retry with exponential delay |
+
+For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
+
 ## Contributing
 
 This repo is generated / curated. File issues at [https://github.com/uptimerobot/ai/issues](https://github.com/uptimerobot/ai/issues). For MCP server bugs, use [https://uptimerobot.com/contact](https://uptimerobot.com/contact).
 
-## Privacy
+## Privacy & Terms
 
-See the [UptimeRobot Privacy Policy](https://uptimerobot.com/privacy/).
+- [Privacy Policy](https://uptimerobot.com/privacy/)
+- [Terms of Service](https://uptimerobot.com/terms/)
 
 ## License
 
