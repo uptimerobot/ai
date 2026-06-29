@@ -114,6 +114,13 @@
       "digest": "sha256:5f503e9f3573c8debb444eafb80fd0ed8a75146c3f8fb24a4701d408bfab3c46"
     },
     {
+      "name": "quick-monitor-setup",
+      "type": "skill-md",
+      "description": "Create a free UptimeRobot HTTPS uptime monitor for someone using ONLY their email, no UptimeRobot account, no API key, and no MCP/OAuth. The agent calls an unauthenticated proof-of-work-gated API; the owner confirms with one click in an activation email. Use when a user wants monitoring but is not signed in to UptimeRobot and has no API key, the zero-setup path.",
+      "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/quick-monitor-setup/SKILL.md",
+      "digest": "sha256:d220ca7bdd34780b18bb00f0cfde26e59fc0f9edf8549de2744353689f6389c4"
+    },
+    {
       "name": "setup",
       "type": "skill-md",
       "description": "Connect and authenticate the UptimeRobot MCP server (OAuth via mcp-remote), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` auth errors or first-time setup.",
