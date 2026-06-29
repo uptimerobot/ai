@@ -14,13 +14,13 @@ Use this when a user says something like "monitor my site and email me if it goe
 
 ## Base URL
 
-```
+```text
 https://api.uptimerobot.com
 ```
 
 ## Step 1: Request a proof-of-work challenge
 
-```
+```http
 GET /agentic/agent-monitor/challenge?email=<owner-email>&url=<site>
 ```
 
@@ -51,7 +51,7 @@ while True:
 
 ## Step 3: Submit the monitor request
 
-```
+```http
 POST /agentic/agent-monitor
 Content-Type: application/json
 
