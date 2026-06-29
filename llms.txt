@@ -11,6 +11,11 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 - [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor plugin, skills, and this file.
 - [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect and authorize Claude Code with UptimeRobot via OAuth.
 
+## Quick Monitor Setup (no account)
+
+- [Quick Monitor Setup guide](https://uptimerobot.com/quick-monitor-setup/): Create a forever-free 5-minute HTTPS monitor for someone using only their email, no account or API key. The owner confirms via a one-click activation email.
+- [quick-monitor-setup skill](https://uptimerobot.com/skills/quick-monitor-setup/SKILL.md): The agent-side recipe (unauthenticated proof-of-work challenge, submit, owner activates).
+
 ## Monitors
 
 - [Create monitor skill (HTTP)](https://uptimerobot.com/skills/create-http-monitor/SKILL.md): Full URL + optional method, auth, headers, success codes.
