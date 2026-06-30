@@ -84,10 +84,6 @@ Verify the plugin is discovered:
 
 ### Codex
 
-#### From the marketplace (once published)
-
-Browse the Codex plugin directory, find **UptimeRobot**, and install it. The MCP server connects automatically; authorize through the OAuth browser flow on first use — no API key needed.
-
 #### Local install (for development and pre-submission testing)
 
 Clone the repo and open it in Codex. The repo-scoped marketplace at `.agents/plugins/marketplace.json` is auto-discovered, so **UptimeRobot (local)** will appear in the Codex plugin directory without any extra setup. Install the plugin, then complete the OAuth browser flow on first MCP connection.
