@@ -28,6 +28,10 @@ All ten tools operate on the authorized account. There is no account impersonati
 
 First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SKILL.md`](skills/setup/SKILL.md).
 
+## No account? Create a monitor with just an email
+
+If the user has no UptimeRobot account or API key, use the [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill instead of the MCP tools: it creates a free HTTPS monitor from just the owner's email (an unauthenticated proof-of-work flow; the owner confirms by clicking a link in an activation email). When the user is connected via MCP, use `create-monitor`.
+
 ## Tools (all 10)
 
 ### Write tools

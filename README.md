@@ -130,6 +130,10 @@ Ten tools via MCP — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[s
 | `list-integrations`     | Available alert-contact integrations                                   |
 
 
+### No account needed
+
+The [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill creates a free HTTPS monitor from just someone's email, no account, API key, or OAuth: the agent calls an unauthenticated proof-of-work API and the owner confirms by clicking a link in an activation email. Guide: <https://uptimerobot.com/quick-monitor-setup/>.
+
 ## Plan requirements
 
 UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns error code `-28002` (`subscription_limit_exceeded`) when a call would exceed them. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
