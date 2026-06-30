@@ -3,14 +3,16 @@
 This repo is UptimeRobot's single source of truth for AI agent integrations. It publishes:
 
 - `**llms.txt**` and `**AGENTS.md**` — discovery and orientation for LLMs and coding agents.
-- `**.claude-plugin/**` and `**.cursor-plugin/**` — installable plugin manifests for Claude Code and Cursor.
+- `**.claude-plugin/**`**, **`**.cursor-plugin/**`**, and **`**.codex-plugin/**` — installable plugin manifests for Claude Code, Cursor, and Codex.
 - `**skills/**` — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
 - `**rules/**` — shared rules loaded by both Cursor and Claude Code.
 - `**mcp.json**` — Cursor-format MCP server config (dot-less filename).
 - `**.mcp.json**` — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
-- `**assets/logo.png**` — marketplace logo, declared as the `icon` in the Cursor manifest (Claude Code's plugin manifest has no icon field; the directory listing supplies its icon at submission time).
+- `**codex.mcp.json**` — Codex-format MCP server config (`mcp_servers` snake_case key, referenced explicitly by the Codex manifest).
+- `**.agents/plugins/marketplace.json**` — repo-scoped Codex marketplace for local install and testing; Codex auto-discovers this file when the repo is open.
+- `**assets/logo.png**` — marketplace logo, declared as the `icon` in the Cursor and Codex manifests (Claude Code's plugin manifest has no icon field; the directory listing supplies its icon at submission time).
 
-Both `mcp.json` files are now identical — they register the same `mcp-remote` launcher that proxies to `https://mcp.uptimerobot.com/mcp` and runs the OAuth browser flow. The two filenames exist only because Claude Code and Cursor each expect their own convention.
+The `mcp.json`, `.mcp.json`, and `codex.mcp.json` files all register the same `mcp-remote` launcher that proxies to `https://mcp.uptimerobot.com/mcp` and runs the OAuth browser flow. Three filenames exist only because Claude Code, Cursor, and Codex each expect their own convention (and Codex requires `mcp_servers` in snake_case rather than `mcpServers`).
 
 The same content is mirrored under `uptimerobot.com/` for crawler discovery (`uptimerobot.com/llms.txt`, `uptimerobot.com/AGENTS.md`, etc.).
 
@@ -79,6 +81,24 @@ Verify the plugin is discovered:
 
 - **Settings → Rules, Skills, Subagents** — the `uptimerobot.mdc` rule and every `skills/*/SKILL.md` entry should be listed.
 - **Settings → Tools & MCPs** — `uptimerobot` should appear with 10 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
+
+### Codex
+
+#### From the marketplace (once published)
+
+Browse the Codex plugin directory, find **UptimeRobot**, and install it. The MCP server connects automatically; authorize through the OAuth browser flow on first use — no API key needed.
+
+#### Local install (for development and pre-submission testing)
+
+Clone the repo and open it in Codex. The repo-scoped marketplace at `.agents/plugins/marketplace.json` is auto-discovered, so **UptimeRobot (local)** will appear in the Codex plugin directory without any extra setup. Install the plugin, then complete the OAuth browser flow on first MCP connection.
+
+If you want Codex to track the source explicitly:
+
+```bash
+codex plugin marketplace add ./
+```
+
+Verify the plugin is loaded: the 21 skills should be available and the `uptimerobot` MCP server should appear with 10 tools once connected.
 
 ### Other agents / direct MCP
 

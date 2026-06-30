@@ -1,0 +1,38 @@
+{
+  "name": "uptimerobot",
+  "version": "0.1.0",
+  "description": "Monitor websites, APIs, and servers — create monitors, triage incidents, and query uptime stats from Codex. Supports HTTP, keyword, ping, port, heartbeat, DNS, API, and UDP monitors.",
+  "author": {
+    "name": "UptimeRobot",
+    "email": "support@uptimerobot.com",
+    "url": "https://uptimerobot.com"
+  },
+  "homepage": "https://github.com/uptimerobot/ai",
+  "repository": "https://github.com/uptimerobot/ai",
+  "license": "MIT",
+  "keywords": [
+    "monitoring",
+    "uptime",
+    "website-monitoring",
+    "incidents",
+    "alerts",
+    "heartbeat",
+    "status-page",
+    "devops"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./codex.mcp.json",
+  "interface": {
+    "displayName": "UptimeRobot",
+    "shortDescription": "Monitor your infrastructure without leaving Codex",
+    "longDescription": "Create and manage UptimeRobot monitors, triage incidents, and query uptime stats from Codex via the hosted UptimeRobot MCP server (OAuth, no API key). Supports HTTP, keyword, ping, port, heartbeat, DNS, API, and UDP monitors.",
+    "developerName": "UptimeRobot",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://uptimerobot.com",
+    "privacyPolicyURL": "https://uptimerobot.com/privacy/",
+    "termsOfServiceURL": "https://uptimerobot.com/terms/",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
+  }
+}
