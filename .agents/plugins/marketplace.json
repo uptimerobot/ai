@@ -1,0 +1,20 @@
+{
+  "name": "uptimerobot-local",
+  "interface": {
+    "displayName": "UptimeRobot (local)"
+  },
+  "plugins": [
+    {
+      "name": "uptimerobot",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
