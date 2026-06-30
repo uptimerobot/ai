@@ -1,0 +1,57 @@
+name: Agent Skills Index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'scripts/generate-agent-skills-index.mjs'
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'scripts/generate-agent-skills-index.mjs'
+      - '.well-known/agent-skills/index.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    name: Regenerate agent-skills index
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Regenerate index.json
+        run: node scripts/generate-agent-skills-index.mjs
+
+      - name: Fail PR when index.json is stale
+        if: github.event_name == 'pull_request'
+        run: |
+          if ! git diff --quiet .well-known/agent-skills/index.json; then
+            echo "index.json is stale — run: node scripts/generate-agent-skills-index.mjs"
+            git diff .well-known/agent-skills/index.json
+            exit 1
+          fi
+          echo "ok: index.json is up to date"
+
+      - name: Commit updated index on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if git diff --quiet .well-known/agent-skills/index.json; then
+            echo "index.json already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .well-known/agent-skills/index.json
+          git commit -m "chore: regenerate agent-skills index.json"
+          git push
