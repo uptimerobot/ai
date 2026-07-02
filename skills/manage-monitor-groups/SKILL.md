@@ -17,14 +17,14 @@ Use this skill when the user says "organize my monitors", "put these into a grou
 
 ## The membership-is-invisible gotcha (read this first)
 
-**Verified against the live server: group membership cannot be read back through any tool.** `create-monitor-group` and `update-monitor-group` accept `monitorIds`/`groupIds` on write, but the response only ever contains `id`, `name`, `createdAt`, `updatedAt` — no monitor list. `get-monitor-group` and `list-monitor-groups` return the same shape. `get-monitor-details` on a monitor doesn't report a `groupId` either. There is currently **no way to ask "which monitors are in this group" or "which group is this monitor in"** over MCP — the dashboard is the only place to see it.
+**Group membership cannot be read back through any tool.** `create-monitor-group` and `update-monitor-group` accept `monitorIds`/`groupIds` on write, but the response only ever contains `id`, `name`, `createdAt`, `updatedAt` — no monitor list. `get-monitor-group` and `list-monitor-groups` return the same shape. `get-monitor-details` on a monitor doesn't report a `groupId` either. There is currently **no way to ask "which monitors are in this group" or "which group is this monitor in"** over MCP — the dashboard is the only place to see it.
 
 Practical consequences:
 - If you assign monitors to a group, **track the IDs yourself** (chat context or a note) — none of `create-monitor-group`, `update-monitor-group`, `get-monitor-group`, or `list-monitor-groups` will confirm it back to you directly.
 - Don't tell the user "group X contains monitors A, B, C" unless you were the one who just set that exact membership and haven't lost track of it.
 - This is a strong practical reason to prefer tags over groups: `get-monitor-details` *does* return `tags` for a monitor, so tag membership is always directly verifiable, unlike group membership.
 
-**Indirect workaround, verified against the live server — get explicit user confirmation before doing this.** [`status-pages`](../status-pages/SKILL.md)' `create-psp` resolves `monitorGroupIds` into a real `monitorsCount` on the response, which can be used to check how many monitors a group actually has (e.g. it's how the `groupIds`-move claim below was confirmed). But `create-psp` **ignores `status: PAUSED` and always creates the page publicly** — this briefly exposes real monitor topology/counts on a live public URL, not a safe local check. Don't do this autonomously: confirm with the user first, then immediately follow up with `update-psp` + `status: PAUSED` to unpublish (see [`status-pages`](../status-pages/SKILL.md) Step 2). It's a last-resort workaround, not a proper read tool.
+**Indirect workaround — get explicit user confirmation before doing this.** [`status-pages`](../status-pages/SKILL.md)' `create-psp` resolves `monitorGroupIds` into a real `monitorsCount` on the response, which can be used to check how many monitors a group actually has. But `create-psp` **ignores `status: PAUSED` and always creates the page publicly** — this briefly exposes real monitor topology/counts on a live public URL, not a safe local check. Don't do this autonomously: confirm with the user first, then immediately follow up with `update-psp` + `status: PAUSED` to unpublish (see [`status-pages`](../status-pages/SKILL.md) Step 2). It's a last-resort workaround, not a proper read tool.
 
 ## Decision: tags vs. groups
 
@@ -40,7 +40,7 @@ Most users asking to "organize" monitors actually want tags — they're cheaper 
 
 ## The group-reassignment gotcha
 
-**There is no tool to move an existing monitor into a different existing group.** `update-monitor-group` only renames a group (`monitorGroupId` + `name` — nothing else, verified against the live server); `update-monitor` has no `groupId` field. Group membership is set exactly once, at monitor-creation time (`groupId` on `create-monitor`) or group-creation time (`monitorIds`/`groupIds` on `create-monitor-group`).
+**There is no tool to move an existing monitor into a different existing group.** `update-monitor-group` only renames a group (`monitorGroupId` + `name` — nothing else); `update-monitor` has no `groupId` field. Group membership is set exactly once, at monitor-creation time (`groupId` on `create-monitor`) or group-creation time (`monitorIds`/`groupIds` on `create-monitor-group`).
 
 The only way to reorganize after the fact is to dissolve groups into a *new* one:
 
@@ -48,7 +48,7 @@ The only way to reorganize after the fact is to dissolve groups into a *new* one
 { "name": "All API monitors", "groupIds": [111, 222] }
 ```
 
-`create-monitor-group`'s `groupIds` pulls every monitor out of groups `111` and `222` into the new group — **confirmed via the status-pages workaround above**: merging two 1-monitor groups produced a new group whose `monitorGroupIds`-scoped status page showed `monitorsCount: 2`, while the original source groups dropped to `monitorsCount: 0`. It really does move them, not copy. You cannot cherry-pick individual monitors out of a group this way though — it's all-or-nothing per source group. To move just a few monitors, recreate the target group via `monitorIds` naming the exact set instead:
+`create-monitor-group`'s `groupIds` pulls every monitor out of groups `111` and `222` into the new group. It **moves** them, not copies — the source groups end up empty. You cannot cherry-pick individual monitors out of a group this way though — it's all-or-nothing per source group. To move just a few monitors, recreate the target group via `monitorIds` naming the exact set instead:
 
 ```json
 { "name": "All API monitors", "monitorIds": [800111, 800222, 800333] }

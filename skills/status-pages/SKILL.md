@@ -21,11 +21,11 @@ Two linked resources: the **page** itself (`create/update/get/list-psp`) and **a
 | `monitorIds` | Explicit list. Ignored if `autoAddMonitors: true`. The only field that populates the response's `monitorIds` array. |
 | `monitorGroupIds` | Resolves group membership into `monitorsCount` correctly (verified) — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md). |
 | `tagIds` | Resolves tagged monitors into `monitorsCount` correctly (verified). |
-| `autoAddMonitors: true` | Every *current* monitor on the account — verified (`monitorsCount` matched the account's full monitor total exactly). Whether it also auto-adds *future* monitors is claimed by the tool description but not independently verified (would require creating a new monitor and watching it appear over time — not tested since there's no way to delete a test monitor afterward). Ignores `monitorIds`. |
+| `autoAddMonitors: true` | Every *current* monitor on the account (`monitorsCount` matches the account's full monitor total). Per the tool description it also auto-adds *future* monitors, though that part isn't independently confirmed. Ignores `monitorIds`. |
 
-**`monitorGroupIds`/`tagIds` resolve into `monitorsCount` but the `monitorIds` array in the response stays empty** — verified against the live server. Don't read an empty `monitorIds` on a group/tag-scoped page as "no monitors are showing"; check `monitorsCount` instead. `autoAddMonitors: true` is stranger still: `monitorIds` comes back as `[0]` (a sentinel, not the real list and not `[]`) — don't read anything into that value on an auto-add page either.
+**`monitorGroupIds`/`tagIds` resolve into `monitorsCount` but the `monitorIds` array in the response stays empty.** Don't read an empty `monitorIds` on a group/tag-scoped page as "no monitors are showing"; check `monitorsCount` instead. `autoAddMonitors: true` is stranger still: `monitorIds` comes back as `[0]` (a sentinel, not the real list and not `[]`) — don't read anything into that value on an auto-add page either.
 
-**Side effect worth knowing about, not a recommended workflow:** `monitorsCount` reflects real group membership, so a page scoped by `monitorGroupIds: [<id>]` indirectly reveals how many monitors are actually in a group — [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) has no direct read for this. But don't reach for this casually: since `create-psp` ignores `status: PAUSED` (below), the page is genuinely public the moment it's created, exposing real monitor topology/counts. Get explicit user confirmation before creating a page for this purpose, and immediately pause it afterward — don't do this autonomously as a routine check.
+**Side effect worth knowing about, not a recommended workflow:** `monitorsCount` reflects real group membership, so a page scoped by `monitorGroupIds: [<id>]` indirectly reveals how many monitors are in a group — [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) has no direct read for this. But don't reach for this casually: since `create-psp` ignores `status: PAUSED` (below), the page is genuinely public the moment it's created, exposing real monitor topology/counts. Get explicit user confirmation before creating a page for this purpose, and immediately pause it afterward — don't do this autonomously as a routine check.
 
 Ask before using `autoAddMonitors: true` — it's convenient but means internal/staging monitors show up on a public page unless the user is deliberate about it, and it touches every monitor on the account.
 
@@ -35,7 +35,7 @@ Ask before using `autoAddMonitors: true` — it's convenient but means internal/
 { "friendlyName": "Acme API Status", "monitorIds": [800111, 800222], "status": "PAUSED" }
 ```
 
-**`create-psp` ignores `status: PAUSED` — verified against the live server.** The page is created `ENABLED` (public) regardless of what you pass. If the user wants to review before going live, you must immediately follow up with a second call:
+**`create-psp` ignores `status: PAUSED`.** The page is created `ENABLED` (public) regardless of what you pass. If the user wants to review before going live, you must immediately follow up with a second call:
 
 ```json
 { "pspId": 900123, "status": "PAUSED" }
@@ -49,7 +49,7 @@ Things MCP **cannot** do — tell the user to use the dashboard instead:
 
 ## Step 3 — Announcements
 
-Announcement `status` has four states and only `pspId` is schema-required. **The blank defaults are not safe** — verified against the live server: omitting `title`/`content` leaves them `null` (a blank notice), and omitting `status`/`startDate` doesn't fall back to `Offline` (draft) — it defaults to `Pending` with `startDate` set to the current time, which will auto-publish blank (see below). Always set `title`, `content`, `type`, and `status` explicitly:
+Announcement `status` has four states and only `pspId` is schema-required. **The blank defaults are not safe:** omitting `title`/`content` leaves them `null` (a blank notice), and omitting `status`/`startDate` doesn't fall back to `Offline` (draft) — it defaults to `Pending` with `startDate` set to the current time, which will auto-publish blank (see below). Always set `title`, `content`, `type`, and `status` explicitly:
 
 | Status | Meaning |
 | -- | -- |
@@ -58,7 +58,7 @@ Announcement `status` has four states and only `pspId` is schema-required. **The
 | `Published` | Live now |
 | `Archived` | Was live, now hidden but kept for history |
 
-**`Pending` → `Published` is asynchronous, not instant — verified against the live server, and this took two attempts to get right.** A first test set `startDate` years in the past and checked seconds after creation: still `Pending`. That looked like status never auto-transitions — but it was actually just checking before a background job had run. A second test set `startDate` ~1 minute out and waited for it to actually pass (~90s): the announcement **had** flipped to `Published` on the next check. So there is a real scheduled process that publishes `Pending` announcements once `startDate` arrives, it's just not synchronous — don't assume "still shows `Pending` when I just checked" means it's stuck; and don't assume you must manually flip it to `Published` at the exact scheduled time either. If the user needs it live *immediately*, set `status: Published` directly rather than relying on the delay.
+**`Pending` → `Published` is asynchronous, not instant.** A background job publishes `Pending` announcements once `startDate` arrives, but it doesn't run the moment `startDate` passes — expect a short delay (on the order of a minute) before the status flips. Don't assume "still shows `Pending` when I just checked" means it's stuck, and don't assume you must manually flip it to `Published` at the exact scheduled time. If the user needs it live *immediately*, set `status: Published` directly rather than relying on the delay.
 
 ```json
 {
@@ -73,7 +73,7 @@ Announcement `status` has four states and only `pspId` is schema-required. **The
 
 `type` is `Info`, `Maintenance`, or `Issue` — pick `Issue` for incident updates, `Maintenance` for planned work (cross-reference [`maintenance-windows`](../maintenance-windows/SKILL.md) if the user is also scheduling one), `Info` for everything else.
 
-**`creationDate` isn't stable — verified against the live server.** It changes on every `update-psp-announcement` call, not just at creation (behaves like "last modified" despite the name). Don't use it to report when an announcement was originally posted if it's been edited since — capture the timestamp yourself at creation time if the user needs an accurate history.
+**`creationDate` isn't stable.** It changes on every `update-psp-announcement` call, not just at creation (behaves like "last modified" despite the name). Don't use it to report when an announcement was originally posted if it's been edited since — capture the timestamp yourself at creation time if the user needs an accurate history.
 
 Pin the active incident announcement so it's the first thing visitors see:
 
@@ -97,7 +97,7 @@ User: "We're down, post something on the status page and let me know when it's r
 
 - Assuming `create-psp` with `status: PAUSED` produces a draft — it doesn't; the page goes live immediately and needs a follow-up `update-psp` call to actually unpublish.
 - Publishing (`status: ENABLED`) before the user has reviewed which monitors are included — internal monitors leak onto a public page.
-- Setting `autoAddMonitors: true` without asking — verified to include every *current* monitor (122/122 in testing); confirm before using since it also touches every internal/staging monitor on the account.
+- Setting `autoAddMonitors: true` without asking — it includes every *current* monitor on the account; confirm before using since it also touches every internal/staging monitor.
 - Creating an announcement with only `pspId` set expecting a safe draft — it saves as `Pending` with `startDate: now`, which will auto-publish blank once the background job runs (not instantly, but not a stable draft either). Always fill `title` + `content` + `type` + `status`.
 - Assuming a `Pending` announcement checked moments after creation is stuck/broken because it hasn't auto-published yet — the transition job runs asynchronously; give it time before concluding it's not working.
 - Leaving a resolved incident announcement pinned and `Published` — archive and unpin once it's over.
