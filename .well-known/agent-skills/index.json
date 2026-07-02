@@ -146,7 +146,7 @@
       "type": "skill-md",
       "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, tweak HTTP/keyword/API/heartbeat settings, and toggle SSL or domain reminders.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/update-monitor/SKILL.md",
-      "digest": "sha256:54371c36b0a30c4ab9f7811e4d26121a7a74111d8f5e774629d8a3d0643fdfb8"
+      "digest": "sha256:6782403a1d38b8776e8ff70d2281815098b40106841e0f59153b1a60e4c285d0"
     }
   ]
 }
