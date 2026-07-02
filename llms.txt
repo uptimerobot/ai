@@ -30,12 +30,15 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 - [Update monitor skill](https://uptimerobot.com/skills/update-monitor/SKILL.md): Rename, retarget, retag, swap alert contacts, and tweak type-specific settings on an existing monitor.
 - [List integrations skill](https://uptimerobot.com/skills/list-integrations/SKILL.md): Discover alert-contact IDs to attach to monitors.
 - [Bulk pause skill](https://uptimerobot.com/skills/bulk-pause/SKILL.md): Pause and resume many monitors at once during deploys.
+- [Manage monitor groups skill](https://uptimerobot.com/skills/manage-monitor-groups/SKILL.md): Choose between tags and monitor groups — group membership can't be read back through any tool, so tags (which are) are usually the better default.
+- [Maintenance windows skill](https://uptimerobot.com/skills/maintenance-windows/SKILL.md): Schedule one-off or recurring windows that suppress alerts for planned downtime, as an alternative to bulk pause.
 
 ## Observability
 
 - [Incidents skill](https://uptimerobot.com/skills/incidents/SKILL.md): List and inspect downtime incidents with checker IPs, logs, traceroute.
-- [Incident response skill](https://uptimerobot.com/skills/incident-response/SKILL.md): End-to-end downtime triage and recovery verification.
+- [Incident response skill](https://uptimerobot.com/skills/incident-response/SKILL.md): End-to-end downtime triage, incident-comment timeline logging, and recovery verification.
 - [Stats skill](https://uptimerobot.com/skills/stats/SKILL.md): Aggregated uptime percentages and per-monitor response-time time series.
+- [Status pages skill](https://uptimerobot.com/skills/status-pages/SKILL.md): Publish a public status page from monitors, groups, or tags, and manage incident/maintenance announcements on it.
 - [Errors skill](https://uptimerobot.com/skills/errors/SKILL.md): MCP error codes, recovery, and rate-limit handling.
 
 ## Product

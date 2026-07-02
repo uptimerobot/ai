@@ -94,7 +94,7 @@ If you want Codex to track the source explicitly:
 codex plugin marketplace add ./
 ```
 
-Verify the plugin is loaded: the 21 skills should be available and the `uptimerobot` MCP server should appear with 32 tools once connected.
+Verify the plugin is loaded: the 24 skills should be available and the `uptimerobot` MCP server should appear with 32 tools once connected.
 
 ### Other agents / direct MCP
 

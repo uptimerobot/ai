@@ -52,7 +52,7 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 
 | Name | When to use |
 | -- | -- |
-| `create-monitor-group` | Create a group. Use `monitorIds` to assign monitors, or `groupIds` to move monitors out of existing groups into the new one. |
+| `create-monitor-group` | Create a group. Use `monitorIds` to assign monitors, or `groupIds` to move monitors out of existing groups into the new one. Group membership can only be set here or at monitor-creation time — see [`skills/manage-monitor-groups/SKILL.md`](skills/manage-monitor-groups/SKILL.md). |
 | `update-monitor-group` | Rename an existing group. |
 | `get-monitor-group` | Fetch a single group by `monitorGroupId`. |
 | `list-monitor-groups` | Cursor-paginated list of groups. |
@@ -61,7 +61,7 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 
 | Name | When to use |
 | -- | -- |
-| `create-psp` | Create a public status page from `monitorIds`, `monitorGroupIds`, or `tagIds`. Logo/icon uploads aren't supported over MCP — use the dashboard. |
+| `create-psp` | Create a public status page from `monitorIds`, `monitorGroupIds`, or `tagIds`. Logo/icon uploads aren't supported over MCP — use the dashboard. See [`skills/status-pages/SKILL.md`](skills/status-pages/SKILL.md). |
 | `update-psp` | Partially update name, custom domain, sort order, visibility (`noIndex`, `password`), or publish status (`status: ENABLED`/`PAUSED`). |
 | `get-psp` | Fetch a single status page by `pspId`. |
 | `list-psps` | Cursor-paginated list of status pages. |
@@ -81,7 +81,7 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 
 | Name | When to use |
 | -- | -- |
-| `create-maintenance-window` | Schedule a window (`once`, `daily`, `weekly`, or `monthly`) that suppresses alerts for assigned monitors. Use `days` for weekly/monthly recurrence. |
+| `create-maintenance-window` | Schedule a window (`once`, `daily`, `weekly`, or `monthly`) that suppresses alerts for assigned monitors. Use `days` for weekly/monthly recurrence. See [`skills/maintenance-windows/SKILL.md`](skills/maintenance-windows/SKILL.md). |
 | `update-maintenance-window` | Partially update schedule, duration, monitors, or pause (`status: paused`) / resume (`status: active`) the window. |
 | `get-maintenance-window` | Fetch a single window by `maintenanceWindowId`. |
 | `list-maintenance-windows` | Cursor-paginated list of windows. |
@@ -97,7 +97,7 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 
 | Name | When to use |
 | -- | -- |
-| `create-incident-comment` | Add a plain-text comment to an incident. `incidentId` is a BigInt passed as a numeric string. |
+| `create-incident-comment` | Add a plain-text comment to an incident. `incidentId` is a BigInt passed as a numeric string. See [`skills/incident-response/SKILL.md`](skills/incident-response/SKILL.md). |
 | `update-incident-comment` | Edit an existing comment's content. |
 | `list-incident-comments` | Cursor-paginated list of comments on an incident. |
 
@@ -106,7 +106,7 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 | Name | When to use |
 | -- | -- |
 | `list-integrations` | Alert-contact integrations configured on the account. Pass the `alertContactId` to `create-monitor` / `update-monitor`. See [`skills/list-integrations/SKILL.md`](skills/list-integrations/SKILL.md). |
-| `list-tags` | Cursor-paginated list of tags on the account (up to 50 per page). |
+| `list-tags` | Cursor-paginated list of tags on the account (up to 50 per page). See [`skills/manage-monitor-groups/SKILL.md`](skills/manage-monitor-groups/SKILL.md) for the tags-vs-groups decision. |
 
 ## Monitor types and their required params
 

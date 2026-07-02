@@ -101,7 +101,7 @@ Useful for staging / internal domains where cert/domain expiry is expected or ha
 
 ### 9. Retag (tag-based grouping)
 
-`update-monitor` itself only manages **tags**, not monitor groups. For a dedicated group with its own ID (rename, move monitors between groups), use `create-monitor-group` / `update-monitor-group` / `list-monitor-groups` / `get-monitor-group` instead — see [`AGENTS.md`](../../AGENTS.md#monitor-groups-plan-gated). To tag a monitor for lightweight filtering, replace the whole tag set in one call:
+`update-monitor` itself only manages **tags**, not monitor groups — and there's no way to move a monitor into a different group after creation either. For a dedicated group with its own ID, see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md). To tag a monitor for lightweight filtering, replace the whole tag set in one call:
 
 ```json
 { "monitorId": 800123456, "tagNames": ["production", "critical", "us-east-1"] }
@@ -212,13 +212,14 @@ Pausing is a separate tool — `update-monitor-status` with `{ "status": "PAUSED
 - Sending a field that doesn't belong to the monitor's type (e.g. `gracePeriod` on HTTP, `port` on HEARTBEAT, `keywordValue` on DNS). Returns `-29001 invalid_parameters`.
 - Treating `assignedAlertContacts` / `tagNames` as patches. They overwrite — always read-modify-write.
 - Passing `alertContactId` as a number. It's a string in every response and must be a string on write.
-- Asking for a monitor-group rename. `update-monitor` can't do this — use `update-monitor-group` (see [`AGENTS.md`](../../AGENTS.md#monitor-groups-plan-gated)).
+- Asking for a monitor-group rename or reassignment. `update-monitor` can't do either — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md).
 - Updating when the authorized account lacks write access — returns `-31002 access_denied`. Re-authenticate with a write-capable account (see [`setup`](../setup/SKILL.md)).
 - Skipping the post-write `get-monitor-details`. A follow-up `list-monitors` can still show the old values due to replication lag.
 
 ## Related
 
 - [`manage-monitors`](../manage-monitors/SKILL.md) — list, get details, pause / resume.
+- [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) — dedicated group IDs, and the tags-vs-groups decision.
 - [`list-integrations`](../list-integrations/SKILL.md) — discover `alertContactId` values before attaching.
 - [`bulk-pause`](../bulk-pause/SKILL.md) — pause/resume many monitors during deploys.
 - [`errors`](../errors/SKILL.md) — recovery for `-28002`, `-29001`, `-30001`, `-31002`.

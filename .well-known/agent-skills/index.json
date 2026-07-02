@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Pause (or resume) many UptimeRobot monitors at once — by tag, search term, or state — around a deployment or maintenance window.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/bulk-pause/SKILL.md",
-      "digest": "sha256:103574fd3f608b30fa7e79aa01bd87136a847c7603ee4cbf4c50d7b51bfc48ac"
+      "digest": "sha256:a7d6e1906f63b0b9fecb316eb0de5127b33175eef5cbad299421a70246fd7a61"
     },
     {
       "name": "conventions",
@@ -81,9 +81,9 @@
     {
       "name": "incident-response",
       "type": "skill-md",
-      "description": "End-to-end incident workflow — find what's down, diagnose it, pause flapping monitors, and verify recovery.",
+      "description": "End-to-end incident workflow — find what's down, diagnose it, log an incident-comment timeline, pause flapping monitors, and verify recovery.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/incident-response/SKILL.md",
-      "digest": "sha256:2524b777871d3752bec8427c3295cc53fb2b5956305ed02e81df7d7de7d8a2be"
+      "digest": "sha256:3ffb691cee5d03c172a268e2954c53d5c29542b23c2d0a4a2b11044ced5e1949"
     },
     {
       "name": "incidents",
@@ -98,6 +98,20 @@
       "description": "List the alert-contact integrations configured on the UptimeRobot account so you can attach them to new or existing monitors.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/list-integrations/SKILL.md",
       "digest": "sha256:637758b549d7ab49d576a76da2ae71cf7255d4a55e5051e0fd4e6b5c2dc6d931"
+    },
+    {
+      "name": "maintenance-windows",
+      "type": "skill-md",
+      "description": "Schedule one-off or recurring maintenance windows that suppress alerts for planned downtime, as an alternative to bulk-pause.",
+      "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/maintenance-windows/SKILL.md",
+      "digest": "sha256:dc956cfc29e8facb0fe0dba10aa0438037473cfabf4407fd896342580494dc45"
+    },
+    {
+      "name": "manage-monitor-groups",
+      "type": "skill-md",
+      "description": "Choose between monitor groups and tags for organizing monitors — group membership is opaque and write-only over MCP, so tags are usually the better default.",
+      "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/manage-monitor-groups/SKILL.md",
+      "digest": "sha256:f02e7ab8f399acc3feaba7a2c91732c0315953f95be66a04cf7cacd26f036805"
     },
     {
       "name": "manage-monitors",
@@ -142,11 +156,18 @@
       "digest": "sha256:c941627290c06e4f150277bb41713a644d6a19be2eee759c5b95af3f8a28b370"
     },
     {
+      "name": "status-pages",
+      "type": "skill-md",
+      "description": "Create and publish a public status page from monitors, groups, or tags, and manage announcements (incident, maintenance, info notices) on it.",
+      "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/status-pages/SKILL.md",
+      "digest": "sha256:18912578a018f3e22acfb65608a8c250fd178a1545b3a5f70fb183d84545b3da"
+    },
+    {
       "name": "update-monitor",
       "type": "skill-md",
       "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, tweak HTTP/keyword/API/heartbeat settings, and toggle SSL or domain reminders.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/update-monitor/SKILL.md",
-      "digest": "sha256:6782403a1d38b8776e8ff70d2281815098b40106841e0f59153b1a60e4c285d0"
+      "digest": "sha256:bdaaa87042770b5a587652db98aa0eabc78a24b1e36204070686f0756250c14f"
     }
   ]
 }
