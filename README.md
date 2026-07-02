@@ -161,7 +161,7 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 | `get-psp`     | Fetch a single status page by ID                                      |
 | `list-psps`   | Paginated list of status pages                                        |
 
-### PSP announcements (plan-gated: `psp-subscribers`)
+### PSP announcements
 
 | Tool                        | Purpose                                              |
 | ---------------------------- | ------------------------------------------------------ |
