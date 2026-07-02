@@ -34,7 +34,7 @@ If the user has no UptimeRobot account or API key, use the [`quick-monitor-setup
 
 ## Tools (all 32)
 
-Grouped by resource. Tools marked **plan-gated** require a specific plan feature (`monitor-groups`, `maintenance-window`, or `psp-subscribers`) and fail if the account's plan doesn't include it.
+Grouped by resource. Tools marked **plan-gated** require a specific plan feature (`monitor-groups`, `maintenance-window`, `incident-comments`, or `psp-subscribers`) and fail if the account's plan doesn't include it.
 
 ### Monitors
 

@@ -101,7 +101,7 @@ Useful for staging / internal domains where cert/domain expiry is expected or ha
 
 ### 9. Retag (tag-based grouping)
 
-`update-monitor` itself only manages **tags**, not monitor groups — and there's no way to move a monitor into a different group after creation either. For a dedicated group with its own ID, see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md). To tag a monitor for lightweight filtering, replace the whole tag set in one call:
+`update-monitor` itself only manages **tags** — it has no `groupId` field, so it can't move a monitor into a different group. (Reorganizing groups is still possible, just not through this tool — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) for the indirect `groupIds`-merge workflow.) To tag a monitor for lightweight filtering, replace the whole tag set in one call:
 
 ```json
 { "monitorId": 800123456, "tagNames": ["production", "critical", "us-east-1"] }

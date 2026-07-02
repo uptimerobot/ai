@@ -143,7 +143,7 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 | `get-monitor-stats`     | Aggregated up/down/paused counts + uptime %                            |
 | `get-response-times`    | Time-series response-time data with buckets                            |
 
-### Monitor groups
+### Monitor groups (plan-gated: `monitor-groups`)
 
 | Tool                    | Purpose                                                     |
 | ------------------------ | ------------------------------------------------------------ |
@@ -161,7 +161,7 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 | `get-psp`     | Fetch a single status page by ID                                      |
 | `list-psps`   | Paginated list of status pages                                        |
 
-### PSP announcements
+### PSP announcements (plan-gated: `psp-subscribers`)
 
 | Tool                        | Purpose                                              |
 | ---------------------------- | ------------------------------------------------------ |
@@ -172,7 +172,7 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 | `get-psp-announcement`      | Fetch a single announcement by ID                        |
 | `list-psp-announcements`    | Paginated list of announcements for a status page        |
 
-### Maintenance windows
+### Maintenance windows (plan-gated: `maintenance-window`)
 
 | Tool                          | Purpose                                                        |
 | ------------------------------ | ----------------------------------------------------------------- |
@@ -188,7 +188,7 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 | `list-incidents`        | Incidents across monitors, with time range + monitor filter     |
 | `get-incident-details`  | Per-incident checker locations, logs, traceroute                |
 
-### Incident comments
+### Incident comments (plan-gated: `incident-comments`)
 
 | Tool                       | Purpose                                  |
 | --------------------------- | ------------------------------------------ |

@@ -24,7 +24,7 @@ Practical consequences:
 - Don't tell the user "group X contains monitors A, B, C" unless you were the one who just set that exact membership and haven't lost track of it.
 - This is a strong practical reason to prefer tags over groups: `get-monitor-details` *does* return `tags` for a monitor, so tag membership is always directly verifiable, unlike group membership.
 
-**Indirect workaround, verified against the live server:** [`status-pages`](../status-pages/SKILL.md)' `create-psp` resolves `monitorGroupIds` into a real `monitorsCount` on the response. Creating a throwaway status page scoped to the group ID (then immediately pausing it) is currently the only way to check how many monitors a group actually has — e.g. it's how the `groupIds`-move claim below was confirmed. It's a workaround, not a proper read tool — use it sparingly, not as a routine check.
+**Indirect workaround, verified against the live server — get explicit user confirmation before doing this.** [`status-pages`](../status-pages/SKILL.md)' `create-psp` resolves `monitorGroupIds` into a real `monitorsCount` on the response, which can be used to check how many monitors a group actually has (e.g. it's how the `groupIds`-move claim below was confirmed). But `create-psp` **ignores `status: PAUSED` and always creates the page publicly** — this briefly exposes real monitor topology/counts on a live public URL, not a safe local check. Don't do this autonomously: confirm with the user first, then immediately follow up with `update-psp` + `status: PAUSED` to unpublish (see [`status-pages`](../status-pages/SKILL.md) Step 2). It's a last-resort workaround, not a proper read tool.
 
 ## Decision: tags vs. groups
 

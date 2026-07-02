@@ -25,7 +25,7 @@ Two linked resources: the **page** itself (`create/update/get/list-psp`) and **a
 
 **`monitorGroupIds`/`tagIds` resolve into `monitorsCount` but the `monitorIds` array in the response stays empty** — verified against the live server. Don't read an empty `monitorIds` on a group/tag-scoped page as "no monitors are showing"; check `monitorsCount` instead. `autoAddMonitors: true` is stranger still: `monitorIds` comes back as `[0]` (a sentinel, not the real list and not `[]`) — don't read anything into that value on an auto-add page either.
 
-**Useful side effect:** because `monitorsCount` reflects real group membership, creating a throwaway page scoped by `monitorGroupIds: [<id>]` is currently the only way to indirectly check how many monitors are actually in a group — [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) has no direct read for this.
+**Side effect worth knowing about, not a recommended workflow:** `monitorsCount` reflects real group membership, so a page scoped by `monitorGroupIds: [<id>]` indirectly reveals how many monitors are actually in a group — [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) has no direct read for this. But don't reach for this casually: since `create-psp` ignores `status: PAUSED` (below), the page is genuinely public the moment it's created, exposing real monitor topology/counts. Get explicit user confirmation before creating a page for this purpose, and immediately pause it afterward — don't do this autonomously as a routine check.
 
 Ask before using `autoAddMonitors: true` — it's convenient but means internal/staging monitors show up on a public page unless the user is deliberate about it, and it touches every monitor on the account.
 
