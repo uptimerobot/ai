@@ -24,7 +24,7 @@ Use the remote MCP server:
 - Transport: HTTP (streamable), launched via `mcp-remote` (`npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp`).
 - Auth: **OAuth**. On first connection `mcp-remote` opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, connect over plain HTTP with an `Authorization: Bearer <API_KEY>` header instead.)
 
-All ten tools operate on the authorized account. There is no account impersonation.
+All 32 tools operate on the authorized account. There is no account impersonation.
 
 First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SKILL.md`](skills/setup/SKILL.md).
 
@@ -32,27 +32,81 @@ First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SK
 
 If the user has no UptimeRobot account or API key, use the [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill instead of the MCP tools: it creates a free HTTPS monitor from just the owner's email (an unauthenticated proof-of-work flow; the owner confirms by clicking a link in an activation email). When the user is connected via MCP, use `create-monitor`.
 
-## Tools (all 10)
+## Tools (all 32)
 
-### Write tools
+Grouped by resource. Tools marked **plan-gated** require a specific plan feature (`monitor-groups`, `maintenance-window`, `incident-comments`, or `psp-subscribers`) and fail if the account's plan doesn't include it.
+
+### Monitors
 
 | Name | When to use |
 | -- | -- |
 | `create-monitor` | Create a new monitor of any supported type. See [`skills/create-*-monitor`](skills/) for per-type recipes. |
 | `update-monitor` | Partially update an existing monitor's name, URL, interval, alert contacts, tags, HTTP settings, etc. Monitor type cannot be changed. See [`skills/update-monitor/SKILL.md`](skills/update-monitor/SKILL.md). |
 | `update-monitor-status` | Pause (`PAUSED`) or resume (`STARTED`) a monitor. |
-
-### Read tools
-
-| Name | When to use |
-| -- | -- |
 | `list-monitors` | Browse monitors with optional search string and state filters (`UP`, `DOWN`, `PAUSED`, `NOT_STARTED`, `EXPIRING_DOMAIN`, `EXPIRING_SSL_CERTIFICATE`, `WITH_API_KEY`, `WITHOUT_API_KEY`). Cursor-paginated. |
 | `get-monitor-details` | Full config + current state for one monitor ID. |
 | `get-monitor-stats` | Aggregated up/down/paused counts + overall uptime % for a time range. |
 | `get-response-times` | Time-series response-time data for one monitor within a time range. Supports `bucketSize` for aggregation. |
+
+### Monitor groups (plan-gated)
+
+| Name | When to use |
+| -- | -- |
+| `create-monitor-group` | Create a group. Use `monitorIds` to assign monitors, or `groupIds` to move monitors out of existing groups into the new one. Group membership can only be set here or at monitor-creation time — see [`skills/manage-monitor-groups/SKILL.md`](skills/manage-monitor-groups/SKILL.md). |
+| `update-monitor-group` | Rename an existing group. |
+| `get-monitor-group` | Fetch a single group by `monitorGroupId`. |
+| `list-monitor-groups` | Cursor-paginated list of groups. |
+
+### Status pages (PSPs)
+
+| Name | When to use |
+| -- | -- |
+| `create-psp` | Create a public status page from `monitorIds`, `monitorGroupIds`, or `tagIds`. Logo/icon uploads aren't supported over MCP — use the dashboard. See [`skills/status-pages/SKILL.md`](skills/status-pages/SKILL.md). |
+| `update-psp` | Partially update name, custom domain, sort order, visibility (`noIndex`, `password`), or publish status (`status: ENABLED`/`PAUSED`). |
+| `get-psp` | Fetch a single status page by `pspId`. |
+| `list-psps` | Cursor-paginated list of status pages. |
+
+### PSP announcements (plan-gated: `psp-subscribers`)
+
+| Name | When to use |
+| -- | -- |
+| `create-psp-announcement` | Post an announcement (`Info`, `Maintenance`, or `Issue`) to a status page. Set `status: Published` to make it visible immediately. |
+| `update-psp-announcement` | Partially update title, content, dates, type, or status (`Offline`/`Pending`/`Published`/`Archived`). |
+| `pin-psp-announcement` | Pin an announcement to the top of a status page. |
+| `unpin-psp-announcement` | Unpin an announcement. |
+| `get-psp-announcement` | Fetch a single announcement by `pspId` + `announcementId`. |
+| `list-psp-announcements` | Cursor-paginated list of announcements for a status page, optionally filtered by `status`. |
+
+### Maintenance windows (plan-gated: `maintenance-window`)
+
+| Name | When to use |
+| -- | -- |
+| `create-maintenance-window` | Schedule a window (`once`, `daily`, `weekly`, or `monthly`) that suppresses alerts for assigned monitors. Use `days` for weekly/monthly recurrence. See [`skills/maintenance-windows/SKILL.md`](skills/maintenance-windows/SKILL.md). |
+| `update-maintenance-window` | Partially update schedule, duration, monitors, or pause (`status: paused`) / resume (`status: active`) the window. |
+| `get-maintenance-window` | Fetch a single window by `maintenanceWindowId`. |
+| `list-maintenance-windows` | Cursor-paginated list of windows. |
+
+### Incidents
+
+| Name | When to use |
+| -- | -- |
 | `list-incidents` | All incidents for the account (or a specific `monitorId`) within a time range. Cursor-paginated. |
 | `get-incident-details` | Per-incident checker locations, IPs, logs, traceroute. Pass `incidentId` (string). |
+
+### Incident comments (plan-gated: `incident-comments`)
+
+| Name | When to use |
+| -- | -- |
+| `create-incident-comment` | Add a plain-text comment to an incident. `incidentId` is a BigInt passed as a numeric string. See [`skills/incident-response/SKILL.md`](skills/incident-response/SKILL.md). |
+| `update-incident-comment` | Edit an existing comment's content. |
+| `list-incident-comments` | Cursor-paginated list of comments on an incident. |
+
+### Integrations & tags
+
+| Name | When to use |
+| -- | -- |
 | `list-integrations` | Alert-contact integrations configured on the account. Pass the `alertContactId` to `create-monitor` / `update-monitor`. See [`skills/list-integrations/SKILL.md`](skills/list-integrations/SKILL.md). |
+| `list-tags` | Cursor-paginated list of tags on the account (up to 50 per page). See [`skills/manage-monitor-groups/SKILL.md`](skills/manage-monitor-groups/SKILL.md) for the tags-vs-groups decision. |
 
 ## Monitor types and their required params
 

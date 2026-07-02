@@ -99,9 +99,9 @@ Same pattern — fetch the current array, drop the entry, send back the remainin
 
 Useful for staging / internal domains where cert/domain expiry is expected or handled elsewhere.
 
-### 9. Retag / reorganize ("monitor group" equivalent)
+### 9. Retag (tag-based grouping)
 
-UptimeRobot's MCP server does **not** expose monitor-group endpoints — grouping is done with **tags**. Replace the whole tag set in one call:
+`update-monitor` itself only manages **tags** — it has no `groupId` field, so it can't move a monitor into a different group. (Reorganizing groups is still possible, just not through this tool — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) for the indirect `groupIds`-merge workflow.) To tag a monitor for lightweight filtering, replace the whole tag set in one call:
 
 ```json
 { "monitorId": 800123456, "tagNames": ["production", "critical", "us-east-1"] }
@@ -121,7 +121,7 @@ To add one tag without losing the others, merge first (like alert contacts). Max
 
 `followRedirections` and `checkSSLErrors` are rejected on PING / PORT / HEARTBEAT / DNS / UDP with `-29001`.
 
-### 11. Update API monitor auth + headers + expected codes
+### 11. Update HTTP auth + headers + expected codes (HTTP / KEYWORD / API)
 
 ```json
 {
@@ -139,7 +139,7 @@ To add one tag without losing the others, merge first (like alert contacts). Max
 }
 ```
 
-These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `customHttpHeaders`, `successHttpResponseCodes`, `postValueData`, `postValueType`) only apply to **API** monitors. For `BEARER`, put the token in `httpPassword`. For `HTTP_BASIC` / `DIGEST`, use `httpUsername` + `httpPassword`.
+These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `customHttpHeaders`, `successHttpResponseCodes`, `postValueData`, `postValueType`) apply to all **HTTP-based** types (HTTP, KEYWORD, API) — the example above just happens to use an API monitor. `postValueData` / `postValueType` only take effect when `httpMethodType` is a body method (`POST` / `PUT` / `PATCH`). For `BEARER`, put the token in `httpPassword`. For `HTTP_BASIC` / `DIGEST`, use `httpUsername` + `httpPassword`. (`config.apiAssertions` in section 12 is the piece that's genuinely API-only.)
 
 ### 12. Update API assertions
 
@@ -178,7 +178,7 @@ These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `cus
 { "monitorId": 800123456, "port": 5432 }
 ```
 
-1–65535. Also works for UDP monitors.
+1–65535. Also works for UDP monitors. DNS monitors accept `port` too (the DNS-server port, default 53) — omit it unless the server runs on a non-standard port.
 
 ### 15. Change UDP payload and packet-loss threshold
 
@@ -197,10 +197,10 @@ These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `cus
 ### 16. Pin IP version
 
 ```json
-{ "monitorId": 800123456, "config": { "ipVersion": "IPV4" } }
+{ "monitorId": 800123456, "config": { "ipVersion": "IPv4" } }
 ```
 
-Valid values: `IPV4`, `IPV6`. If your URL is a literal IP, the server cross-checks it against this field and rejects mismatches.
+Valid values: `IPv4`, `IPv6` (mixed case — the same spelling the `create-*-monitor` skills use). If your URL is a literal IP, the server cross-checks it against this field and rejects mismatches.
 
 ## Pause vs. update
 
@@ -212,13 +212,14 @@ Pausing is a separate tool — `update-monitor-status` with `{ "status": "PAUSED
 - Sending a field that doesn't belong to the monitor's type (e.g. `gracePeriod` on HTTP, `port` on HEARTBEAT, `keywordValue` on DNS). Returns `-29001 invalid_parameters`.
 - Treating `assignedAlertContacts` / `tagNames` as patches. They overwrite — always read-modify-write.
 - Passing `alertContactId` as a number. It's a string in every response and must be a string on write.
-- Asking for a monitor-group rename. MCP has no group endpoints — use tags.
+- Asking for a monitor-group rename or reassignment. `update-monitor` can't do either — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md).
 - Updating when the authorized account lacks write access — returns `-31002 access_denied`. Re-authenticate with a write-capable account (see [`setup`](../setup/SKILL.md)).
 - Skipping the post-write `get-monitor-details`. A follow-up `list-monitors` can still show the old values due to replication lag.
 
 ## Related
 
 - [`manage-monitors`](../manage-monitors/SKILL.md) — list, get details, pause / resume.
+- [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) — dedicated group IDs, and the tags-vs-groups decision.
 - [`list-integrations`](../list-integrations/SKILL.md) — discover `alertContactId` values before attaching.
 - [`bulk-pause`](../bulk-pause/SKILL.md) — pause/resume many monitors during deploys.
 - [`errors`](../errors/SKILL.md) — recovery for `-28002`, `-29001`, `-30001`, `-31002`.

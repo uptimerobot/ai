@@ -13,7 +13,8 @@ The full loop a user runs when something's on fire:
 1. Find what's down (`list-monitors` with `DOWN` filter).
 2. Pull incident details for the worst offenders (`get-incident-details`).
 3. Optionally silence flapping monitors while the underlying issue is being fixed (`update-monitor-status` → `PAUSED`).
-4. After the fix, verify recovery with `get-monitor-stats` and/or `get-response-times`.
+4. Log findings as you go with incident comments (requires the `incident-comments` plan feature).
+5. After the fix, verify recovery with `get-monitor-stats` and/or `get-response-times`.
 
 Use this when the user says "what's down?", "is production still broken?", "triage the alerts", or "show me the outage".
 
@@ -69,7 +70,19 @@ Useful output pattern:
 
 Don't paste the full log body unless asked — summarise the error kind and HTTP status.
 
-## Step 4 — Silence flapping monitors (optional)
+## Step 4 — Log findings as an incident comment thread (optional)
+
+Requires the `incident-comments` plan feature. Rather than only reporting a final summary at the end, add a comment each time you learn something material — it builds a timeline other responders (and future you, writing the postmortem) can read directly on the incident:
+
+```json
+{ "incidentId": "inc_abcdef1234567890", "content": "5/5 checkers see connection refused on :443 since 14:02 UTC. Not regional — looks like the LB is down." }
+```
+
+`incidentId` here is a BigInt passed as a numeric string (same value as `get-incident-details`). If you posted something and later learn it was wrong (e.g. misidentified root cause), fix it with `update-incident-comment` (needs the numeric `commentId` from the create response or `list-incident-comments`) rather than leaving a stale comment alongside a correction — the thread should read as a clean timeline, not a debug log.
+
+When writing the final summary (below), pull the full thread with `list-incident-comments` so nothing gets lost between what was said live and what makes the postmortem.
+
+## Step 5 — Silence flapping monitors (optional)
 
 If a monitor is flapping while the underlying issue is being fixed and the noise is distracting, pause just that monitor (not everything — see `bulk-pause` for that):
 
@@ -79,9 +92,9 @@ If a monitor is flapping while the underlying issue is being fixed and the noise
 
 Confirm with the user first — pausing a monitor also stops alerts, which is exactly what you want during known downtime but dangerous if the user forgets to resume.
 
-Store the paused IDs so you can resume them later. Maintenance windows are a better choice when the downtime is planned.
+Store the paused IDs so you can resume them later. [`maintenance-windows`](../maintenance-windows/SKILL.md) is a better choice when the downtime is planned ahead of time rather than reactive.
 
-## Step 5 — Verify recovery
+## Step 6 — Verify recovery
 
 Once the user says the fix is deployed, confirm the monitor is actually green.
 
@@ -109,7 +122,7 @@ Look for response times returning to baseline, not just "up vs down".
 
 ### Resume anything you paused
 
-For each paused monitor ID you stored in step 4:
+For each paused monitor ID you stored in step 5:
 
 ```json
 { "monitorId": 800123456, "status": "STARTED" }
@@ -139,6 +152,8 @@ Related monitors also down during window: `prod-api-healthz`, `prod-api-db`.
 - Claiming recovery from `status: UP` alone. Check `get-response-times` — a monitor can be UP with 10x response time and still degraded.
 - Treating a resolved-then-retriggered incident as one event. Sometimes `list-incidents` returns two rows for a flap.
 - Requesting `timeRange` > 90 days. Max is 90d.
+- Leaving an incorrect incident comment uncorrected instead of using `update-incident-comment` — the thread is the record other people read.
+- Trying to comment on an incident when the account's plan lacks the `incident-comments` feature — check for `-28002` and fall back to reporting in chat only.
 
 ## Related
 
@@ -146,4 +161,6 @@ Related monitors also down during window: `prod-api-healthz`, `prod-api-db`.
 - `incidents` — detailed reference for `list-incidents` and `get-incident-details`.
 - `stats` — for `get-monitor-stats` and `get-response-times`.
 - `bulk-pause` — when many monitors need silencing at once.
-- `errors` — `-28001` on resume, `-30001` on stale IDs, 429 handling during heavy loops.
+- [`maintenance-windows`](../maintenance-windows/SKILL.md) — the scheduled alternative to pausing during known downtime.
+- [`status-pages`](../status-pages/SKILL.md) — post a public-facing announcement alongside internal incident comments.
+- `errors` — `-28001` on resume, `-28002` for plan-gated features, `-30001` on stale IDs, 429 handling during heavy loops.

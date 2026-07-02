@@ -12,7 +12,7 @@ There is no single "pause all" tool. The workflow is: enumerate the target monit
 
 Use this when the user says "pause everything", "silence alerts during deploy", "mute the api monitors", or "bring them all back online".
 
-> **Prefer maintenance windows for scheduled downtime.** Maintenance windows suppress *alerts* without changing monitor state and don't count against your plan's active-monitor cap on resume. Only bulk-pause when the user explicitly wants the monitors stopped, or when a maintenance window isn't suitable (ad-hoc, very short, or already in the middle of a deploy).
+> **Prefer [`maintenance-windows`](../maintenance-windows/SKILL.md) for scheduled downtime.** Maintenance windows suppress *alerts* without changing monitor state and don't count against your plan's active-monitor cap on resume. Only bulk-pause when the user explicitly wants the monitors stopped, or when a maintenance window isn't suitable (ad-hoc, very short, or already in the middle of a deploy).
 
 ## Step 1 — List the target monitors
 
@@ -98,5 +98,6 @@ User: "Pause everything tagged `deploy-web` for the next 20 minutes."
 ## Related
 
 - `manage-monitors` — for the underlying `list-monitors` and `update-monitor-status` tools.
+- [`maintenance-windows`](../maintenance-windows/SKILL.md) — the scheduled/recurring alternative.
 - `errors` — for `-28001`, `-31002`, and 429 handling.
 - `incident-response` — when pausing is a response to ongoing incidents rather than a deploy.

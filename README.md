@@ -80,7 +80,7 @@ Launch Cursor and run **Developer: Reload Window** from the command palette.
 Verify the plugin is discovered:
 
 - **Settings → Rules, Skills, Subagents** — the `uptimerobot.mdc` rule and every `skills/*/SKILL.md` entry should be listed.
-- **Settings → Tools & MCPs** — `uptimerobot` should appear with 10 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
+- **Settings → Tools & MCPs** — `uptimerobot` should appear with 32 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
 
 ### Codex
 
@@ -94,7 +94,7 @@ If you want Codex to track the source explicitly:
 codex plugin marketplace add ./
 ```
 
-Verify the plugin is loaded: the 21 skills should be available and the `uptimerobot` MCP server should appear with 10 tools once connected.
+Verify the plugin is loaded: the 24 skills should be available and the `uptimerobot` MCP server should appear with 32 tools once connected.
 
 ### Other agents / direct MCP
 
@@ -129,8 +129,9 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 
 ## What the plugin provides
 
-Ten tools via MCP — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
+32 tools via MCP, grouped by resource — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
 
+### Monitors
 
 | Tool                    | Purpose                                                                |
 | ----------------------- | ---------------------------------------------------------------------- |
@@ -141,10 +142,66 @@ Ten tools via MCP — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[s
 | `get-monitor-details`   | Full config + current state for one monitor                            |
 | `get-monitor-stats`     | Aggregated up/down/paused counts + uptime %                            |
 | `get-response-times`    | Time-series response-time data with buckets                            |
-| `list-incidents`        | Incidents across monitors, with time range + monitor filter            |
-| `get-incident-details`  | Per-incident checker locations, logs, traceroute                       |
-| `list-integrations`     | Available alert-contact integrations                                   |
 
+### Monitor groups (plan-gated: `monitor-groups`)
+
+| Tool                    | Purpose                                                     |
+| ------------------------ | ------------------------------------------------------------ |
+| `create-monitor-group`  | Create a group and assign monitors to it                    |
+| `update-monitor-group`  | Rename an existing group                                     |
+| `get-monitor-group`     | Fetch a single group by ID                                   |
+| `list-monitor-groups`   | Paginated list of groups                                     |
+
+### Status pages (PSPs)
+
+| Tool          | Purpose                                                              |
+| ------------- | --------------------------------------------------------------------- |
+| `create-psp`  | Create a public status page from monitors, groups, or tags            |
+| `update-psp`  | Change name, domain, sort order, visibility, or publish status        |
+| `get-psp`     | Fetch a single status page by ID                                      |
+| `list-psps`   | Paginated list of status pages                                        |
+
+### PSP announcements (plan-gated: `psp-subscribers`)
+
+| Tool                        | Purpose                                              |
+| ---------------------------- | ------------------------------------------------------ |
+| `create-psp-announcement`   | Post an announcement (info/maintenance/issue) to a status page |
+| `update-psp-announcement`   | Edit title, content, dates, type, or publish status     |
+| `pin-psp-announcement`      | Pin an announcement to the top of the page              |
+| `unpin-psp-announcement`    | Unpin an announcement                                    |
+| `get-psp-announcement`      | Fetch a single announcement by ID                        |
+| `list-psp-announcements`    | Paginated list of announcements for a status page        |
+
+### Maintenance windows (plan-gated: `maintenance-window`)
+
+| Tool                          | Purpose                                                        |
+| ------------------------------ | ----------------------------------------------------------------- |
+| `create-maintenance-window`   | Schedule a one-off or recurring window that suppresses alerts     |
+| `update-maintenance-window`   | Change schedule, duration, monitors, or pause/resume the window   |
+| `get-maintenance-window`      | Fetch a single window by ID                                       |
+| `list-maintenance-windows`    | Paginated list of windows                                         |
+
+### Incidents
+
+| Tool                    | Purpose                                                      |
+| ------------------------ | --------------------------------------------------------------- |
+| `list-incidents`        | Incidents across monitors, with time range + monitor filter     |
+| `get-incident-details`  | Per-incident checker locations, logs, traceroute                |
+
+### Incident comments (plan-gated: `incident-comments`)
+
+| Tool                       | Purpose                                  |
+| --------------------------- | ------------------------------------------ |
+| `create-incident-comment`  | Add a comment to an incident               |
+| `update-incident-comment`  | Edit an existing comment                   |
+| `list-incident-comments`   | Paginated list of comments on an incident  |
+
+### Integrations & tags
+
+| Tool                  | Purpose                                    |
+| ---------------------- | --------------------------------------------- |
+| `list-integrations`   | Available alert-contact integrations          |
+| `list-tags`            | Paginated list of tags on the account         |
 
 ### No account needed
 
