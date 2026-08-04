@@ -81,7 +81,7 @@
     {
       "name": "incident-response",
       "type": "skill-md",
-      "description": "End-to-end incident workflow — find what's down, diagnose it, log an incident-comment timeline, pause flapping monitors, and verify recovery.",
+      "description": "End-to-end incident workflow — find what's down, diagnose it, pause flapping monitors, and verify recovery.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/incident-response/SKILL.md",
       "digest": "sha256:3ffb691cee5d03c172a268e2954c53d5c29542b23c2d0a4a2b11044ced5e1949"
     },
@@ -111,7 +111,7 @@
       "type": "skill-md",
       "description": "Choose between monitor groups and tags for organizing monitors — group membership is opaque and write-only over MCP, so tags are usually the better default.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/manage-monitor-groups/SKILL.md",
-      "digest": "sha256:eb1aa03e38504539468a53645e526807937658817786a8e5cef9f9fa1762ce98"
+      "digest": "sha256:b287375743f574d7ea27a25f92a0a2ea73122aabece1fa2e33b4ebc1bc57b0d1"
     },
     {
       "name": "manage-monitors",
@@ -160,14 +160,14 @@
       "type": "skill-md",
       "description": "Create and publish a public status page from monitors, groups, or tags, and manage announcements (incident, maintenance, info notices) on it.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/status-pages/SKILL.md",
-      "digest": "sha256:dd3860c5cdf7f592d9ee50084c2238befeabca302110ce9ea1ecb9928fe3c793"
+      "digest": "sha256:b27b8fb22cacbf19c8233900f50ad215f43731a1f4a3e54c37823942751a19a6"
     },
     {
       "name": "update-monitor",
       "type": "skill-md",
       "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, tweak HTTP/keyword/API/heartbeat settings, and toggle SSL or domain reminders.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/update-monitor/SKILL.md",
-      "digest": "sha256:e55b515ae16317506c3a4782317032503068c2cde9b7d17732aaaebcc0ecf222"
+      "digest": "sha256:2cdab4bc3465d58a39d7152a61f084ef3ce596f6c7e9a256a736f97ad2810812"
     }
   ]
 }
