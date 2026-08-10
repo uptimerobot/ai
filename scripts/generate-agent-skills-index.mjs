@@ -34,78 +34,29 @@ function fail(message) {
   process.exit(1);
 }
 
-const DOUBLE_QUOTE_ESCAPES = { '"': '"', "\\": "\\", n: "\n", t: "\t", r: "\r" };
-
-// Unescapes a YAML plain-scalar value that was wrapped in quotes. Double
-// quotes support backslash escapes (`\"`, `\\`, `\n`, `\t`, `\r`; any other
-// escape is left as-is rather than guessed at). Single quotes only support a
-// doubled `''` as an escaped literal quote.
-function unquote(value) {
+// Every skill's frontmatter uses a plain single-line value for both `name`
+// and `description` (true of every current skills/*/SKILL.md). YAML block
+// scalars (`description: |` / `>`) and escapes other than `\"`/`\\` are
+// deliberately unsupported rather than hand-rolled: this repo has no YAML
+// dependency, and re-implementing YAML's block-scalar folding/indentation
+// rules from scratch (previously attempted here) turned into a recurring
+// source of subtle parsing bugs for a form nothing in this repo actually
+// uses. Unsupported input fails the build loudly instead of guessing.
+function unquote(value, field) {
   if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
-    return value.slice(1, -1).replace(/\\(.)/g, (raw, ch) => DOUBLE_QUOTE_ESCAPES[ch] ?? raw);
+    return value.slice(1, -1).replace(/\\(.)/g, (raw, ch) => {
+      if (ch === '"' || ch === "\\") return ch;
+      fail(
+        `unsupported escape "\\${ch}" in ${field} (only \\" and \\\\ are supported — ` +
+          "write it as plain text instead)",
+      );
+      return raw;
+    });
   }
   if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
     return value.slice(1, -1).replace(/''/g, "'");
   }
   return value;
-}
-
-// Splits the lines following a block-scalar header into { blank } / { text }
-// entries, stripping exactly the indentation of the block's first non-blank
-// line (preserving any deeper relative indentation) and dropping trailing
-// blank entries (YAML "clip" chomping — the default, and the only chomping
-// mode this generator supports). `keyIndent` is the indentation of the
-// `field:` header line itself — a content line must be indented deeper than
-// that to count as part of the block; otherwise the block has no body (e.g.
-// `description: |` immediately followed by the next frontmatter key).
-function readBlockScalarLines(lines, startIndex, keyIndent) {
-  const entries = [];
-  let baseIndent = null;
-  for (let i = startIndex; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.trim() === "") {
-      entries.push({ blank: true });
-      continue;
-    }
-    const indent = line.match(/^ */)[0].length;
-    if (baseIndent === null) {
-      if (indent <= keyIndent) break;
-      baseIndent = indent;
-    } else if (indent < baseIndent) {
-      break;
-    }
-    entries.push({ blank: false, text: line.slice(baseIndent) });
-  }
-  while (entries.length > 0 && entries[entries.length - 1].blank) {
-    entries.pop();
-  }
-  return entries;
-}
-
-// Literal style (`|`): line breaks are preserved as-is.
-function joinLiteralBlock(entries) {
-  return entries.map((entry) => (entry.blank ? "" : entry.text)).join("\n");
-}
-
-// Folded style (`>`, YAML 1.2 §8.1.3): a single line break between two
-// non-blank lines folds to a space; a run of N blank lines folds to N line
-// breaks. This does not implement the "more-indented line" exception, which
-// doesn't apply to single-level plain-text skill descriptions.
-function joinFoldedBlock(entries) {
-  let result = "";
-  let blankRun = 0;
-  for (const entry of entries) {
-    if (entry.blank) {
-      blankRun += 1;
-      continue;
-    }
-    if (result !== "") {
-      result += blankRun > 0 ? "\n".repeat(blankRun) : " ";
-    }
-    blankRun = 0;
-    result += entry.text;
-  }
-  return result;
 }
 
 function extractFrontmatterLines(skillMd) {
@@ -116,46 +67,31 @@ function extractFrontmatterLines(skillMd) {
   return match[1].split(/\r?\n/);
 }
 
-// Reads a single `field:` scalar from frontmatter lines. `description` may
-// use a YAML block scalar (`|`/`>`); other fields (e.g. `name`) are expected
-// to be plain single-line values.
-function parseFrontmatterField(lines, field, { allowBlockScalar = false } = {}) {
+// Reads a single `field:` scalar from frontmatter lines.
+function parseFrontmatterField(lines, field) {
   const headerPattern = new RegExp(`^${field}:\\s*(.*)$`);
   const headerIndex = lines.findIndex((line) => headerPattern.test(line));
   if (headerIndex === -1) {
     fail(`SKILL.md frontmatter is missing ${field}`);
   }
 
-  const keyIndent = lines[headerIndex].match(/^ */)[0].length;
   const inlineValue = lines[headerIndex].match(headerPattern)[1].trim();
 
   if (/^[|>]/.test(inlineValue)) {
-    if (!allowBlockScalar) {
-      fail(`SKILL.md frontmatter "${field}" must be a plain single-line value, not a block scalar`);
-    }
-    if (!/^[|>][-+]?$/.test(inlineValue)) {
-      fail(
-        `unsupported YAML block scalar header "${inlineValue}" in ${field} ` +
-          "(explicit indentation indicators like |2 aren't supported)",
-      );
-    }
-    const folded = inlineValue.startsWith(">");
-    const entries = readBlockScalarLines(lines, headerIndex + 1, keyIndent);
-    if (entries.length === 0) {
-      fail(`SKILL.md frontmatter "${field}" block scalar has no content`);
-    }
-    const joined = folded ? joinFoldedBlock(entries) : joinLiteralBlock(entries);
-    return joined.trim();
+    fail(
+      `SKILL.md frontmatter "${field}" uses a YAML block scalar ("${inlineValue}"), ` +
+        "which isn't supported — write it as a single (optionally quoted) line instead.",
+    );
   }
 
-  return unquote(inlineValue);
+  return unquote(inlineValue, field);
 }
 
 function parseFrontmatter(skillMd) {
   const lines = extractFrontmatterLines(skillMd);
   return {
     name: parseFrontmatterField(lines, "name"),
-    description: parseFrontmatterField(lines, "description", { allowBlockScalar: true }),
+    description: parseFrontmatterField(lines, "description"),
   };
 }
 
