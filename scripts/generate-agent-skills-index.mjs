@@ -44,6 +44,60 @@ function unquote(value) {
   return value;
 }
 
+// Splits the lines following a block-scalar header into { blank } / { text }
+// entries, stripping exactly the indentation of the block's first non-blank
+// line (preserving any deeper relative indentation) and dropping trailing
+// blank entries (YAML "clip" chomping — the default, and the only chomping
+// mode this generator supports).
+function readBlockScalarLines(lines, startIndex) {
+  const entries = [];
+  let baseIndent = null;
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === "") {
+      entries.push({ blank: true });
+      continue;
+    }
+    const indent = line.match(/^ */)[0].length;
+    if (baseIndent === null) {
+      baseIndent = indent;
+    } else if (indent < baseIndent) {
+      break;
+    }
+    entries.push({ blank: false, text: line.slice(baseIndent) });
+  }
+  while (entries.length > 0 && entries[entries.length - 1].blank) {
+    entries.pop();
+  }
+  return entries;
+}
+
+// Literal style (`|`): line breaks are preserved as-is.
+function joinLiteralBlock(entries) {
+  return entries.map((entry) => (entry.blank ? "" : entry.text)).join("\n");
+}
+
+// Folded style (`>`, YAML 1.2 §8.1.3): a single line break between two
+// non-blank lines folds to a space; a run of N blank lines folds to N line
+// breaks. This does not implement the "more-indented line" exception, which
+// doesn't apply to single-level plain-text skill descriptions.
+function joinFoldedBlock(entries) {
+  let result = "";
+  let blankRun = 0;
+  for (const entry of entries) {
+    if (entry.blank) {
+      blankRun += 1;
+      continue;
+    }
+    if (result !== "") {
+      result += blankRun > 0 ? "\n".repeat(blankRun) : " ";
+    }
+    blankRun = 0;
+    result += entry.text;
+  }
+  return result;
+}
+
 function parseDescription(skillMd) {
   const match = skillMd.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) {
@@ -58,21 +112,16 @@ function parseDescription(skillMd) {
 
   const inlineValue = lines[headerIndex].match(/^description:\s*(.*)$/)[1].trim();
 
-  // Block scalar (`|`, `|-`, `|+`, `>`, `>-`, `>+`): value is the indented
-  // lines that follow, until a line at or below the key's indentation.
-  if (/^[|>][-+]?$/.test(inlineValue)) {
-    const folded = inlineValue.startsWith(">");
-    const blockLines = [];
-    for (let i = headerIndex + 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.trim() === "") {
-        blockLines.push("");
-        continue;
-      }
-      if (!/^\s/.test(line)) break;
-      blockLines.push(line.replace(/^\s+/, ""));
+  if (/^[|>]/.test(inlineValue)) {
+    if (!/^[|>][-+]?$/.test(inlineValue)) {
+      fail(
+        `unsupported YAML block scalar header "${inlineValue}" in description ` +
+          "(explicit indentation indicators like |2 aren't supported)",
+      );
     }
-    const joined = folded ? blockLines.join(" ").replace(/\s+/g, " ") : blockLines.join("\n");
+    const folded = inlineValue.startsWith(">");
+    const entries = readBlockScalarLines(lines, headerIndex + 1);
+    const joined = folded ? joinFoldedBlock(entries) : joinLiteralBlock(entries);
     return joined.trim();
   }
 

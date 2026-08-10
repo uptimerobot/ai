@@ -55,7 +55,11 @@ jobs:
           node-version: 22
 
       - name: Regenerate index.json
-        run: node scripts/generate-agent-skills-index.mjs
+        # Pin generated skill URLs to the branch actually being committed to —
+        # on push this is always "main"; on workflow_dispatch it may be any
+        # ref, and defaulting to "main" here would mint URLs that don't match
+        # the content just committed on that ref.
+        run: node scripts/generate-agent-skills-index.mjs --branch="$GITHUB_REF_NAME"
 
       - name: Commit updated index
         run: |
