@@ -42,24 +42,16 @@ function fail(message) {
 // rules from scratch (previously attempted here) turned into a recurring
 // source of subtle parsing bugs for a form nothing in this repo actually
 // uses. Unsupported input fails the build loudly instead of guessing.
+// A double-quoted value with every quote/backslash properly escaped: zero or
+// more (non-quote/backslash chars, or a backslash followed by any char), then
+// the real closing quote. Rejects malformed/unterminated values like `"foo\"`
+// that endsWith('"') alone can't distinguish from a real closing quote — that
+// trailing quote is itself escaped, not a terminator.
+const DOUBLE_QUOTED_PATTERN = /^"(?:[^"\\]|\\.)*"$/;
+
 function unquote(value, field) {
   if (value.startsWith('"')) {
-    // Find the first *unescaped* closing quote, rather than trusting
-    // endsWith('"') — a malformed/unterminated value like `"foo\"` also
-    // ends in a quote character (an escaped one), which endsWith can't
-    // distinguish from a real closing quote.
-    let closingIndex = -1;
-    for (let i = 1; i < value.length; i++) {
-      if (value[i] === "\\") {
-        i += 1;
-        continue;
-      }
-      if (value[i] === '"') {
-        closingIndex = i;
-        break;
-      }
-    }
-    if (closingIndex !== value.length - 1) {
+    if (!DOUBLE_QUOTED_PATTERN.test(value)) {
       fail(`malformed double-quoted value in ${field} (missing or misplaced closing quote)`);
     }
     return value.slice(1, -1).replace(/\\(.)/g, (raw, ch) => {
