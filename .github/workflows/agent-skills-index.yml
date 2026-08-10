@@ -54,12 +54,18 @@ jobs:
         with:
           node-version: 22
 
+      - name: Require main for manual publish
+        # A workflow_dispatch run on another ref would commit an index whose
+        # URLs still point at "main" (the generator's default, matching the
+        # check job) while the file itself lands on that other branch —
+        # refuse instead of publishing a mismatched index.
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::workflow_dispatch must be run against main (got $GITHUB_REF_NAME)"
+          exit 1
+
       - name: Regenerate index.json
-        # Pin generated skill URLs to the branch actually being committed to —
-        # on push this is always "main"; on workflow_dispatch it may be any
-        # ref, and defaulting to "main" here would mint URLs that don't match
-        # the content just committed on that ref.
-        run: node scripts/generate-agent-skills-index.mjs --branch="$GITHUB_REF_NAME"
+        run: node scripts/generate-agent-skills-index.mjs
 
       - name: Commit updated index
         run: |

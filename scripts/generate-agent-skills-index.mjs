@@ -34,12 +34,18 @@ function fail(message) {
   process.exit(1);
 }
 
+const DOUBLE_QUOTE_ESCAPES = { '"': '"', "\\": "\\", n: "\n", t: "\t", r: "\r" };
+
+// Unescapes a YAML plain-scalar value that was wrapped in quotes. Double
+// quotes support backslash escapes (`\"`, `\\`, `\n`, `\t`, `\r`; any other
+// escape is left as-is rather than guessed at). Single quotes only support a
+// doubled `''` as an escaped literal quote.
 function unquote(value) {
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    return value.slice(1, -1);
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1).replace(/\\(.)/g, (raw, ch) => DOUBLE_QUOTE_ESCAPES[ch] ?? raw);
+  }
+  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1).replace(/''/g, "'");
   }
   return value;
 }
@@ -48,8 +54,11 @@ function unquote(value) {
 // entries, stripping exactly the indentation of the block's first non-blank
 // line (preserving any deeper relative indentation) and dropping trailing
 // blank entries (YAML "clip" chomping — the default, and the only chomping
-// mode this generator supports).
-function readBlockScalarLines(lines, startIndex) {
+// mode this generator supports). `keyIndent` is the indentation of the
+// `field:` header line itself — a content line must be indented deeper than
+// that to count as part of the block; otherwise the block has no body (e.g.
+// `description: |` immediately followed by the next frontmatter key).
+function readBlockScalarLines(lines, startIndex, keyIndent) {
   const entries = [];
   let baseIndent = null;
   for (let i = startIndex; i < lines.length; i++) {
@@ -60,6 +69,7 @@ function readBlockScalarLines(lines, startIndex) {
     }
     const indent = line.match(/^ */)[0].length;
     if (baseIndent === null) {
+      if (indent <= keyIndent) break;
       baseIndent = indent;
     } else if (indent < baseIndent) {
       break;
@@ -98,34 +108,55 @@ function joinFoldedBlock(entries) {
   return result;
 }
 
-function parseDescription(skillMd) {
+function extractFrontmatterLines(skillMd) {
   const match = skillMd.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) {
     fail("SKILL.md is missing YAML frontmatter");
   }
+  return match[1].split(/\r?\n/);
+}
 
-  const lines = match[1].split(/\r?\n/);
-  const headerIndex = lines.findIndex((line) => /^description:\s*(.*)$/.test(line));
+// Reads a single `field:` scalar from frontmatter lines. `description` may
+// use a YAML block scalar (`|`/`>`); other fields (e.g. `name`) are expected
+// to be plain single-line values.
+function parseFrontmatterField(lines, field, { allowBlockScalar = false } = {}) {
+  const headerPattern = new RegExp(`^${field}:\\s*(.*)$`);
+  const headerIndex = lines.findIndex((line) => headerPattern.test(line));
   if (headerIndex === -1) {
-    fail("SKILL.md frontmatter is missing description");
+    fail(`SKILL.md frontmatter is missing ${field}`);
   }
 
-  const inlineValue = lines[headerIndex].match(/^description:\s*(.*)$/)[1].trim();
+  const keyIndent = lines[headerIndex].match(/^ */)[0].length;
+  const inlineValue = lines[headerIndex].match(headerPattern)[1].trim();
 
   if (/^[|>]/.test(inlineValue)) {
+    if (!allowBlockScalar) {
+      fail(`SKILL.md frontmatter "${field}" must be a plain single-line value, not a block scalar`);
+    }
     if (!/^[|>][-+]?$/.test(inlineValue)) {
       fail(
-        `unsupported YAML block scalar header "${inlineValue}" in description ` +
+        `unsupported YAML block scalar header "${inlineValue}" in ${field} ` +
           "(explicit indentation indicators like |2 aren't supported)",
       );
     }
     const folded = inlineValue.startsWith(">");
-    const entries = readBlockScalarLines(lines, headerIndex + 1);
+    const entries = readBlockScalarLines(lines, headerIndex + 1, keyIndent);
+    if (entries.length === 0) {
+      fail(`SKILL.md frontmatter "${field}" block scalar has no content`);
+    }
     const joined = folded ? joinFoldedBlock(entries) : joinLiteralBlock(entries);
     return joined.trim();
   }
 
   return unquote(inlineValue);
+}
+
+function parseFrontmatter(skillMd) {
+  const lines = extractFrontmatterLines(skillMd);
+  return {
+    name: parseFrontmatterField(lines, "name"),
+    description: parseFrontmatterField(lines, "description", { allowBlockScalar: true }),
+  };
 }
 
 function digestFor(bytes) {
@@ -156,10 +187,17 @@ function buildIndex() {
 
     const bytes = fs.readFileSync(skillPath);
     const content = bytes.toString("utf8");
+    const frontmatter = parseFrontmatter(content);
+    if (frontmatter.name !== name) {
+      fail(
+        `skill directory "${name}" has a mismatched frontmatter name ` +
+          `"${frontmatter.name}" in SKILL.md`,
+      );
+    }
     return {
       name,
       type: "skill-md",
-      description: parseDescription(content),
+      description: frontmatter.description,
       url: `https://raw.githubusercontent.com/${GITHUB_ORG_REPO}/${branch}/skills/${name}/SKILL.md`,
       digest: digestFor(bytes),
     };
