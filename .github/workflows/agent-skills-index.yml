@@ -13,38 +13,51 @@ on:
       - '.well-known/agent-skills/index.json'
   workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  group: agent-skills-index-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  regenerate:
-    name: Regenerate agent-skills index
+  check:
+    name: Check agent-skills index is current
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Verify index.json is current
+        run: node scripts/generate-agent-skills-index.mjs --check
+
+  publish:
+    name: Regenerate and commit agent-skills index
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Needs write access to commit the regenerated index back to the branch.
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
       - name: Regenerate index.json
         run: node scripts/generate-agent-skills-index.mjs
 
-      - name: Fail PR when index.json is stale
-        if: github.event_name == 'pull_request'
-        run: |
-          if ! git diff --quiet .well-known/agent-skills/index.json; then
-            echo "index.json is stale — run: node scripts/generate-agent-skills-index.mjs"
-            git diff .well-known/agent-skills/index.json
-            exit 1
-          fi
-          echo "ok: index.json is up to date"
-
-      - name: Commit updated index on main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Commit updated index
         run: |
           if git diff --quiet .well-known/agent-skills/index.json; then
             echo "index.json already up to date"
@@ -54,4 +67,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .well-known/agent-skills/index.json
           git commit -m "chore: regenerate agent-skills index.json"
-          git push
+          git push || { git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push; }

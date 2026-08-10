@@ -34,31 +34,53 @@ function fail(message) {
   process.exit(1);
 }
 
+function unquote(value) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
 function parseDescription(skillMd) {
   const match = skillMd.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) {
     fail("SKILL.md is missing YAML frontmatter");
   }
 
-  const frontmatter = match[1];
-  const descriptionMatch = frontmatter.match(/^description:\s*(.+)$/m);
-  if (!descriptionMatch) {
+  const lines = match[1].split(/\r?\n/);
+  const headerIndex = lines.findIndex((line) => /^description:\s*(.*)$/.test(line));
+  if (headerIndex === -1) {
     fail("SKILL.md frontmatter is missing description");
   }
 
-  let description = descriptionMatch[1].trim();
-  if (
-    (description.startsWith('"') && description.endsWith('"')) ||
-    (description.startsWith("'") && description.endsWith("'"))
-  ) {
-    description = description.slice(1, -1);
+  const inlineValue = lines[headerIndex].match(/^description:\s*(.*)$/)[1].trim();
+
+  // Block scalar (`|`, `|-`, `|+`, `>`, `>-`, `>+`): value is the indented
+  // lines that follow, until a line at or below the key's indentation.
+  if (/^[|>][-+]?$/.test(inlineValue)) {
+    const folded = inlineValue.startsWith(">");
+    const blockLines = [];
+    for (let i = headerIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.trim() === "") {
+        blockLines.push("");
+        continue;
+      }
+      if (!/^\s/.test(line)) break;
+      blockLines.push(line.replace(/^\s+/, ""));
+    }
+    const joined = folded ? blockLines.join(" ").replace(/\s+/g, " ") : blockLines.join("\n");
+    return joined.trim();
   }
 
-  return description;
+  return unquote(inlineValue);
 }
 
-function digestFor(content) {
-  const hash = crypto.createHash("sha256").update(content, "utf8").digest("hex");
+function digestFor(bytes) {
+  const hash = crypto.createHash("sha256").update(bytes).digest("hex");
   return `sha256:${hash}`;
 }
 
@@ -83,13 +105,14 @@ function buildIndex() {
       fail(`missing SKILL.md for skill "${name}"`);
     }
 
-    const content = fs.readFileSync(skillPath, "utf8");
+    const bytes = fs.readFileSync(skillPath);
+    const content = bytes.toString("utf8");
     return {
       name,
       type: "skill-md",
       description: parseDescription(content),
       url: `https://raw.githubusercontent.com/${GITHUB_ORG_REPO}/${branch}/skills/${name}/SKILL.md`,
-      digest: digestFor(content),
+      digest: digestFor(bytes),
     };
   });
 
