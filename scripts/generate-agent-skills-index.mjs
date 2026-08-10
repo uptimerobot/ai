@@ -43,7 +43,25 @@ function fail(message) {
 // source of subtle parsing bugs for a form nothing in this repo actually
 // uses. Unsupported input fails the build loudly instead of guessing.
 function unquote(value, field) {
-  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+  if (value.startsWith('"')) {
+    // Find the first *unescaped* closing quote, rather than trusting
+    // endsWith('"') — a malformed/unterminated value like `"foo\"` also
+    // ends in a quote character (an escaped one), which endsWith can't
+    // distinguish from a real closing quote.
+    let closingIndex = -1;
+    for (let i = 1; i < value.length; i++) {
+      if (value[i] === "\\") {
+        i += 1;
+        continue;
+      }
+      if (value[i] === '"') {
+        closingIndex = i;
+        break;
+      }
+    }
+    if (closingIndex !== value.length - 1) {
+      fail(`malformed double-quoted value in ${field} (missing or misplaced closing quote)`);
+    }
     return value.slice(1, -1).replace(/\\(.)/g, (raw, ch) => {
       if (ch === '"' || ch === "\\") return ch;
       fail(
@@ -60,7 +78,11 @@ function unquote(value, field) {
 }
 
 function extractFrontmatterLines(skillMd) {
-  const match = skillMd.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  // The closing fence must be its own line (`(?:\r?\n|$)` after it), not
+  // just a `---` substring at the start of a longer line — otherwise a
+  // frontmatter value containing a stray leading "---" could be mistaken
+  // for the real terminator and truncate the block early.
+  const match = skillMd.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) {
     fail("SKILL.md is missing YAML frontmatter");
   }
@@ -70,12 +92,17 @@ function extractFrontmatterLines(skillMd) {
 // Reads a single `field:` scalar from frontmatter lines.
 function parseFrontmatterField(lines, field) {
   const headerPattern = new RegExp(`^${field}:\\s*(.*)$`);
-  const headerIndex = lines.findIndex((line) => headerPattern.test(line));
-  if (headerIndex === -1) {
+  let inlineValue;
+  for (const line of lines) {
+    const match = line.match(headerPattern);
+    if (match) {
+      inlineValue = match[1].trim();
+      break;
+    }
+  }
+  if (inlineValue === undefined) {
     fail(`SKILL.md frontmatter is missing ${field}`);
   }
-
-  const inlineValue = lines[headerIndex].match(headerPattern)[1].trim();
 
   if (/^[|>]/.test(inlineValue)) {
     fail(
@@ -162,7 +189,7 @@ if (checkOnly) {
   }
 
   const existing = fs.readFileSync(OUTPUT_PATH, "utf8");
-  if (normalizeJson(existing) !== normalizeJson(generatedText)) {
+  if (normalizeJson(existing) !== JSON.stringify(generated)) {
     fail(
       "index.json is stale — run: node scripts/generate-agent-skills-index.mjs",
     );
