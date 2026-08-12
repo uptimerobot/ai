@@ -1,0 +1,97 @@
+name: Agent Skills Index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'scripts/generate-agent-skills-index.mjs'
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'scripts/generate-agent-skills-index.mjs'
+      - '.well-known/agent-skills/index.json'
+  workflow_dispatch:
+
+concurrency:
+  group: agent-skills-index-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check agent-skills index is current
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Verify index.json is current
+        run: node scripts/generate-agent-skills-index.mjs --check
+
+  publish:
+    name: Regenerate and commit agent-skills index
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Needs write access to commit the regenerated index back to the branch.
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Require main for manual publish
+        # A workflow_dispatch run on another ref would commit an index whose
+        # URLs still point at "main" (the generator's default, matching the
+        # check job) while the file itself lands on that other branch —
+        # refuse instead of publishing a mismatched index.
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::workflow_dispatch must be run against main (got $GITHUB_REF_NAME)"
+          exit 1
+
+      - name: Regenerate index.json
+        run: node scripts/generate-agent-skills-index.mjs
+
+      - name: Commit updated index
+        run: |
+          commit_and_push() {
+            if git diff --quiet .well-known/agent-skills/index.json; then
+              echo "index.json already up to date"
+              return 0
+            fi
+            git add .well-known/agent-skills/index.json
+            git commit -m "chore: regenerate agent-skills index.json"
+            git push
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if commit_and_push; then
+            exit 0
+          fi
+
+          # Another run's push landed first: discard our commit, re-sync to
+          # what's now on the branch, and regenerate fresh against that —
+          # never re-push a commit built from stale content, and never let
+          # git merge two independently-generated index.json diffs.
+          echo "push rejected, resyncing to origin/${GITHUB_REF_NAME} and regenerating"
+          git fetch origin "${GITHUB_REF_NAME}"
+          git reset --hard "origin/${GITHUB_REF_NAME}"
+          node scripts/generate-agent-skills-index.mjs
+          commit_and_push
