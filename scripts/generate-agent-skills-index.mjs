@@ -48,6 +48,12 @@ function fail(message) {
 // that endsWith('"') alone can't distinguish from a real closing quote — that
 // trailing quote is itself escaped, not a terminator.
 const DOUBLE_QUOTED_PATTERN = /^"(?:[^"\\]|\\.)*"$/;
+// Single-quoted YAML: `''` is an escaped literal quote, anything else ends
+// the string. Same rationale as DOUBLE_QUOTED_PATTERN — a value that merely
+// startsWith("'") without being a complete, validly-terminated quoted string
+// (e.g. `'unterminated`) should fail, not be published as literal text with
+// a stray leading quote character.
+const SINGLE_QUOTED_PATTERN = /^'(?:[^']|'')*'$/;
 
 function unquote(value, field) {
   if (value.startsWith('"')) {
@@ -63,7 +69,10 @@ function unquote(value, field) {
       return raw;
     });
   }
-  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+  if (value.startsWith("'")) {
+    if (!SINGLE_QUOTED_PATTERN.test(value)) {
+      fail(`malformed single-quoted value in ${field} (missing or misplaced closing quote)`);
+    }
     return value.slice(1, -1).replace(/''/g, "'");
   }
   return value;
