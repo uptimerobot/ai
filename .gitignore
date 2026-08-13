@@ -14,3 +14,11 @@ __pycache__/
 .env
 .env.local
 *.log
+
+# Local agent config — may contain API keys in allowlisted commands
+.claude/settings.local.json
+
+# MCP Registry DNS signing key (com.uptimerobot namespace) — never commit
+key.pem
+*.pem
+.mcpregistry_registry_token
