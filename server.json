@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.uptimerobot/uptimerobot",
+  "title": "UptimeRobot",
+  "description": "Monitor websites, APIs, and servers: create monitors, triage incidents, and query uptime stats.",
+  "version": "0.1.0",
+  "websiteUrl": "https://uptimerobot.com",
+  "repository": {
+    "url": "https://github.com/uptimerobot/ai",
+    "source": "github",
+    "id": "1217763769"
+  },
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/uptimerobot/ai/main/assets/logo.png",
+      "mimeType": "image/png",
+      "sizes": ["1024x1024"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.uptimerobot.com/mcp"
+    }
+  ]
+}

@@ -98,7 +98,13 @@ Verify the plugin is loaded: the 24 skills should be available and the `uptimero
 
 ### Other agents / direct MCP
 
-Any MCP-compatible client can connect via the same `mcp-remote` launcher (OAuth on first use):
+The server is listed in the [official MCP Registry](https://registry.modelcontextprotocol.io) as `com.uptimerobot/uptimerobot`, so any registry-aware client can discover and install it without a per-client plugin submission. Metadata lives in [`server.json`](server.json):
+
+```bash
+curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=com.uptimerobot/uptimerobot"
+```
+
+Clients without registry support can connect via the same `mcp-remote` launcher (OAuth on first use):
 
 ```json
 {
