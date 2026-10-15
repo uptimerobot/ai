@@ -41,14 +41,14 @@
       "type": "skill-md",
       "description": "Create an HTTP monitor in UptimeRobot to check that a URL returns a successful response on an interval.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-http-monitor/SKILL.md",
-      "digest": "sha256:6312e052e18d3eded30d933344d18914f2d2a933248c72569f27607d03e8e280"
+      "digest": "sha256:94e6131be989d576477ab83e5324084428a8a9debb239c409d3baaaa4fbd3ec8"
     },
     {
       "name": "create-keyword-monitor",
       "type": "skill-md",
       "description": "Create a KEYWORD monitor that fetches a URL and alerts when a given keyword appears (or is missing) in the response body.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-keyword-monitor/SKILL.md",
-      "digest": "sha256:8ca516577e822791bf23aa7c54ae6da2fd006c6e7a68447eee132772c5ab03c0"
+      "digest": "sha256:0043a63bfd5849fa2a0e043a3c0a688c44ce03bf59e5a74ea0aec7958268750d"
     },
     {
       "name": "create-ping-monitor",
@@ -167,7 +167,7 @@
       "type": "skill-md",
       "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, tweak HTTP/keyword/API/heartbeat settings, and toggle SSL or domain reminders.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/update-monitor/SKILL.md",
-      "digest": "sha256:2cdab4bc3465d58a39d7152a61f084ef3ce596f6c7e9a256a736f97ad2810812"
+      "digest": "sha256:df879fe28614ef8857dfe137e1af00412e24ab810476c9c5dfca35f64a2187ba"
     }
   ]
 }

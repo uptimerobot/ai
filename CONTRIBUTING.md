@@ -149,9 +149,7 @@ nothing in CI enforces this.
 ```bash
 mcp-publisher validate
 
-MY_DOMAIN="uptimerobot.com"
-PRIVATE_KEY="$(openssl pkey -in key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n')"
-mcp-publisher login dns --domain "${MY_DOMAIN}" --private-key "${PRIVATE_KEY}"
+mcp-publisher login dns --domain uptimerobot.com --private-key <hex private key>
 
 mcp-publisher publish
 ```
@@ -167,7 +165,8 @@ curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=com.uptime
 The `com.uptimerobot/*` namespace is proven by an Ed25519 key whose public half is
 published as a TXT record on the `uptimerobot.com` apex
 (`v=MCPv1; k=ed25519; p=<public key>`, managed in Cloudflare). The private key
-(`key.pem`) is **gitignored and lives in the team password manager** — losing it
+(`key.pem`) is **gitignored and lives in the team password manager**. Paste its hex
+form where the login command says `<hex private key>`; don't script reading it. Losing it
 means losing the ability to publish updates under this namespace.
 
 ## Testing a change

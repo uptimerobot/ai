@@ -10,6 +10,7 @@
   "homepage": "https://github.com/uptimerobot/ai",
   "repository": "https://github.com/uptimerobot/ai",
   "license": "MIT",
+  "privacyPolicyUrl": "https://uptimerobot.com/privacy/",
   "keywords": [
     "monitoring",
     "uptime",

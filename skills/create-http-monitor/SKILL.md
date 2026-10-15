@@ -61,7 +61,7 @@ Use when the user wants to monitor a website or HTTP(S) endpoint for reachabilit
   "timeout": 10,
   "httpMethodType": "GET",
   "authType": "BEARER",
-  "httpPassword": "sk_live_...",
+  "httpPassword": "<token the user gave you>",
   "customHttpHeaders": { "X-Env": "prod" },
   "successHttpResponseCodes": ["200", "204"],
   "sslExpirationReminder": true,

@@ -32,7 +32,7 @@ Use when the user cares not just that an endpoint returns a 200, but that a spec
 
 ## Common optional params
 
-All HTTP-monitor params are supported: `httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `followRedirections`, `checkSSLErrors`, `timeout`, `interval`, `sslExpirationReminder`, `domainExpirationReminder`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
+All HTTP-monitor params are supported, including HTTP auth (see `create-http-monitor`): `httpMethodType`, `authType`, `followRedirections`, `checkSSLErrors`, `timeout`, `interval`, `sslExpirationReminder`, `domainExpirationReminder`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
 
 KEYWORD-specific:
 
