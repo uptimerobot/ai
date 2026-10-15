@@ -21,8 +21,8 @@ Plans: **Free, Solo, Team, Enterprise**. Availability of specific monitor types 
 Use the remote MCP server:
 
 - URL: `https://mcp.uptimerobot.com/mcp`
-- Transport: HTTP (streamable), launched via `mcp-remote` (`npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp`).
-- Auth: **OAuth**. On first connection `mcp-remote` opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, connect over plain HTTP with an `Authorization: Bearer <API_KEY>` header instead.)
+- Transport: HTTP (streamable), connected directly — nothing runs locally.
+- Auth: **OAuth**. On first connection the client opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, see the manual setup in the [README](README.md#headless--ci-no-browser).)
 
 All 32 tools operate on the authorized account. There is no account impersonation.
 

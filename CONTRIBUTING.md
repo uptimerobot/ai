@@ -93,16 +93,18 @@ hooks run on every matching event.
 
 ## MCP servers (`mcp.json` / `.mcp.json`)
 
-The UptimeRobot server is registered as an `mcp-remote` launcher that proxies to
-`https://mcp.uptimerobot.com/mcp` and authenticates via OAuth (browser flow on
-first use). No API key or env var is injected into the config — keep it that way:
+The UptimeRobot server is registered as a direct streamable-HTTP connection to
+`https://mcp.uptimerobot.com/mcp`; the client runs the OAuth browser flow itself.
+Nothing runs on the user's machine, and no API key, header, or env var is in the
+config — keep it that way. The plugin directory scan flags local launchers
+(`npx`, `uvx`), unpinned packages, and credential reads:
 
 ```json
 {
   "mcpServers": {
     "uptimerobot": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://mcp.uptimerobot.com/mcp"]
+      "type": "http",
+      "url": "https://mcp.uptimerobot.com/mcp"
     }
   }
 }
@@ -134,7 +136,7 @@ Deliberate omissions in `server.json` — please don't "fix" these:
   `Authorization` header as required would make every client prompt for an API key
   and bypass OAuth. The Bearer-token path stays a documented headless/CI escape
   hatch, not registry metadata.
-- **No `packages` array.** `mcp-remote` is a third-party shim, not our package.
+- **No `packages` array.** There is no package; the server is remote-only.
 
 ### Publishing an update
 

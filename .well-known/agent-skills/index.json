@@ -137,9 +137,9 @@
     {
       "name": "setup",
       "type": "skill-md",
-      "description": "Connect and authenticate the UptimeRobot MCP server (OAuth via mcp-remote), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` auth errors or first-time setup.",
+      "description": "Connect and authenticate the hosted UptimeRobot MCP server (OAuth over streamable HTTP), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` auth errors or first-time setup.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/setup/SKILL.md",
-      "digest": "sha256:cda5acaa06bc709560cc972eaa4941919d6b1ce2b6c1f5b01254ed5460598ab0"
+      "digest": "sha256:70616fc8fca52e14cae4c1b8d5a001a0a498e93f8c4827574f4145f6d821f89d"
     },
     {
       "name": "sla-report",
