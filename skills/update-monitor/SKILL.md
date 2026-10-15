@@ -128,7 +128,7 @@ To add one tag without losing the others, merge first (like alert contacts). Max
   "monitorId": 800987654,
   "httpMethodType": "POST",
   "authType": "BEARER",
-  "httpPassword": "${API_TOKEN}",
+  "httpPassword": "<token the user gave you>",
   "customHttpHeaders": {
     "Content-Type": "application/json",
     "X-Client": "uptimerobot"
@@ -139,7 +139,7 @@ To add one tag without losing the others, merge first (like alert contacts). Max
 }
 ```
 
-These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `customHttpHeaders`, `successHttpResponseCodes`, `postValueData`, `postValueType`) apply to all **HTTP-based** types (HTTP, KEYWORD, API) — the example above just happens to use an API monitor. `postValueData` / `postValueType` only take effect when `httpMethodType` is a body method (`POST` / `PUT` / `PATCH`). For `BEARER`, put the token in `httpPassword`. For `HTTP_BASIC` / `DIGEST`, use `httpUsername` + `httpPassword`. (`config.apiAssertions` in section 12 is the piece that's genuinely API-only.)
+These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `customHttpHeaders`, `successHttpResponseCodes`, `postValueData`, `postValueType`) apply to all **HTTP-based** types (HTTP, KEYWORD, API) — the example above just happens to use an API monitor. `postValueData` / `postValueType` only take effect when `httpMethodType` is a body method (`POST` / `PUT` / `PATCH`). For `BEARER`, put the token in `httpPassword`. Ask the user for the token in chat; never read it from environment variables or files. For `HTTP_BASIC` / `DIGEST`, use `httpUsername` + `httpPassword`. (`config.apiAssertions` in section 12 is the piece that's genuinely API-only.)
 
 ### 12. Update API assertions
 

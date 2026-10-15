@@ -32,7 +32,7 @@ Use when the user cares not just that an endpoint returns a 200, but that a spec
 
 ## Common optional params
 
-All HTTP-monitor params are supported: `httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `followRedirections`, `checkSSLErrors`, `timeout`, `interval`, `sslExpirationReminder`, `domainExpirationReminder`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
+All HTTP-monitor params are supported, including HTTP auth (see `create-http-monitor`): `httpMethodType`, `authType`, `followRedirections`, `checkSSLErrors`, `timeout`, `interval`, `sslExpirationReminder`, `domainExpirationReminder`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
 
 KEYWORD-specific:
 
@@ -59,7 +59,7 @@ KEYWORD-specific:
 
 - Leaving off `keywordType` — it is required.
 - Using an HTTP monitor when the user said "alert me if the page shows X" — use KEYWORD.
-- Case-sensitivity confusion. Default is case-sensitive; pass `keywordCaseType: 1` for insensitive.
+- Case-sensitivity confusion. Default is case-sensitive; set `keywordCaseType: 1` for insensitive.
 - `keywordValue` longer than 500 chars is rejected.
 - HEAD requests cannot match body content. If `httpMethodType` is `HEAD`, the keyword check will not work as expected.
 

@@ -2,17 +2,17 @@
 
 This repo is UptimeRobot's single source of truth for AI agent integrations. It publishes:
 
-- `**llms.txt**` and `**AGENTS.md**` — discovery and orientation for LLMs and coding agents.
-- `**.claude-plugin/**`**, **`**.cursor-plugin/**`**, and **`**.codex-plugin/**` — installable plugin manifests for Claude Code, Cursor, and Codex.
-- `**skills/**` — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
-- `**rules/**` — shared rules loaded by both Cursor and Claude Code.
-- `**mcp.json**` — Cursor-format MCP server config (dot-less filename).
-- `**.mcp.json**` — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
-- `**codex.mcp.json**` — Codex-format MCP server config (`mcp_servers` snake_case key, referenced explicitly by the Codex manifest).
-- `**.agents/plugins/marketplace.json**` — repo-scoped Codex marketplace for local install and testing; Codex auto-discovers this file when the repo is open.
-- `**assets/logo.png**` — marketplace logo, declared as the `icon` in the Cursor and Codex manifests (Claude Code's plugin manifest has no icon field; the directory listing supplies its icon at submission time).
+- **llms.txt** and **AGENTS.md** — discovery and orientation for LLMs and coding agents.
+- **.claude-plugin**, **.cursor-plugin**, and **.codex-plugin** folders — installable plugin manifests for Claude Code, Cursor, and Codex.
+- **skills** folder — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
+- **rules** folder — shared rules loaded by both Cursor and Claude Code.
+- **mcp.json** — Cursor-format MCP server config (dot-less filename).
+- **.mcp.json** — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
+- **codex.mcp.json** — Codex-format MCP server config (`mcp_servers` snake_case key, referenced explicitly by the Codex manifest).
+- **.agents/plugins/marketplace.json** — repo-scoped Codex marketplace for local install and testing; Codex auto-discovers this file when the repo is open.
+- **The assets folder** — the marketplace logo, declared as the icon in the Cursor and Codex manifests (Claude Code's plugin manifest has no icon field; the directory listing supplies its icon at submission time).
 
-The `mcp.json`, `.mcp.json`, and `codex.mcp.json` files all register the same `mcp-remote` launcher that proxies to `https://mcp.uptimerobot.com/mcp` and runs the OAuth browser flow. Three filenames exist only because Claude Code, Cursor, and Codex each expect their own convention (and Codex requires `mcp_servers` in snake_case rather than `mcpServers`).
+The `mcp.json`, `.mcp.json`, and `codex.mcp.json` files all connect directly to the hosted server at `https://mcp.uptimerobot.com/mcp` over streamable HTTP. Nothing runs locally: the client discovers the server's OAuth endpoints and runs the browser login itself. Three filenames exist only because Claude Code, Cursor, and Codex each expect their own convention (and Codex requires `mcp_servers` in snake_case rather than `mcpServers`).
 
 The same content is mirrored under `uptimerobot.com/` for crawler discovery (`uptimerobot.com/llms.txt`, `uptimerobot.com/AGENTS.md`, etc.).
 
@@ -55,10 +55,10 @@ On first connection a browser opens for the OAuth flow. Run `/plugin` to confirm
 If you just want the MCP tools without the rest of the plugin (dotfiles, CI bootstrap), see `[skills/setup/SKILL.md](skills/setup/SKILL.md)`. Short version:
 
 ```bash
-claude mcp add uptimerobot -- npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp
+claude mcp add --transport http uptimerobot https://mcp.uptimerobot.com/mcp
 ```
 
-Then quit and relaunch Claude Code, completing the OAuth browser flow when it appears. Run `/plugin` to confirm `uptimerobot MCP Server` shows ✓ connected.
+Then run `/mcp`, select **uptimerobot**, and choose **Authenticate** to complete the OAuth browser flow. Run `/plugin` to confirm `uptimerobot MCP Server` shows ✓ connected.
 
 ### Cursor
 
@@ -104,14 +104,14 @@ The server is listed in the [official MCP Registry](https://registry.modelcontex
 curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=com.uptimerobot/uptimerobot"
 ```
 
-Clients without registry support can connect via the same `mcp-remote` launcher (OAuth on first use):
+Clients without registry support can connect to the same URL directly (OAuth on first use):
 
 ```json
 {
   "mcpServers": {
     "uptimerobot": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://mcp.uptimerobot.com/mcp"]
+      "type": "http",
+      "url": "https://mcp.uptimerobot.com/mcp"
     }
   }
 }
@@ -119,7 +119,7 @@ Clients without registry support can connect via the same `mcp-remote` launcher 
 
 #### Headless / CI (no browser)
 
-Where the OAuth browser flow can't run, connect over plain HTTP with a Main API key from the dashboard (**Integrations & API**) instead:
+Where the OAuth browser flow can't run, add the server to your own client config with a Main API key from the dashboard (**Integrations & API**) instead. This is a manual setup — the plugin itself never reads or sends an API key:
 
 ```json
 {
@@ -227,9 +227,9 @@ The MCP handshake sometimes completes after the client captures its tool list at
 
 | Symptom | Fix |
 | --- | --- |
-| OAuth browser didn't open | Copy the authorization URL `mcp-remote` prints in the terminal and open it manually |
-| Tools return `-31001 user_not_found` | Clear cached tokens with `rm -rf ~/.mcp-auth`, then fully quit and relaunch to re-run the OAuth flow |
-| Write tools return `-31002 access_denied` | Re-authenticate (`rm -rf ~/.mcp-auth`) with an account that has write permission |
+| OAuth browser didn't open | Run `/mcp`, select **uptimerobot**, choose **Authenticate**, and open the URL it shows manually if the browser still doesn't launch |
+| Tools return `-31001 user_not_found` | Run `/mcp`, select **uptimerobot**, and choose **Clear authentication**, then **Authenticate** again |
+| Write tools return `-31002 access_denied` | Re-authenticate via `/mcp` with an account that has write permission |
 
 ### API error codes
 

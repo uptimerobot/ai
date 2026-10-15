@@ -1,16 +1,16 @@
 ---
 name: setup
-description: Connect and authenticate the UptimeRobot MCP server (OAuth via mcp-remote), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` auth errors or first-time setup.
+description: Connect and authenticate the hosted UptimeRobot MCP server (OAuth over streamable HTTP), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` auth errors or first-time setup.
 tags: [setup, auth, oauth, configuration, onboarding]
 ---
 
 # Setup UptimeRobot
 
-The UptimeRobot MCP server authenticates with **OAuth**. The plugin registers a
-small `mcp-remote` launcher that proxies to `https://mcp.uptimerobot.com/mcp`;
-on first connection it opens a browser where the user logs into UptimeRobot and
-authorizes access. There is no API key to paste — tokens are cached locally by
-`mcp-remote`.
+The UptimeRobot MCP server authenticates with **OAuth**. The plugin connects
+directly to the hosted server at `https://mcp.uptimerobot.com/mcp` over
+streamable HTTP — nothing runs locally. The client discovers the server's OAuth
+endpoints and opens a browser where the user logs into UptimeRobot and authorizes
+access. There is no API key to paste — the client stores the tokens itself.
 
 Invoke this skill when:
 - Any UptimeRobot tool returns `-31001 user_not_found` (the OAuth grant is missing, expired, or revoked).
@@ -44,11 +44,13 @@ Interpret the output:
 
   Then **stop this skill**. Do not proceed.
 
-- **A line containing `uptimerobot` and `✗ Failed to connect`**: the server is registered but the OAuth grant is stale/expired, or the launcher couldn't start. Go to **Step 3 (Re-authenticate)**.
+- **A line containing `uptimerobot` and `! Needs authentication`**: the server is registered but the user hasn't authorized yet. Go to **Step 2 (Authenticate)**.
+
+- **A line containing `uptimerobot` and `✗ Failed to connect`**: the server is registered but the OAuth grant is stale/expired, or the server isn't reachable. Go to **Step 3 (Re-authenticate)**.
 
 - **No `uptimerobot` line at all**: the server hasn't been registered yet. Go to **Step 1**.
 
-- **Multiple `uptimerobot` entries** (e.g. `claude.ai UptimeRobot` plus a plain `uptimerobot`): only the plain `uptimerobot` (the `mcp-remote` launcher) matters for this skill. The `claude.ai`-prefixed one is a separate cloud MCP server unrelated to this plugin.
+- **Multiple `uptimerobot` entries** (e.g. `claude.ai UptimeRobot` plus a plain `uptimerobot`): only the plain `uptimerobot` (the plugin's server) matters for this skill. The `claude.ai`-prefixed one is a separate cloud MCP server unrelated to this plugin.
 
 ---
 
@@ -58,10 +60,10 @@ If the user installed this plugin from the marketplace (Claude Code) or via the
 Cursor plugin, the server auto-registers from `.mcp.json` / `mcp.json` — skip to
 Step 2.
 
-For a manual / scripted setup, register the `mcp-remote` launcher:
+For a manual / scripted setup, register the hosted server:
 
 ```bash
-claude mcp add uptimerobot -- npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp
+claude mcp add --transport http uptimerobot https://mcp.uptimerobot.com/mcp
 ```
 
 If it fails because the server already exists in some scope, remove it from each
@@ -70,23 +72,19 @@ scope the error lists, then re-add:
 ```bash
 claude mcp remove uptimerobot -s local
 claude mcp remove uptimerobot -s user   # only if the error mentioned user scope
-claude mcp add uptimerobot -- npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp
+claude mcp add --transport http uptimerobot https://mcp.uptimerobot.com/mcp
 ```
 
 ---
 
 ## Step 2 — Authenticate (OAuth browser flow)
 
-The first time the server connects, `mcp-remote` opens your default browser to log
-into UptimeRobot and authorize access. Tell the user:
+The user authorizes from inside Claude Code. Tell the user:
 
-> I've registered the UptimeRobot MCP server. The next time it connects it will
-> open a browser asking you to log into UptimeRobot and authorize access — there's
-> no API key to paste. After you approve, fully quit Claude Code (close the
-> terminal) and relaunch so the tools load at session start.
->
-> If a browser window doesn't open automatically, copy the authorization URL that
-> `mcp-remote` prints in the terminal and open it manually.
+> Run `/mcp`, select **uptimerobot**, and choose **Authenticate**. A browser opens
+> where you log into UptimeRobot and authorize access — there's no API key to
+> paste. If the browser doesn't open, copy the URL `/mcp` shows and open it
+> manually.
 
 Then confirm connectivity with Step 4.
 
@@ -95,18 +93,10 @@ Then confirm connectivity with Step 4.
 ## Step 3 — Re-authenticate (fix a stale or revoked grant)
 
 Use this when a tool returns `-31001`, when `claude mcp list` shows
-`✗ Failed to connect`, or when the user revoked access. Clear the cached
-`mcp-remote` tokens so the next connection re-runs the OAuth flow:
+`✗ Failed to connect`, or when the user revoked access. Tell the user:
 
-```bash
-rm -rf ~/.mcp-auth
-```
-
-Then tell the user:
-
-> I've cleared the cached UptimeRobot authorization. Fully quit Claude Code and
-> relaunch — the next connection will reopen the browser so you can log in and
-> re-authorize.
+> Run `/mcp`, select **uptimerobot**, and choose **Clear authentication**. Then
+> choose **Authenticate** to reopen the browser, log in, and re-authorize.
 
 Then confirm connectivity with Step 4.
 
@@ -134,9 +124,8 @@ but do not block this skill on that.
 ## Step 5 — Handle validation failures
 
 **`claude mcp list` still shows `✗ Failed`:**
-1. Confirm the browser flow completed — `mcp-remote` needs the user to finish authorizing in the browser. Re-run Step 3 to force a fresh attempt.
-2. Confirm `node`/`npx` is installed and on `PATH` (`npx --version`). `mcp-remote` runs via `npx`; without Node it can't start.
-3. If the authorization page errored, have the user retry; if it persists, the account may lack access — see the access-denied note below.
+1. Confirm the browser flow completed — the user must finish authorizing in the browser. Re-run Step 3 to force a fresh attempt.
+2. If the authorization page errored, have the user retry; if it persists, the account may lack access — see the access-denied note below.
 
 **`-31002 access_denied` when the user later runs a write operation:**
 The authorized account doesn't have write permission for that action. Tell the user
@@ -162,9 +151,9 @@ session, the cause is almost always one of these:
 
 ## Notes
 
-- **Cursor users:** the project's `mcp.json` registers the same `mcp-remote`
-  launcher. Reload Cursor and complete the OAuth browser flow when prompted — no
-  `UPTIMEROBOT_API_KEY` env var is needed.
+- **Cursor users:** the project's `mcp.json` registers the same hosted server.
+  Reload Cursor and complete the OAuth browser flow when prompted — no API key is
+  needed.
 - **Marketplace / plugin install path:** the server auto-registers from
   `.mcp.json` (Claude Code) or `mcp.json` (Cursor). Users only need to complete
   the OAuth browser flow on first connection — no `claude mcp add` required. This
@@ -172,25 +161,10 @@ session, the cause is almost always one of these:
 
 ### Advanced — headless / CI (no browser)
 
-The OAuth browser flow can't run in a headless environment (CI, dev-containers).
-There, skip `mcp-remote` and connect over plain HTTP with a Main API key from the
-dashboard (**Integrations & API**) instead:
-
-```json
-{
-  "mcpServers": {
-    "uptimerobot": {
-      "type": "http",
-      "url": "https://mcp.uptimerobot.com/mcp",
-      "headers": { "Authorization": "Bearer <MAIN_API_KEY>" }
-    }
-  }
-}
-```
-
-Use a Main key for read/write; a Read-only key blocks write tools (`-31002`). This
-is the only place the API-key path is needed — the default interactive flow is
-OAuth.
+The OAuth browser flow can't run in headless environments (CI, dev-containers).
+For that case, point the user to the **Headless / CI** section of the repo
+[README](../../README.md#headless--ci-no-browser). It is a manual config the user
+writes themselves; this skill never reads, writes, or asks for an API key.
 
 ## Related
 

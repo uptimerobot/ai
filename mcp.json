@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "uptimerobot": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://mcp.uptimerobot.com/mcp"]
+      "type": "http",
+      "url": "https://mcp.uptimerobot.com/mcp"
     }
   }
 }
