@@ -2,7 +2,7 @@
 
 > UptimeRobot monitors websites, APIs, servers, DNS, and services from a global checker network. It records up/down state and response times, opens incidents when targets fail, and sends alerts through configurable contacts (email, SMS, Slack, webhooks, and more). A remote MCP server exposes the full monitor lifecycle to AI agents.
 
-UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availability, minimum interval, and monitor counts depend on the active plan. The MCP server enforces plan limits and returns error code `-28002` when a request exceeds them.
+UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availability, minimum interval, and monitor counts depend on the active plan. The MCP server enforces plan limits: `-28001` when the monitor limit is reached, `-28002` when an interval or monitor type exceeds the plan.
 
 ## MCP
 
@@ -26,11 +26,12 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 - [Create monitor skill (DNS)](https://uptimerobot.com/skills/create-dns-monitor/SKILL.md): Validate DNS records against expected values.
 - [Create monitor skill (API)](https://uptimerobot.com/skills/create-api-monitor/SKILL.md): Assertion-based API response checks.
 - [Create monitor skill (UDP)](https://uptimerobot.com/skills/create-udp-monitor/SKILL.md): UDP port with optional payload and packet-loss threshold.
+- VISUAL_COMPARISON monitors (no dedicated skill): `create-monitor` with a full `url` and `config.visualComparison` (`sensitivityThreshold` 0–100, `viewport` desktop/mobile, optional `areaCoordinates`). See AGENTS.md.
 - [Manage monitors skill](https://uptimerobot.com/skills/manage-monitors/SKILL.md): List, inspect, pause, resume monitors.
 - [Update monitor skill](https://uptimerobot.com/skills/update-monitor/SKILL.md): Rename, retarget, retag, swap alert contacts, and tweak type-specific settings on an existing monitor.
-- [List integrations skill](https://uptimerobot.com/skills/list-integrations/SKILL.md): Discover alert-contact IDs to attach to monitors.
+- [List integrations skill](https://uptimerobot.com/skills/list-integrations/SKILL.md): Discover integration IDs (Slack, webhook, etc.) to attach to monitors. Personal contact IDs (email, SMS, voice, push) come from `list-alert-contacts`; each `assignedAlertContacts` item needs `alertContactId`, `threshold`, and `recurrence`.
 - [Bulk pause skill](https://uptimerobot.com/skills/bulk-pause/SKILL.md): Pause and resume many monitors at once during deploys.
-- [Manage monitor groups skill](https://uptimerobot.com/skills/manage-monitor-groups/SKILL.md): Choose between tags and monitor groups — group membership can't be read back through any tool, so tags (which are) are usually the better default.
+- [Manage monitor groups skill](https://uptimerobot.com/skills/manage-monitor-groups/SKILL.md): Choose between tags and monitor groups. Group membership is set with `groupId` on `create-monitor` / `update-monitor` (`0` = no group) or via `create-monitor-group`, and read with `list-monitors` `groupId`.
 - [Maintenance windows skill](https://uptimerobot.com/skills/maintenance-windows/SKILL.md): Schedule one-off or recurring windows that suppress alerts for planned downtime, as an alternative to bulk pause.
 
 ## Observability

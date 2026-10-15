@@ -63,4 +63,4 @@ Call `get-monitor-details` to confirm stored records and port.
 ## Related
 
 - `create-http-monitor` — to also check the service behind the DNS name.
-- `update-monitor` — retune interval, alert contacts, and tags on an existing DNS monitor. (Note: `dnsRecords` are set at creation and changing them requires creating a new monitor.)
+- `update-monitor` — retune interval, alert contacts, tags, and expected records on an existing DNS monitor. Send `config.dnsRecords` to replace the expected records, or `null` to remove them.

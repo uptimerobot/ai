@@ -1,6 +1,6 @@
 ---
 name: bulk-pause
-description: Pause (or resume) many UptimeRobot monitors at once — by tag, search term, or state — around a deployment or maintenance window.
+description: Pause (or resume) many UptimeRobot monitors at once — by tag, name, URL, or state — around a deployment or maintenance window.
 tags: [bulk, pause, resume, deployment, maintenance, uptimerobot]
 ---
 
@@ -21,24 +21,26 @@ Filter as tightly as possible to avoid pausing unrelated monitors.
 ### By tag
 
 ```json
-{ "search": "", "filter": [], "limit": 50 }
+{ "tags": ["deploy-api"], "limit": 100 }
 ```
 
-`list-monitors` doesn't support tag-based server-side filtering. Pull the page, then filter client-side on `tagNames` before touching anything.
+`tags` matches monitors carrying **any** of the listed tags. Check each returned monitor's `tags` before touching anything.
 
 ### By name or URL
 
 ```json
-{ "search": "api.example.com", "limit": 50 }
+{ "url": "api.example.com", "limit": 100 }
 ```
+
+Use `name` instead of `url` to match on the monitor name. There is no `search` parameter — an unknown filter key must never be trusted to narrow the list, so always check the returned count before pausing.
 
 ### By state (only currently-running monitors)
 
 ```json
-{ "filter": ["UP", "DOWN", "NOT_STARTED"], "limit": 50 }
+{ "filter": ["STARTED"], "limit": 100 }
 ```
 
-Excluding `PAUSED` avoids re-pausing already-paused monitors.
+`STARTED` returns every monitor that isn't paused, so already-paused monitors are skipped. Filters combine, e.g. `{ "tags": ["deploy-api"], "filter": ["STARTED"] }`.
 
 Follow the `instructions` field for pagination until `hasMore: false`. **Do not start pausing until the full list is collected** — partial pauses mid-paginate are easy to miss on resume.
 
@@ -81,7 +83,7 @@ Resuming a monitor can return `-28001 monitor_limit_exceeded` if the account is 
 
 User: "Pause everything tagged `deploy-web` for the next 20 minutes."
 
-1. `list-monitors` with `{ "limit": 50 }`, paginate, filter client-side where `tagNames` includes `"deploy-web"` → 8 monitors.
+1. `list-monitors` with `{ "tags": ["deploy-web"], "filter": ["STARTED"], "limit": 100 }`, paginate → 8 monitors.
 2. Echo the 8 names and `type`s. User confirms.
 3. For each: `update-monitor-status` with `{"monitorId": ..., "status": "PAUSED"}`.
 4. Note the 8 IDs. Tell the user: "Paused 8 monitors. Run `resume deploy-web` when you're done."

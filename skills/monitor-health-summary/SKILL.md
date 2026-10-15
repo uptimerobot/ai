@@ -20,10 +20,10 @@ Use this when the user asks "how's everything looking?", "give me a health check
 
 Call `get-monitor-stats`. Returns:
 
-- Counts of monitors in each state (`up`, `down`, `paused`, `notStarted`).
-- Overall uptime percentage across active monitors.
-- Total incident count and downtime duration for the range.
-- Plan-level monitor cap vs. current usage.
+- `monitorsUp`, `monitorsDegraded`, `monitorsDown`, `monitorsPaused` — counts of monitors in each state.
+- `overallUptime` — a fraction from 0 to 1; multiply by 100 for the percentage.
+- `totalIncidents` and `totalIncidentsDuration` (seconds) for the range.
+- `totalMonitors` vs. `totalMonitorsLimit` — current usage vs. plan cap.
 
 Adjust `timeRange` if the user wants a longer window (e.g. `"7d"` for a weekly brief).
 
@@ -33,7 +33,7 @@ Adjust `timeRange` if the user wants a longer window (e.g. `"7d"` for a weekly b
 { "filter": ["DOWN"], "limit": 50 }
 ```
 
-Paginate with `cursor` until `hasMore: false`. Collect each monitor's `id` and `friendlyName` and the timestamp from `get-monitor-details` if you need exact downtime duration.
+Paginate with `nextCursor` until `hasMore: false`. Collect each monitor's `id`, `name`, and `currentStateDuration` (how long it has been in its current state — use it for "down for ~58 min").
 
 If there are zero DOWN monitors, skip step 3 and say so clearly.
 
@@ -51,7 +51,7 @@ Paginate until `hasMore: false`. You only need names and count — no need to fe
 { "timeRange": "24h", "limit": 25 }
 ```
 
-Call `list-incidents`. Paginate until `hasMore: false`. Collect total count and sum of incident durations for the report footer.
+Call `list-incidents`. Paginate with `nextCursor` until `hasMore: false`. Collect the total count for the report footer. For total downtime, use `totalIncidentsDuration` (seconds) from step 1 — the per-incident `duration` is text like `"15m 55s"`, not seconds.
 
 ## Step 5 — Spot-check degraded monitors (optional)
 
@@ -68,7 +68,7 @@ Only call this when the user wants more detail or when the monitor count is smal
 ```
 Health summary — 2026-05-01 (last 24h)
 
-Status: 2 DOWN · 3 PAUSED · 42 UP  (47 total)
+Status: 2 DOWN · 1 DEGRADED · 3 PAUSED · 41 UP  (47 total)
 Uptime: 98.7% across active monitors
 Incidents last 24h: 4  (total downtime: 2h 13min)
 
@@ -93,11 +93,11 @@ All active monitors are up. One monitor paused: sandbox-api.
 
 ## Common mistakes
 
-- Counting `NOT_STARTED` monitors as "down" — they're unstarted, not failing. Exclude them from down/up tallies or list them separately.
+- Showing `overallUptime` as-is. It's a fraction (`0.987` = 98.7%).
+- Ignoring `monitorsDegraded` — degraded monitors are up but not healthy. Show the count when it's above zero.
 - Reporting `PAUSED` monitors as "healthy" — they're unmonitored. Always surface them so the user is aware.
 - Looping `get-response-times` over every UP monitor — expensive and unnecessary. Reserve it for DOWN or flagged monitors.
 - Forgetting to paginate `list-monitors` or `list-incidents` — with many monitors or incidents you'll silently under-count.
-- Confusing `notStarted` with `paused` — they're different states. `notStarted` means the monitor was never activated.
 
 ## Related
 

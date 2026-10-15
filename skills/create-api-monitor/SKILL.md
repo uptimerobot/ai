@@ -36,14 +36,14 @@ Use when the user needs to validate the **content** of an HTTP response — not 
 - `logic` — `"AND"` (every check must pass) or `"OR"` (any check passing counts as up).
 - `checks` — 1 to 5 items. Each has:
   - `property` — JSONPath against the response body, or a header selector. Max 500 chars.
-  - `comparison` — one of `equals`, `not_equals`, `contains`, `not_contains`, `greater_than`, `less_than`, `is_null`, `is_not_null`.
-  - `target` — expected value. Type depends on the comparison (`is_null` / `is_not_null` take none). Strings, numbers, booleans, and `null` are all valid.
+  - `comparison` — one of `equals`, `not_equals`, `contains`, `not_contains`, `greater_than`, `less_than`, `is_null`, `is_not_null`, `is_string`, `is_number`, `is_boolean`, `is_array`, `is_object`, `is_empty`, `is_not_empty`, `length_equals`, `length_not_equals`, `length_greater_than`, `length_less_than`, `exists`, `not_exists`.
+  - `target` — expected value. Type depends on the comparison. Omit it for the `is_*` comparisons and for `exists` / `not_exists`. Strings, numbers, booleans, and `null` are all valid.
 
 ## Common optional params
 
 Everything HTTP monitors support: `httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `customHttpHeaders`, `postValueData`, `postValueType` (`KEY_VALUE` / `RAW_JSON`), `postContentType`, `successHttpResponseCodes`, `followRedirections`, `checkSSLErrors`, `timeout`, `interval`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`, `responseTimeThreshold`, `sslExpirationReminder`, `domainExpirationReminder`.
 
-`config.ipVersion` — force `IPv4` / `IPv6`.
+`config.ipVersion` is not accepted on `create-monitor` for API monitors. Set it afterwards with `update-monitor` (`"ipVersion": "ipv4Only"` or `"ipv6Only"`) if needed.
 
 ## Example: POST with JSON body and multiple assertions
 
@@ -77,7 +77,7 @@ Everything HTTP monitors support: `httpMethodType`, `authType`, `httpUsername`, 
 - Omitting `config.apiAssertions` — API monitors require at least one check.
 - Sending more than 5 checks — the max is 5; split into multiple monitors if needed.
 - Using JSONPath like `$..items[0]` without a working tool beforehand. Test the expression manually first.
-- Passing `target` for `is_null` / `is_not_null`. It's ignored or rejected — leave it out.
+- Passing `target` for `is_*`, `exists`, or `not_exists` comparisons. It's ignored or rejected — leave it out.
 - Type-mismatched `target` (e.g. `"100"` string when the field is a number). Use the matching JSON type.
 - Using an API monitor when a KEYWORD check would do. API adds cost — reach for it only when you need structural assertions.
 
