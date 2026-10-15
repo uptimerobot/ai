@@ -1,104 +1,53 @@
 ---
 name: errors
-description: Handle UptimeRobot MCP errors — codes, meanings, retry policy, and user-facing recovery suggestions.
+description: Interpret UptimeRobot MCP errors — map the plain-text messages to their meaning, decide whether to retry, and tell the user how to recover.
 tags: [errors, troubleshooting, rate-limit, uptimerobot]
 ---
 
 # Errors
 
-The UptimeRobot MCP server may return structured JSON-RPC errors with numeric codes, but most tool errors arrive as **plain text with no code** (for example `Monitor not found or access denied`). Map either form to the recovery recipes below, and give the user a plain explanation rather than echoing raw codes.
+> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
 
-## Error codes
+Use this when an UptimeRobot tool call fails and you need to know what it means and what to do next.
 
-| Code | Name | Retryable | Meaning |
-| -- | -- | -- | -- |
-| `-28001` | `monitor_limit_exceeded` | No | Account has hit its plan's monitor cap. Creation or resuming a paused monitor exceeded it. |
-| `-28002` | `subscription_limit_exceeded` | No | Request violates plan limits — most commonly `interval` too aggressive, or a monitor type not available on the plan. |
-| `-29001` | `invalid_parameters` | No | Payload failed validation. Includes blacklisted URLs, forbidden fields for a monitor type, wrong enum values, string too long, etc. The error message usually lists the offending fields. |
-| `-30001` | `monitor_not_found` | No | Monitor ID doesn't exist or isn't owned by this account. |
-| `-30003` | `resource_not_found` | No | A referenced resource (alert contact, maintenance window, tag) doesn't exist. |
-| `-31001` | `user_not_found` | No | Authentication failed. The OAuth grant is missing, expired, or revoked. |
-| `-31002` | `access_denied` | No | The authorized account doesn't have permission for the requested action (e.g. a write tool with read-only access). |
-| `-32603` | `internal` | Maybe | Unexpected server error. One retry with backoff is fine; escalate on repeat. |
-| HTTP `429` | rate limit | Yes | Back off with exponential delay + jitter, then retry. |
+**Tools:** any; recovery uses `get-user`, `list-monitors`, `list-alert-contacts`, `list-integrations`, `list-incidents`. The tools' own schemas and descriptions are the reference for parameters — this page only covers what they don't say.
 
-## Plain-text errors — map by message
+**Tool errors arrive as plain text with no numeric code**, and the wording varies per tool. Match by case-insensitive substring, not exact text and not by code. Then explain the problem to the user in plain words; don't just echo the raw message.
 
-When the error has no numeric code, match on the message text (case-insensitive) and treat it as the code in the table above:
+## Message → meaning
 
-| Message contains | Treat as | Example |
+| Message contains | Meaning (code) | What to do |
 | -- | -- | -- |
-| `Invalid parameters` | `-29001` | `Invalid parameters: [field]: reason` — names the offending field |
-| `Monitor not found` (incl. `or access denied`) | `-30001` | `Monitor not found or access denied` |
-| `<something> not found` (alert contact, incident, maintenance window, …) | `-30003` | `Alert contact not found`, `Incident not found` |
-| plan, limit, upgrade, or a feature name (`incident-comments`, `maintenance-window`, …) | `-28001` if about the monitor count, else `-28002` | |
-| `access denied`, `forbidden`, `read-only` (without "not found") | `-31002` | Call `get-user` first and check `account.accessLevel` — if the session can write, the cause is something else (often a wrong ID). |
-| `unauthorized`, `unauthenticated`, `token` (expired / invalid / missing) | `-31001` | Invoke `uptimerobot:setup`. |
+| `Invalid parameters: [<field>]: <reason>` | Bad input (`-29001`) | Fix the named field and resend. Don't retry unchanged. |
+| `Invalid field for <TYPE> monitor` / `Invalid fields for …` | Field doesn't apply to this monitor type (`-29001`) | Drop the field; the message says which types take it. |
+| `is required and must be non-empty` | Missing required value (`-29001`), e.g. `days is required and must be non-empty for "weekly" maintenance windows` | Add the value. |
+| `Monitor not found` (also `Monitor not found or access denied`) | Monitor doesn't exist or isn't in this account (`-30001`) | Find the right ID with `list-monitors`. Don't substitute a look-alike without asking. |
+| `<thing> not found` — `Alert contact not found`, `Incident not found`, `Incident <id> not found`, `PSP not found`, `Status page not found`, `Maintenance window not found` | Referenced resource doesn't exist (`-30003`) | Look the ID up with the matching `list-*` tool. A user-supplied ID may belong to another account. |
+| plan, limit, upgrade, or a plan feature name (`monitor-groups`, `maintenance-window`, `incident-comments`, …) | Plan limit: monitor count (`-28001`) or interval / type / feature (`-28002`) | Don't retry. Explain the limit; suggest a longer interval, another type, deleting monitors, or upgrading. Paused monitors still count toward the monitor limit. |
+| `access denied`, `forbidden`, `read-only` (without "not found") | No write access (`-31002`) | Call `get-user` and check `account.accessLevel`. If it can write, the cause is something else (often a wrong ID). If it can't, re-authorize with an account that can write via `uptimerobot:setup`. |
+| `unauthorized`, `unauthenticated`, `token` (expired / invalid / missing) | Auth grant missing or expired (`-31001`) | Invoke `uptimerobot:setup`; don't ask the user to handle tokens. |
+| HTTP `429` / rate limit | Throttled | The only retryable case — back off (below). |
+| anything else | Unknown | Show the message as-is; at most one retry for an obvious server error. |
 
-If nothing matches, show the message to the user as-is and don't retry.
+## Gotchas
 
-## Recovery recipes
+- **A success message doesn't prove a change.** `update-monitor` returns `updated successfully` even for fields it ignores (e.g. `authType`). Verify writes with the matching `get-*` tool.
+- **Some wrong inputs aren't errors at all.** An unknown parameter such as `search` on `list-monitors` is ignored silently and you get unfiltered results. If a result looks too broad, check your parameter names.
+- `get-incident-details` doesn't validate the ID format and just says `Incident not found`; the activity-log and alerts tools reject non-numeric IDs with `incidentId must be a numeric string`.
+- `list-maintenance-windows` rejects `cursor: 0` (`Too small: expected number to be >0`) — omit `cursor` on the first page.
+- Never retry not-found, invalid-parameter, plan-limit or access errors unchanged — they fail the same way every time.
+- Never put credentials, tokens or header values in error summaries.
 
-### `-28001` monitor limit
+## Rate limit (429)
 
-Do not retry. Tell the user:
-
-> You've reached your plan's monitor limit. Delete unused monitors (`list-monitors` + `update-monitor-status: PAUSED` doesn't help — paused monitors still count) or upgrade your plan.
-
-### `-28002` subscription limit
-
-Do not retry. Ask whether the user wants to:
-
-1. Loosen the interval (bump `interval` — plan minima vary).
-2. Use a different monitor type available on their plan.
-3. Upgrade.
-
-Typical trigger: `interval: 30` on Free, or creating types gated by the plan.
-
-### `-29001` invalid parameters
-
-Do not retry. Re-read the error message — it usually names the offending fields. Common causes:
-
-- Using numeric `type` codes instead of string enums.
-- Forbidden fields for the monitor type (e.g. `gracePeriod` on HTTP, `url` on HEARTBEAT, `port` on KEYWORD).
-- `url` without a scheme on HTTP / KEYWORD / API.
-- `url` with a scheme on PING / PORT / UDP / DNS.
-- Blacklisted URLs (private IPs, localhost, known-abusive domains).
-- `keywordValue` exceeding 500 chars, `friendlyName` exceeding 200, etc.
-
-Fix the payload and resend.
-
-### `-30001` / `-30003` not found
-
-Do not retry the same call. Find a valid ID with the matching discovery tool — `list-monitors` for monitors, `list-alert-contacts` + `list-integrations` for alert contacts, `list-incidents` for incidents — then make a new call with that ID. If the user typed the ID, it may belong to a different UptimeRobot account.
-
-### `-31001` unauthenticated
-
-Do not retry the call. Immediately invoke the `uptimerobot:setup` skill — it re-runs the OAuth flow (clearing the cached grant and reopening the browser) and validates the connection. Do not ask the user to manually check tokens; the setup skill handles that flow.
-
-### `-31002` access denied
-
-Do not retry the call. Call `get-user` and check `account.accessLevel` to confirm the session really is read-only. If it is, the authorized account lacks write permission for this action — invoke the `uptimerobot:setup` skill to re-authenticate with an account that has write access.
-
-### HTTP 429 rate limit
-
-Do retry, but with backoff:
-
-```
-sleep(min(60s, 2^attempt + random_jitter))
+```text
+wait = min(60s, 2^attempt + random jitter); give up after ~5 attempts and tell the user
 ```
 
-Cap at ~5 attempts; if still throttled, surface the issue to the user. Bulk loops (e.g. pulling stats for hundreds of monitors) are the usual culprit — batch or serialize them.
-
-## Never do
-
-- **Never retry** `-28001`, `-28002`, `-29001`, `-30001`, `-30003`, `-31002` — they are deterministic client errors.
-- **`-31001`** is also non-retryable, but instead of surfacing it, invoke `uptimerobot:setup`.
-- **Never swallow errors silently.** Users need to know why an automation didn't land.
-- **Never echo credentials or tokens** in error summaries or logs.
+Bulk loops (stats or details for hundreds of monitors) are the usual cause — slow them down or batch them.
 
 ## Related
 
-- `manage-monitors` — for discovering correct IDs after `-30001`.
-- `setup` — re-authenticate after `-31001` or an unauthorized / token-expired message.
-- `create-*-monitor` — each lists type-specific forbidden fields that trigger `-29001`.
+- [`setup`](../setup/SKILL.md) — re-authenticate after an auth error.
+- [`manage-monitors`](../manage-monitors/SKILL.md) — find the right monitor ID.
+- [`update-monitor`](../update-monitor/SKILL.md) — type-specific field errors.

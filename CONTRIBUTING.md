@@ -39,6 +39,24 @@ skills/sync-timezones/
     └── run.sh            # invoked via ${CLAUDE_PLUGIN_ROOT}/skills/.../scripts/run.sh
 ```
 
+### What belongs in a skill
+
+The MCP server's tool schemas and descriptions already tell agents every
+parameter, and a live A/B evaluation showed agents complete single-tool tasks
+just as well without a skill. Write skills for:
+
+- **Multi-step workflows** (bulk pause around a deploy, SLA reports, incident
+  response).
+- **Behaviour the schemas don't state**, verified against the live server
+  (for example, `create-psp` ignoring `status: PAUSED`).
+
+Don't restate parameter lists or enums from the schemas: those copies are
+what drifted from the server before. If a behaviour belongs in a tool's
+description, raise it with the MCP server team instead.
+
+Skill files are published at `uptimerobot.com/skills/<name>/SKILL.md`, so
+don't delete or rename a skill without arranging a redirect.
+
 ## Commands (`commands/<command-name>.md`)
 
 A command is a single markdown file that becomes a slash command

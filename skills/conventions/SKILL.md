@@ -9,15 +9,15 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 ## Monitor types
 
-- Always send `type` as a string enum — one of `HTTP`, `KEYWORD`, `PING`, `PORT`, `HEARTBEAT`, `DNS`, `API`, `UDP`, `VISUAL_COMPARISON`. Do not pass numeric type codes; the MCP layer rejects them.
+- Always send `type` as a string enum — one of `HTTP`, `KEYWORD`, `PING`, `PORT`, `HEARTBEAT`, `DNS`, `API`, `UDP`. Do not pass numeric type codes; the MCP layer rejects them.
 - `HEARTBEAT` monitors must **not** include a `url` on creation. The server generates `https://heartbeat.uptimerobot.com/m<id>-<hash>` and returns it. Show that URL to the user after creation so they can wire up the heartbeat sender.
 - `PING`, `PORT`, `UDP`, `DNS`: `url` is a hostname or IP, never a full URL with scheme.
-- `HTTP`, `KEYWORD`, `API`, `VISUAL_COMPARISON`: `url` must be a full URL with scheme (`https://...`).
+- `HTTP`, `KEYWORD`, `API`: `url` must be a full URL with scheme (`https://...`).
 
 ## Discovery before writes
 
 - Before calling `update-monitor`, `update-monitor-status`, or referencing a monitor by ID, call `list-monitors` (optionally filtered by `name`, `url`, or `tags` — there is no `search` parameter) to confirm the ID and current state.
-- Before referencing an alert contact in `assignedAlertContacts`, call **both** `list-alert-contacts` (personal email, SMS, voice, push) and `list-integrations` (Slack, webhooks, PagerDuty, Teams, …), dedupe by `id`, and use an `id` from the responses.
+- Before referencing an alert contact in `assignedAlertContacts`, call **both** `list-alert-contacts` (personal email, SMS, voice, push) and `list-integrations` (Slack, webhooks, PagerDuty, Teams, … — it also returns the personal contacts under the same ids), dedupe by `id`, and use an `id` from the responses.
 
 ## Verification after writes
 
@@ -37,7 +37,9 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 ## Pagination
 
-- Paginated tools return `nextCursor` and `hasMore`. Pass `nextCursor` as `cursor` and keep calling while `hasMore` is `true`. The `instructions` field is plain prose, not a JSON call — don't try to parse it.
+- Paginated tools return `nextCursor` and `hasMore`. While `hasMore` is `true`, repeat your **own** arguments (filters, `limit`, `timeRange`) and set `cursor` to `nextCursor`.
+- Don't copy the `instructions` field. On multi-page results it embeds a next-call JSON that is unsafe: for `list-monitors` it drops your filters (widening to every monitor), for `list-integrations` it drops `limit`, and for `list-incidents` it emits an object `timeRange` the tool rejects.
+- Don't rely on `totalCount`: it is null on any page fetched with a `cursor`, and always null for several list tools (e.g. `list-alert-contacts`, `list-tags`, `list-monitor-groups`, `list-psps`).
 - Cursor types differ by tool:
   - **Integer** — `list-monitors`, `list-integrations`, `list-alert-contacts`, `list-tags`, `list-monitor-groups`, `list-psps`, `list-psp-announcements`, `list-maintenance-windows`, `list-incident-comments`.
   - **Numeric string** (an incident ID) — `list-incidents`.
@@ -47,11 +49,12 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 - `-28001` monitor limit, `-28002` subscription limit, `-29001` invalid params (incl. blacklisted URLs), `-30001` / `-30003` not found, `-31002` access denied (authorized account lacks write permission).
 - `-31001 user_not_found` means the OAuth grant is missing/expired/revoked — do not surface it raw; invoke the `uptimerobot:setup` skill to re-authenticate.
-- Many errors arrive as plain text with no numeric code (`Monitor not found or access denied`, `Incident not found`, `Alert contact not found`, `Invalid parameters: [field]: reason`). Map them by message — see the table in `errors`. Unauthorized / token-expired messages mean `-31001`.
+- Most errors arrive as plain text with no numeric code, and the wording varies by tool: `Monitor not found` (e.g. `get-monitor-details`) vs `Monitor not found or access denied` (`get-response-times`), `Incident not found` vs `Incident <id> not found`, `Alert contact not found`, `Invalid parameters: [field]: reason`, `Invalid field for DNS monitor: port. ...`. Map them by **substring** (e.g. `not found`, `Invalid parameters`, `Invalid field`), never by exact text — see the table in `errors`. Unauthorized / token-expired messages mean `-31001`.
 - HTTP 429 is the only code worth retrying (exponential backoff + jitter). Everything else is a client error — surface it to the user.
 
 ## Output style
 
 - Do not echo API keys, incident request logs, or redacted contact values unless the user explicitly asks.
+- `get-monitor-details` returns `customHttpHeaders` unredacted (may include `Authorization` tokens or API keys), and `list-alert-contacts` / `list-integrations` return email addresses and phone numbers in clear. Never echo header values or contact values back to the user unless asked; mask secrets (e.g. `Bearer ****`).
 - When summarising many monitors, group by state (`DOWN` first, then `PAUSED`, then `UP`) and show counts before detail.
 - When quoting uptime percentages, always cite the time range.

@@ -24,7 +24,7 @@ Use this when the user says "what's down?", "is production still broken?", "tria
 { "filter": ["DOWN"], "limit": 50 }
 ```
 
-Paginate with `nextCursor` until `hasMore: false`. Each item has `id`, `name`, `url`, `type`, `status`, `currentStateDuration`, `lastIncidentId`, and `tags`. Group the results by tag or `name` prefix before reporting — the user typically cares "what system is down", not "which individual checks are failing".
+Paginate until `hasMore: false` by repeating this call (same `filter`, `limit`) with `cursor` set to `nextCursor` — don't copy the call embedded in `instructions`, it drops the filter. Each item has `id`, `name`, `url`, `type`, `status`, `currentStateDuration`, `lastIncidentId`, and `tags`. Group the results by tag or `name` prefix before reporting — the user typically cares "what system is down", not "which individual checks are failing".
 
 `DOWN` by itself excludes paused monitors. To also catch monitors that are failing but not yet confirmed down, add `LOOKS_DOWN`:
 
@@ -60,9 +60,11 @@ Lead with the active (unresolved) incident, then show recently-resolved ones as 
 
 Returns:
 
-- `startedAt`, `endedAt` (not set while ongoing), `duration`, `cause`, `reason`.
-- `checkerLocations[]` and `requestLogs[]` (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers).
+- `startedAt`, `endedAt` (not set while ongoing), `duration`, `cause` (a number, e.g. `401`), `reason`.
+- `checkerLocations[]` and `requestLogs[]` (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is not ISO 8601 (`"2026-09-30 14:44:48.587"`).
 - `errorDetails` — `primaryError`, `errorCount`, `affectedRegions`.
+
+`checkerLocations` and `affectedRegions` can come back empty — count regions from `requestLogs[].region` instead.
 
 No traceroute or root-cause category is returned. For the checker IP and city per check, call `get-incident-activity-log` (`entries[].remoteNode`). For who was notified, call `get-incident-alerts`.
 

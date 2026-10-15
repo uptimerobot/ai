@@ -4,7 +4,7 @@ This repo is UptimeRobot's single source of truth for AI agent integrations. It 
 
 - **llms.txt** and **AGENTS.md** — discovery and orientation for LLMs and coding agents.
 - **.claude-plugin**, **.cursor-plugin**, and **.codex-plugin** folders — installable plugin manifests for Claude Code, Cursor, and Codex.
-- **skills** folder — self-contained skill files covering every UptimeRobot MCP tool plus onboarding and runbook workflows.
+- **skills** folder — workflow skills (setup, no-account quick monitor, bulk pause, SLA reports, incident response, status pages) plus short per-tool reference pages that cover only what the MCP tool schemas don't say. See [Skills](#skills).
 - **rules** folder — shared rules loaded by both Cursor and Claude Code.
 - **mcp.json** — Cursor-format MCP server config (dot-less filename).
 - **.mcp.json** — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
@@ -94,7 +94,7 @@ If you want Codex to track the source explicitly:
 codex plugin marketplace add ./
 ```
 
-Verify the plugin is loaded: the 24 skills should be available and the `uptimerobot` MCP server should appear with 50 tools once connected.
+Verify the plugin is loaded: the UptimeRobot skills should be available and the `uptimerobot` MCP server should appear with 50 tools once connected.
 
 ### Other agents / direct MCP
 
@@ -135,13 +135,13 @@ Where the OAuth browser flow can't run, add the server to your own client config
 
 ## What the plugin provides
 
-50 tools via MCP, grouped by resource — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
+50 tools via MCP, grouped by resource — full list in [`AGENTS.md`](AGENTS.md); each tool's own schema and description are the reference for its parameters:
 
 ### Monitors
 
 | Tool                    | Purpose                                                                |
 | ----------------------- | ---------------------------------------------------------------------- |
-| `create-monitor`        | Create HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, UDP, or VISUAL_COMPARISON monitors |
+| `create-monitor`        | Create HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, or UDP monitors |
 | `update-monitor`        | Change name, URL, interval, alert contacts, tags, HTTP settings        |
 | `update-monitor-status` | Pause or resume a monitor                                              |
 | `list-monitors`         | Paginated list filtered by name, URL, tags, group, custom field, or state |
@@ -164,7 +164,7 @@ Where the OAuth browser flow can't run, add the server to your own client config
 
 | Tool          | Purpose                                                              |
 | ------------- | --------------------------------------------------------------------- |
-| `create-psp`  | Create a public status page from monitors, groups, or tags            |
+| `create-psp`  | Create a status page from monitors, groups, or tags (always created public; pause with `update-psp`) |
 | `update-psp`  | Change name, domain, sort order, visibility, or publish status        |
 | `get-psp`     | Fetch a single status page by ID                                      |
 | `list-psps`   | Paginated list of status pages                                        |
@@ -197,7 +197,7 @@ Where the OAuth browser flow can't run, add the server to your own client config
 | Tool                    | Purpose                                                      |
 | ------------------------ | --------------------------------------------------------------- |
 | `list-incidents`        | Incidents across monitors, with time range, monitor, or open-only filter |
-| `get-incident-details`  | Per-incident checker locations, logs, traceroute                |
+| `get-incident-details`  | Per-incident request logs and error details                     |
 | `get-incident-activity-log` | Incident timeline summary plus paginated entries            |
 | `get-incident-alerts`   | Alerts sent during an incident, with delivery summary           |
 
@@ -224,8 +224,8 @@ Where the OAuth browser flow can't run, add the server to your own client config
 
 | Tool                  | Purpose                                    |
 | ---------------------- | --------------------------------------------- |
-| `list-integrations`   | Slack, webhook, PagerDuty, etc. integrations  |
-| `delete-integration`  | Permanently delete an integration             |
+| `list-integrations`   | Slack, webhook, PagerDuty, etc. integrations (also lists personal contacts) |
+| `delete-integration`  | Permanently delete an integration (use `delete-alert-contact` for ids in `list-alert-contacts`) |
 | `list-tags`            | Paginated list of tags on the account         |
 | `delete-tag`           | Delete a tag and remove it from every monitor |
 
@@ -237,15 +237,33 @@ Where the OAuth browser flow can't run, add the server to your own client config
 | `get-storm-protection-settings`     | Read account-wide alert grouping settings                      |
 | `update-storm-protection-settings`  | Change alert grouping (plan-gated: `notification-grouping`)    |
 
-Alert contact IDs for `assignedAlertContacts` come from `list-alert-contacts` (personal) and `list-integrations`; each entry needs `alertContactId`, `threshold`, and `recurrence`. All `delete-*` tools are permanent — call `get-user` first to confirm which account the session acts on.
+Alert contact IDs for `assignedAlertContacts` come from `list-alert-contacts` (personal) and `list-integrations` (which also returns the personal contacts — dedupe by `id`); each entry needs `alertContactId`, `threshold`, and `recurrence`. All `delete-*` tools are permanent — call `get-user` first to confirm which account the session acts on.
 
 ### No account needed
 
 The [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill creates a free HTTPS monitor from just someone's email, no account, API key, or OAuth: the agent calls an unauthenticated proof-of-work API and the owner confirms by clicking a link in an activation email. Guide: <https://uptimerobot.com/quick-monitor-setup/>.
 
+## Skills
+
+The tools' own schemas cover parameters, so the skills focus on multi-step workflows and on behaviour the schemas don't spell out.
+
+**Workflows**
+
+| Skill | Use it when |
+| --- | --- |
+| [`setup`](skills/setup/SKILL.md) | Connecting the MCP server, or the UptimeRobot tools aren't showing up |
+| [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) | Someone has no UptimeRobot account and wants a monitor from just an email |
+| [`conventions`](skills/conventions/SKILL.md) | Always: verify after writes, `get-user` before deletes, pagination, error matching, no secrets in replies |
+| [`bulk-pause`](skills/bulk-pause/SKILL.md) | Pausing and resuming many monitors around a deploy |
+| [`sla-report`](skills/sla-report/SKILL.md) / [`monitor-health-summary`](skills/monitor-health-summary/SKILL.md) | Uptime/SLA reports and account health summaries |
+| [`incident-response`](skills/incident-response/SKILL.md) | Investigating a downtime, commenting on it, confirming recovery |
+| [`status-pages`](skills/status-pages/SKILL.md) | Creating a status page without exposing it early, and posting announcements |
+
+**Reference pages** — short notes on non-obvious behaviour, verified against the live server: [`create-http-monitor`](skills/create-http-monitor/SKILL.md), [`create-keyword-monitor`](skills/create-keyword-monitor/SKILL.md), [`create-ping-monitor`](skills/create-ping-monitor/SKILL.md), [`create-port-monitor`](skills/create-port-monitor/SKILL.md), [`create-heartbeat-monitor`](skills/create-heartbeat-monitor/SKILL.md), [`create-dns-monitor`](skills/create-dns-monitor/SKILL.md), [`create-api-monitor`](skills/create-api-monitor/SKILL.md), [`create-udp-monitor`](skills/create-udp-monitor/SKILL.md), [`update-monitor`](skills/update-monitor/SKILL.md), [`manage-monitors`](skills/manage-monitors/SKILL.md), [`manage-monitor-groups`](skills/manage-monitor-groups/SKILL.md), [`maintenance-windows`](skills/maintenance-windows/SKILL.md), [`list-integrations`](skills/list-integrations/SKILL.md), [`stats`](skills/stats/SKILL.md), [`incidents`](skills/incidents/SKILL.md), [`errors`](skills/errors/SKILL.md).
+
 ## Plan requirements
 
-UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these, returning `-28001` (`monitor_limit_exceeded`) when the monitor limit is reached and `-28002` (`subscription_limit_exceeded`) when an interval or monitor type exceeds the plan. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
+Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`) instead of assuming a fixed list. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these, returning `-28001` (`monitor_limit_exceeded`) when the monitor limit is reached and `-28002` (`subscription_limit_exceeded`) when an interval or monitor type exceeds the plan. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
 
 ## Troubleshooting
 
@@ -268,13 +286,13 @@ The MCP handshake sometimes completes after the client captures its tool list at
 | `-28001` | Monitor limit reached | Delete unused monitors or upgrade your plan |
 | `-28002` | Subscription limit | Interval too aggressive for your plan, or monitor type not included — loosen the interval or upgrade |
 | `-29001` | Invalid parameters | The error message names the offending fields; fix them and retry |
-| `-30001` | Monitor not found | Monitor doesn't exist or belongs to another account (may also arrive as the plain message `Monitor not found`) |
+| `-30001` | Monitor not found | Monitor doesn't exist or belongs to another account (usually arrives as a plain message such as `Monitor not found` or `Monitor not found or access denied`) |
 | `-30003` | Resource not found | A referenced alert contact or maintenance window doesn't exist |
 | `-31001` | Authentication failed | See Authentication problems above |
 | `-31002` | Access denied | The session account lacks write permission — see Authentication problems above |
 | HTTP `429` | Rate limit | Back off and retry with exponential delay |
 
-For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
+Errors usually reach the client as plain text with no code, and the wording varies by tool — match by substring (`not found`, `Invalid parameters`, `Invalid field`), not exact text. For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
 
 ## Contributing
 

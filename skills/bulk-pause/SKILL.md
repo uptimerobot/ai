@@ -37,12 +37,12 @@ Use `name` instead of `url` to match on the monitor name. There is no `search` p
 ### By state (only currently-running monitors)
 
 ```json
-{ "filter": ["STARTED"], "limit": 100 }
+{ "filter": ["UP", "DOWN", "LOOKS_DOWN", "STARTED"], "limit": 100 }
 ```
 
-`STARTED` returns every monitor that isn't paused, so already-paused monitors are skipped. Filters combine, e.g. `{ "tags": ["deploy-api"], "filter": ["STARTED"] }`.
+`filter` values combine as OR, so this returns every monitor that isn't paused. Don't use `["STARTED"]` alone — it matches only monitors whose status is literally `STARTED` (just created or resumed, not yet checked), not every running monitor. Alternatively, omit `filter` and skip monitors whose `status` is `PAUSED` client-side. Filters combine with the other params, e.g. `{ "tags": ["deploy-api"], "filter": ["UP", "DOWN", "LOOKS_DOWN", "STARTED"] }`.
 
-Follow the `instructions` field for pagination until `hasMore: false`. **Do not start pausing until the full list is collected** — partial pauses mid-paginate are easy to miss on resume.
+Paginate until `hasMore: false`: repeat your **own** arguments (filters, `tags`, `limit`) and set `cursor` to the previous `nextCursor`. Don't copy the next-call JSON in the `instructions` field — it drops your filters, silently widening the list to every monitor on the account. **Do not start pausing until the full list is collected** — partial pauses mid-paginate are easy to miss on resume.
 
 ## Step 2 — Confirm with the user
 
@@ -83,7 +83,7 @@ Resuming a monitor can return `-28001 monitor_limit_exceeded` if the account is 
 
 User: "Pause everything tagged `deploy-web` for the next 20 minutes."
 
-1. `list-monitors` with `{ "tags": ["deploy-web"], "filter": ["STARTED"], "limit": 100 }`, paginate → 8 monitors.
+1. `list-monitors` with `{ "tags": ["deploy-web"], "filter": ["UP", "DOWN", "LOOKS_DOWN", "STARTED"], "limit": 100 }`, paginate (same args + `cursor`) → 8 monitors.
 2. Echo the 8 names and `type`s. User confirms.
 3. For each: `update-monitor-status` with `{"monitorId": ..., "status": "PAUSED"}`.
 4. Note the 8 IDs. Tell the user: "Paused 8 monitors. Run `resume deploy-web` when you're done."
@@ -94,6 +94,8 @@ User: "Pause everything tagged `deploy-web` for the next 20 minutes."
 - Re-filtering on resume instead of using the stored ID list — will silently miss monitors whose tag or name changed.
 - Skipping the confirmation step for large batches. Pausing production monitoring without echoing the list is high-risk.
 - Pausing monitors already in `PAUSED` state — harmless but noisy. Filter them out up front.
+- Using `filter: ["STARTED"]` to mean "running" — it returns only never-checked monitors, so the batch comes back empty or incomplete.
+- Copying the `instructions` next-call JSON when paginating — it drops `tags` / `filter` / `name`, so later pages contain unrelated monitors.
 - Retrying `-28001 monitor_limit_exceeded` on resume. It's a cap, not a rate limit.
 - Using `update-monitor` with `status: ...` instead of `update-monitor-status`. Status lives on the dedicated tool.
 

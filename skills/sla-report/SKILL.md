@@ -35,7 +35,7 @@ Call `get-monitor-stats` to get the aggregate uptime and total downtime for the 
 { "name": "prod", "limit": 50 }
 ```
 
-`list-monitors` has no `search` parameter. Filter with `name` or `url` (case-insensitive partial match) or `tags` (any of these tag names); omit all of them to get every monitor. Paginate with `nextCursor` until `hasMore: false`. Collect `id`, `name`, and `status` for every monitor in scope.
+`list-monitors` has no `search` parameter. Filter with `name` or `url` (case-insensitive partial match) or `tags` (any of these tag names); omit all of them to get every monitor. Paginate until `hasMore: false` by repeating the same call (same filters and `limit`) with `cursor` set to `nextCursor` — don't copy the call embedded in `instructions`, it drops your filters. Collect `id`, `name`, and `status` for every monitor in scope.
 
 Exclude `PAUSED` monitors from the report unless the user explicitly wants them — they have no meaningful uptime data for the range. Note how many were excluded.
 
@@ -49,7 +49,7 @@ For each monitor, fetch downtime incidents for the range:
 { "monitorId": 800123456, "timeRange": "30d", "limit": 50 }
 ```
 
-Paginate with `nextCursor` until `hasMore: false`. Count the incidents.
+Paginate until `hasMore: false` by repeating your own args with `cursor` set to `nextCursor` — never copy the call in `instructions` (its `timeRange` is an object the tool rejects). Count the incidents yourself; `totalCount` is `null` on every page after the first.
 
 `duration` is human-readable text (`"15m 55s"`, `"1h 2m 3s"`), **not** seconds. To get downtime seconds per incident, either parse its `d` / `h` / `m` / `s` parts, or take `startedAt` from the list item and `endedAt` from `get-incident-details`. Then:
 
