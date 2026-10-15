@@ -96,8 +96,8 @@ hooks run on every matching event.
 The UptimeRobot server is registered as a direct streamable-HTTP connection to
 `https://mcp.uptimerobot.com/mcp`; the client runs the OAuth browser flow itself.
 Nothing runs on the user's machine, and no API key, header, or env var is in the
-config — keep it that way. The plugin directory scan flags local launchers
-(package launchers), unpinned packages, and credential reads:
+config — keep it that way. The plugin directory scan flags local package
+launchers, unpinned packages, and credential reads:
 
 ```json
 {
