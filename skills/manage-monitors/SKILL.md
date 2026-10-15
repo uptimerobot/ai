@@ -1,6 +1,6 @@
 ---
 name: manage-monitors
-description: List monitors, fetch details, and pause or resume monitors in UptimeRobot.
+description: Find monitors with list-monitors filters, read one monitor's details, and pause or resume monitors in UptimeRobot.
 tags: [monitoring, list, pause, resume, uptimerobot]
 ---
 
@@ -8,67 +8,31 @@ tags: [monitoring, list, pause, resume, uptimerobot]
 
 > **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
 
-Covers monitor discovery and status control:
+Use this to find monitors, inspect one, or pause / resume one. For changing a monitor's settings see [`update-monitor`](../update-monitor/SKILL.md); for creating one see the `create-*-monitor` skills.
 
-- `list-monitors` — paginated discovery with search + state filters.
-- `get-monitor-details` — full config for one monitor.
-- `update-monitor-status` — pause or resume.
+**Tools:** `list-monitors`, `get-monitor-details`, `update-monitor-status`. The tools' own schemas and descriptions are the reference for parameters — this page only covers what they don't say.
 
-For **creating** monitors see the `create-*-monitor` skills. For **editing** an existing monitor's configuration (rename, URL, interval, alert contacts, tags, type-specific settings) see [`update-monitor`](../update-monitor/SKILL.md).
-
-## List monitors
+`list-monitors` — every monitor that isn't paused, matching a name:
 
 ```json
-{
-  "search": "api",
-  "filter": ["DOWN"],
-  "limit": 50
-}
+{ "name": "api", "filter": ["UP", "DOWN", "LOOKS_DOWN", "STARTED"], "limit": 100 }
 ```
 
-Parameters:
+## Gotchas
 
-- `search` — full-text match against `friendlyName` and `url`.
-- `filter` — array, any of `UP`, `DOWN`, `PAUSED`, `NOT_STARTED`, `EXPIRING_DOMAIN`, `EXPIRING_SSL_CERTIFICATE`, `WITH_API_KEY`, `WITHOUT_API_KEY`.
-- `limit` — page size (clamped server-side).
-- `cursor` — from the previous page's `nextCursor`.
-
-The response includes an `instructions` field with the exact next-page call JSON. Follow it verbatim.
-
-## Get monitor details
-
-```json
-{ "monitorId": 800123456 }
-```
-
-Returns the full config (type, URL, interval, thresholds, alert contacts, tags, type-specific fields) plus current status and state duration. Use this:
-
-- To confirm a `create-monitor` / `update-monitor` took effect.
-- To inspect one monitor's config before editing.
-- To retrieve the generated URL for a HEARTBEAT monitor.
-
-## Update monitor configuration
-
-Covered in its own skill: [`update-monitor`](../update-monitor/SKILL.md) — rename, URL, interval, alert contacts, tags, HTTP/keyword/API/heartbeat type-specific settings, and read‑modify‑write patterns for array fields.
-
-## Update monitor status
-
-```json
-{ "monitorId": 800123456, "status": "PAUSED" }
-```
-
-`status` is one of `PAUSED` (stop monitoring) or `STARTED` (resume). Resuming a paused monitor can return `-28001 monitor_limit_exceeded` if the account is over its active-monitor cap.
-
-## Common mistakes
-
-- Skipping `get-monitor-details` after a status change. Replication lag can mean the next `list-monitors` call still shows the old state.
-- Calling `update-monitor-status` when the authorized account lacks write access — returns `-31002 access_denied`.
-- Forgetting that resume counts against the active-monitor cap — `-28001 monitor_limit_exceeded`.
+- **`filter: ["STARTED"]` does not mean "running".** It matches only monitors that haven't been checked yet since create/resume. For every non-paused monitor use `["UP", "DOWN", "LOOKS_DOWN", "STARTED"]` (values combine as OR), or omit `filter` and skip `status: "PAUSED"` yourself.
+- There is no `search` parameter. An unknown parameter like `search` is **silently ignored** and you get the unfiltered account — use `name` or `url`.
+- **Pagination: never copy the call in `instructions`.** It keeps only `cursor` and `limit` and drops `name` / `url` / `tags` / `filter`, which silently widens the query to every monitor. While `hasMore` is true, repeat your own arguments with `cursor` set to `nextCursor`.
+- `totalCount` is only on the first page (it's `null` whenever `cursor` is passed).
+- Responses use `name`; `friendlyName` is only an input field on create/update.
+- `get-monitor-details` doesn't return the monitor's alert contacts, maintenance windows or group. For group membership use `list-monitors` with `groupId`.
+- `get-monitor-details` returns `customHttpHeaders` unredacted (bearer tokens, API keys). Don't echo header values to the user.
+- For a HEARTBEAT monitor the push URL is in `heartbeatUrl`; its `url` field is only the bare hash.
+- Resuming (`status: "STARTED"`) counts against the plan's monitor limit and can fail with a limit error. After pausing or resuming, confirm with `get-monitor-details`.
 
 ## Related
 
-- [`update-monitor`](../update-monitor/SKILL.md) — edit configuration of an existing monitor.
-- [`bulk-pause`](../bulk-pause/SKILL.md) — pause/resume many monitors at once.
-- [`incidents`](../incidents/SKILL.md) — downtime history for a monitor.
-- [`stats`](../stats/SKILL.md) — aggregated uptime / response-time metrics.
-- [`errors`](../errors/SKILL.md) — recovering from `-28001`, `-28002`, `-29001`, `-31002`.
+- [`update-monitor`](../update-monitor/SKILL.md) — edit a monitor's configuration.
+- [`bulk-pause`](../bulk-pause/SKILL.md) — pause / resume many monitors.
+- [`incidents`](../incidents/SKILL.md) and [`stats`](../stats/SKILL.md) — history and uptime.
+- [`errors`](../errors/SKILL.md) — what the error messages mean.

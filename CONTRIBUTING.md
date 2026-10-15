@@ -39,6 +39,24 @@ skills/sync-timezones/
     └── run.sh            # invoked via ${CLAUDE_PLUGIN_ROOT}/skills/.../scripts/run.sh
 ```
 
+### What belongs in a skill
+
+The MCP server's tool schemas and descriptions already tell agents every
+parameter, and a live A/B evaluation showed agents complete single-tool tasks
+just as well without a skill. Write skills for:
+
+- **Multi-step workflows** (bulk pause around a deploy, SLA reports, incident
+  response).
+- **Behaviour the schemas don't state**, verified against the live server
+  (for example, `create-psp` ignoring `status: PAUSED`).
+
+Don't restate parameter lists or enums from the schemas: those copies are
+what drifted from the server before. If a behaviour belongs in a tool's
+description, raise it with the MCP server team instead.
+
+Skill files are published at `uptimerobot.com/skills/<name>/SKILL.md`, so
+don't delete or rename a skill without arranging a redirect.
+
 ## Commands (`commands/<command-name>.md`)
 
 A command is a single markdown file that becomes a slash command
@@ -93,16 +111,18 @@ hooks run on every matching event.
 
 ## MCP servers (`mcp.json` / `.mcp.json`)
 
-The UptimeRobot server is registered as an `mcp-remote` launcher that proxies to
-`https://mcp.uptimerobot.com/mcp` and authenticates via OAuth (browser flow on
-first use). No API key or env var is injected into the config — keep it that way:
+The UptimeRobot server is registered as a direct streamable-HTTP connection to
+`https://mcp.uptimerobot.com/mcp`; the client runs the OAuth browser flow itself.
+Nothing runs on the user's machine, and no API key, header, or env var is in the
+config — keep it that way. The plugin directory scan flags local package
+launchers, unpinned packages, and credential reads:
 
 ```json
 {
   "mcpServers": {
     "uptimerobot": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://mcp.uptimerobot.com/mcp"]
+      "type": "http",
+      "url": "https://mcp.uptimerobot.com/mcp"
     }
   }
 }
@@ -134,7 +154,7 @@ Deliberate omissions in `server.json` — please don't "fix" these:
   `Authorization` header as required would make every client prompt for an API key
   and bypass OAuth. The Bearer-token path stays a documented headless/CI escape
   hatch, not registry metadata.
-- **No `packages` array.** `mcp-remote` is a third-party shim, not our package.
+- **No `packages` array.** There is no package; the server is remote-only.
 
 ### Publishing an update
 
@@ -147,9 +167,7 @@ nothing in CI enforces this.
 ```bash
 mcp-publisher validate
 
-MY_DOMAIN="uptimerobot.com"
-PRIVATE_KEY="$(openssl pkey -in key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n')"
-mcp-publisher login dns --domain "${MY_DOMAIN}" --private-key "${PRIVATE_KEY}"
+mcp-publisher login dns --domain uptimerobot.com --private-key <hex private key>
 
 mcp-publisher publish
 ```
@@ -165,7 +183,8 @@ curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=com.uptime
 The `com.uptimerobot/*` namespace is proven by an Ed25519 key whose public half is
 published as a TXT record on the `uptimerobot.com` apex
 (`v=MCPv1; k=ed25519; p=<public key>`, managed in Cloudflare). The private key
-(`key.pem`) is **gitignored and lives in the team password manager** — losing it
+(`key.pem`) is **gitignored and lives in the team password manager**. Paste its hex
+form where the login command says `<hex private key>`; don't script reading it. Losing it
 means losing the ability to publish updates under this namespace.
 
 ## Testing a change

@@ -4,27 +4,27 @@ Orientation for coding agents (Claude Code, Cursor, Codex, Aider, etc.) that nee
 
 ## What UptimeRobot is
 
-UptimeRobot monitors websites, APIs, servers, DNS, and services. It probes each target on an interval (minimum 30s on paid plans), records up/down state plus response times, opens incidents on downtime, and fires alerts (email, SMS, webhooks, Slack, etc.) through **alert contacts**.
+UptimeRobot monitors websites, APIs, servers, DNS, and services. It probes each target on an interval (15s–24h; the plan sets the actual minimum), records up/down state plus response times, opens incidents on downtime, and fires alerts (email, SMS, webhooks, Slack, etc.) through **alert contacts**.
 
 Key entities:
 
-- **Monitor** — one probe against one target. Has a `type` (HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, UDP), a URL/host, an interval, and a status (`UP`, `DOWN`, `PAUSED`, `NOT_STARTED`, etc.).
-- **Incident** — a downtime event. Opens when a monitor goes down, closes when it recovers. Has logs, checker IPs, traceroute.
-- **Alert contact** — a destination (email, Slack, webhook, SMS, Telegram, etc.) attached to monitors with a threshold and recurrence.
+- **Monitor** — one probe against one target. Has a `type` (HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, UDP), a URL/host, an interval, and a status (e.g. `UP`, `DOWN`, `PAUSED`).
+- **Incident** — a downtime event. Opens when a monitor goes down, closes when it recovers. `get-incident-details` returns `requestLogs` (per-check request/response data) and `errorDetails`; `get-incident-activity-log` status entries carry the checker's `remoteNode` (IP, city, country).
+- **Alert contact** — a notification destination attached to monitors with a threshold and recurrence. Two kinds: **personal alert contacts** (email, Pro SMS, voice, mobile push — `list-alert-contacts`) and **integrations** (Slack, webhook, PagerDuty, etc. — `list-integrations`). Both supply IDs for `assignedAlertContacts`. `list-integrations` also returns the personal contacts (same ids as `list-alert-contacts`), so dedupe by `id`.
 - **Tag** — free-form label assigned to monitors.
 - **Maintenance window** — scheduled period where alerts for attached monitors are suppressed.
 
-Plans: **Free, Solo, Team, Enterprise**. Availability of specific monitor types and minimum intervals depends on the active plan. The MCP server enforces all limits.
+Plans: don't hard-code plan names (live accounts report e.g. `Scale`) — read `activeSubscription.plan` from `get-user`. Availability of specific monitor types and minimum intervals depends on the active plan. The MCP server enforces all limits.
 
 ## How to talk to UptimeRobot
 
 Use the remote MCP server:
 
 - URL: `https://mcp.uptimerobot.com/mcp`
-- Transport: HTTP (streamable), launched via `mcp-remote` (`npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp`).
-- Auth: **OAuth**. On first connection `mcp-remote` opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, connect over plain HTTP with an `Authorization: Bearer <API_KEY>` header instead.)
+- Transport: HTTP (streamable), connected directly — nothing runs locally.
+- Auth: **OAuth**. On first connection the client opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, see the manual setup in the [README](README.md#headless--ci-no-browser).)
 
-All 32 tools operate on the authorized account. There is no account impersonation.
+All 50 tools act on the **session account** chosen at OAuth authorization (personal or a team account; re-authorize to switch). An API-key session always acts on the key owner's own account. Call `get-user` to see which account a session acts on and whether it may write.
 
 First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SKILL.md`](skills/setup/SKILL.md).
 
@@ -32,9 +32,11 @@ First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SK
 
 If the user has no UptimeRobot account or API key, use the [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill instead of the MCP tools: it creates a free HTTPS monitor from just the owner's email (an unauthenticated proof-of-work flow; the owner confirms by clicking a link in an activation email). When the user is connected via MCP, use `create-monitor`.
 
-## Tools (all 32)
+## Tools (all 50)
 
-Grouped by resource. Tools marked **plan-gated** require a specific plan feature (`monitor-groups`, `maintenance-window`, `incident-comments`, or `psp-subscribers`) and fail if the account's plan doesn't include it.
+Grouped by resource. Tools marked **plan-gated** require a specific plan feature (`monitor-groups`, `maintenance-window`, `incident-comments`, `psp-subscribers`, or `notification-grouping`) and fail if the account's plan doesn't include it. Some params are gated by entitlement instead: `customFields` needs `custom-fields`, and `regionData.THRESHOLD` needs `monitor-slow-response`.
+
+All `delete-*` tools are **permanent** — see convention 2 below.
 
 ### Monitors
 
@@ -43,17 +45,19 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 | `create-monitor` | Create a new monitor of any supported type. See [`skills/create-*-monitor`](skills/) for per-type recipes. |
 | `update-monitor` | Partially update an existing monitor's name, URL, interval, alert contacts, tags, HTTP settings, etc. Monitor type cannot be changed. See [`skills/update-monitor/SKILL.md`](skills/update-monitor/SKILL.md). |
 | `update-monitor-status` | Pause (`PAUSED`) or resume (`STARTED`) a monitor. |
-| `list-monitors` | Browse monitors with optional search string and state filters (`UP`, `DOWN`, `PAUSED`, `NOT_STARTED`, `EXPIRING_DOMAIN`, `EXPIRING_SSL_CERTIFICATE`, `WITH_API_KEY`, `WITHOUT_API_KEY`). Cursor-paginated. |
-| `get-monitor-details` | Full config + current state for one monitor ID. |
+| `list-monitors` | Browse monitors. Filters: `name` / `url` (case-insensitive partial match), `tags`, `groupId`, `customField` (`key:value`), and `filter` state enum (`PAUSED`, `STARTED`, `UP`, `LOOKS_DOWN`, `DOWN`, `EXPIRING_DOMAIN`, `EXPIRING_SSL_CERTIFICATE`, `WITH_API_KEY`, `WITHOUT_API_KEY`; values combine as OR). `STARTED` matches only monitors not yet checked since create/resume — for every non-paused monitor use `["UP", "DOWN", "LOOKS_DOWN", "STARTED"]`. `limit` 1–100 (default 10). Cursor-paginated. |
+| `get-monitor-details` | Full config + current state for one monitor ID. Has no group field — use `list-monitors` with `groupId` to list a group's members. |
+| `delete-monitor` | Permanently delete a monitor and its history. |
 | `get-monitor-stats` | Aggregated up/down/paused counts + overall uptime % for a time range. |
 | `get-response-times` | Time-series response-time data for one monitor within a time range. Supports `bucketSize` for aggregation. |
 
-### Monitor groups (plan-gated)
+### Monitor groups
 
 | Name | When to use |
 | -- | -- |
-| `create-monitor-group` | Create a group. Use `monitorIds` to assign monitors, or `groupIds` to move monitors out of existing groups into the new one. Group membership can only be set here or at monitor-creation time — see [`skills/manage-monitor-groups/SKILL.md`](skills/manage-monitor-groups/SKILL.md). |
-| `update-monitor-group` | Rename an existing group. |
+| `create-monitor-group` | **Plan-gated** (`monitor-groups`). Create a group. Use `monitorIds` to assign monitors, or `groupIds` to move monitors out of existing groups into the new one. Membership can also be set with `groupId` on `create-monitor` / `update-monitor` (`0` = no group) and read with `list-monitors` `groupId` — see [`skills/manage-monitor-groups/SKILL.md`](skills/manage-monitor-groups/SKILL.md). |
+| `update-monitor-group` | **Plan-gated** (`monitor-groups`). Rename an existing group. |
+| `delete-monitor-group` | **Plan-gated** (`monitor-groups`). Permanently delete a group. Its monitors move to `monitorsNewGroupId` (optional) or the default group (`0`); no monitor is deleted. |
 | `get-monitor-group` | Fetch a single group by `monitorGroupId`. |
 | `list-monitor-groups` | Cursor-paginated list of groups. |
 
@@ -61,21 +65,23 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 
 | Name | When to use |
 | -- | -- |
-| `create-psp` | Create a public status page from `monitorIds`, `monitorGroupIds`, or `tagIds`. Logo/icon uploads aren't supported over MCP — use the dashboard. See [`skills/status-pages/SKILL.md`](skills/status-pages/SKILL.md). |
+| `create-psp` | Create a public status page from `monitorIds`, `monitorGroupIds`, or `tagIds`. `status: PAUSED` is ignored — a new page is always `ENABLED` (public). To avoid exposure, create it with no monitors (or a `password`), `update-psp` `status: PAUSED`, then add monitors. Logo/icon uploads aren't supported over MCP — use the dashboard. See [`skills/status-pages/SKILL.md`](skills/status-pages/SKILL.md). |
 | `update-psp` | Partially update name, custom domain, sort order, visibility (`noIndex`, `password`), or publish status (`status: ENABLED`/`PAUSED`). |
 | `get-psp` | Fetch a single status page by `pspId`. |
 | `list-psps` | Cursor-paginated list of status pages. |
+| `delete-psp` | Permanently delete a status page and its announcements. |
 
 ### PSP announcements (plan-gated: `psp-subscribers`)
 
 | Name | When to use |
 | -- | -- |
-| `create-psp-announcement` | Post an announcement (`Info`, `Maintenance`, or `Issue`) to a status page. Set `status: Published` to make it visible immediately. |
-| `update-psp-announcement` | Partially update title, content, dates, type, or status (`Offline`/`Pending`/`Published`/`Archived`). |
+| `create-psp-announcement` | Post an announcement (`Info`, `Maintenance`, or `Issue`) to a status page. Publish now: `status: Published` and **omit** `startDate` (the server stamps the time). Schedule: future `startDate`, `status` unset (defaults to `Pending`). |
+| `update-psp-announcement` | Partially update title, content, dates, type, or status (`Offline`/`Pending`/`Published`/`Archived`). Publish now: `status: Published` + `startDate` set to the current time (an omitted `startDate` keeps the stored schedule). Reschedule: future `startDate` **and** `status: Pending`. |
 | `pin-psp-announcement` | Pin an announcement to the top of a status page. |
 | `unpin-psp-announcement` | Unpin an announcement. |
 | `get-psp-announcement` | Fetch a single announcement by `pspId` + `announcementId`. |
 | `list-psp-announcements` | Cursor-paginated list of announcements for a status page, optionally filtered by `status`. |
+| `delete-psp-announcement` | Permanently delete an announcement. |
 
 ### Maintenance windows (plan-gated: `maintenance-window`)
 
@@ -85,13 +91,16 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 | `update-maintenance-window` | Partially update schedule, duration, monitors, or pause (`status: paused`) / resume (`status: active`) the window. |
 | `get-maintenance-window` | Fetch a single window by `maintenanceWindowId`. |
 | `list-maintenance-windows` | Cursor-paginated list of windows. |
+| `delete-maintenance-window` | Permanently delete a window. |
 
 ### Incidents
 
 | Name | When to use |
 | -- | -- |
-| `list-incidents` | All incidents for the account (or a specific `monitorId`) within a time range. Cursor-paginated. |
-| `get-incident-details` | Per-incident checker locations, IPs, logs, traceroute. Pass `incidentId` (string). |
+| `list-incidents` | All incidents for the account (or a specific `monitorId`) within a time range. `status: "open"` returns only ongoing incidents, regardless of `timeRange`. `limit` 1–100 (default 10). Cursor-paginated. |
+| `get-incident-details` | Per-incident `requestLogs` (region, request/response data) and `errorDetails`. `checkerLocations` can come back empty — use `requestLogs[].region` or the activity log's `remoteNode` for checker location/IP. Pass `incidentId` (string). |
+| `get-incident-activity-log` | What happened during an incident: summary (entry counts, contacts involved, latest entry) plus the newest page of entries. `limit` 1–200 (default 50). Cursor-paginated. |
+| `get-incident-alerts` | Alerts sent during an incident: summary (counts by delivery status, contacts involved) plus the newest page of sent alerts. `limit` 1–200 (default 50). Cursor-paginated. |
 
 ### Incident comments (plan-gated: `incident-comments`)
 
@@ -100,13 +109,34 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 | `create-incident-comment` | Add a plain-text comment to an incident. `incidentId` is a BigInt passed as a numeric string. See [`skills/incident-response/SKILL.md`](skills/incident-response/SKILL.md). |
 | `update-incident-comment` | Edit an existing comment's content. |
 | `list-incident-comments` | Cursor-paginated list of comments on an incident. |
+| `delete-incident-comment` | Permanently delete a comment. |
+
+### Alert contacts (personal)
+
+| Name | When to use |
+| -- | -- |
+| `create-alert-contact` | Create a personal **email** contact (`value` = address). SMS, voice, and push contacts must be added in the dashboard / mobile app. |
+| `update-alert-contact` | Partially update `friendlyName`, `isActive`, `enableNotificationsFor` (`UpAndDown`/`Down`/`Up`/`None`), or `sslExpirationReminder`. |
+| `get-alert-contact` | Fetch a single personal contact by `alertContactId`. |
+| `list-alert-contacts` | Cursor-paginated list of the signed-in person's contacts (email, Pro SMS, voice, push). `limit` 1–200 (default 50). |
+| `delete-alert-contact` | Permanently delete a personal contact; monitors stop notifying through it. |
 
 ### Integrations & tags
 
 | Name | When to use |
 | -- | -- |
-| `list-integrations` | Alert-contact integrations configured on the account. Pass the `alertContactId` to `create-monitor` / `update-monitor`. See [`skills/list-integrations/SKILL.md`](skills/list-integrations/SKILL.md). |
+| `list-integrations` | Integrations (Slack, webhook, PagerDuty, etc.) on the account — the response also includes the personal contacts from `list-alert-contacts` (same ids), so dedupe by `id`. Their IDs go in `assignedAlertContacts`. `limit` 1–100 (default 10). See [`skills/list-integrations/SKILL.md`](skills/list-integrations/SKILL.md). |
+| `delete-integration` | Permanently delete an integration; monitors assigned to it stop notifying through it. Check what else uses it first, and check the id is not in `list-alert-contacts` — personal contacts also appear in `list-integrations`; delete those with `delete-alert-contact`. |
 | `list-tags` | Cursor-paginated list of tags on the account (up to 50 per page). See [`skills/manage-monitor-groups/SKILL.md`](skills/manage-monitor-groups/SKILL.md) for the tags-vs-groups decision. |
+| `delete-tag` | Permanently delete a tag; it is removed from every monitor that carried it. |
+
+### Account & storm protection
+
+| Name | When to use |
+| -- | -- |
+| `get-user` | Names the session account and team, the signed-in person, monitor count/limit, SMS credits, subscription, and whether the session may write. Call before any `delete-*`. |
+| `get-storm-protection-settings` | Read account-wide storm protection (alert grouping): enabled, threshold type/value, window, pooling. |
+| `update-storm-protection-settings` | **Plan-gated** (`notification-grouping`). Partially update `isEnabled`, `thresholdType` (`count` ≥ 2 \| `percentage` ≤ 100), `thresholdValue`, `windowMinutes` (1–15), `config.groupPooling`. |
 
 ## Monitor types and their required params
 
@@ -116,14 +146,18 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 | -- | -- | -- |
 | `HTTP` | `friendlyName`, `url` (full URL) | `httpMethodType`, `authType`, `customHttpHeaders`, `successHttpResponseCodes`, `interval`, `timeout` |
 | `KEYWORD` | `friendlyName`, `url` (full URL), `keywordValue`, `keywordType` (`ALERT_EXISTS` \| `ALERT_NOT_EXISTS`) | `keywordCaseType` (0=case-sensitive, 1=insensitive) |
-| `PING` | `friendlyName`, `url` (hostname or IP, **no scheme**) | `config.ipVersion` |
-| `PORT` | `friendlyName`, `url` (host), `port` (1–65535) | `config.ipVersion` |
+| `PING` | `friendlyName`, `url` (hostname or IP, **no scheme**) | — |
+| `PORT` | `friendlyName`, `url` (host), `port` (1–65535) | `portAlertCondition` (`CLOSED` \| `OPEN`) |
 | `HEARTBEAT` | `friendlyName` | `gracePeriod` (seconds, 0–86400). **No `url`** — the server returns a push URL of the form `https://heartbeat.uptimerobot.com/m<id>-<hash>` that the target must PING. |
-| `DNS` | `friendlyName`, `url` (domain) | `port` (defaults 53), `config.dnsRecords` (record type → expected values) |
+| `DNS` | `friendlyName`, `url` (domain) | `port` (server-side default; a monitor created without `port` reads back `port: null`, and `port` can't be changed via `update-monitor` for DNS), `config.dnsRecords` (record type → expected values) |
 | `API` | `friendlyName`, `url` (full URL), `config.apiAssertions` (`{logic: AND\|OR, checks: [{property, comparison, target}]}`, 1–5 checks) | `httpMethodType`, `postValueData`, `postValueType` |
-| `UDP` | `friendlyName`, `url` (host), `port` | `config.udp.payload`, `config.udp.packetLossThreshold`, `keywordValue` |
+| `UDP` | `friendlyName`, `url` (host), `port` | `config.udp` (`packetLossThreshold` **required** when `config.udp` is sent, optional `payload`), `keywordValue` |
 
-Common optional params on every type: `interval` (30–86400s), `assignedAlertContacts`, `tagNames`, `responseTimeThreshold`, `sslExpirationReminder`, `domainExpirationReminder`, `maintenanceWindowsIds`.
+Common optional params on every type: `interval` (15–86400s; `HEARTBEAT` up to 2678400s — the plan's minimum is enforced with `-28002`), `assignedAlertContacts` (each item needs `alertContactId`, `threshold` minutes 0–1440, `recurrence` minutes 0–10080), `tagNames`, `groupId` (`0` = no group), `timeout` (1–60s, not HEARTBEAT), `responseTimeThreshold`, `regionData` (`REGION`: `na`/`eu`/`as`/`oc`; optional per-region `THRESHOLD`), `customFields` (max 20 keys), `sslExpirationReminder`, `domainExpirationReminder`, `maintenanceWindowsIds`. HTTP/KEYWORD also take `checkSSLErrors` and `followRedirections`; HTTP/KEYWORD/API take `config.applicationErrorRetries` (0–3).
+
+`config.ipVersion` (`ipv4Only` \| `ipv6Only` — not `IPv4`/`IPv6`) was accepted and stored on create for HTTP, KEYWORD, PING, PORT, and API (UDP untested), and on `update-monitor` (verified on PORT). `responseTimeThreshold` is 100–60000 ms on create; omit it rather than sending `0`. On `update-monitor`, `customFields` **replaces** the whole map — read it from `get-monitor-details` and send it in full to change one key.
+
+Monitor responses use `name`; `friendlyName` is input-only.
 
 ## Time-range parameters
 
@@ -136,7 +170,7 @@ Default is `7d`.
 
 ## Pagination
 
-Write/list tools that return pages (`list-monitors`, `list-incidents`, `list-integrations`) return an `instructions` field containing the exact next-page tool call JSON. Follow it verbatim — cursor shape is opaque.
+All `list-*` tools plus `get-incident-activity-log` and `get-incident-alerts` paginate. Paged responses carry `nextCursor` and `hasMore`: while `hasMore` is true, repeat your own arguments and pass `nextCursor` back as `cursor` exactly as returned (its type varies by tool — integer, numeric string, or opaque string). Don't copy the `instructions` field: on multi-page results it embeds a next-call JSON that is unsafe — for `list-monitors` it drops your filters (widening to every monitor), for `list-integrations` it drops `limit`, and for `list-incidents` it emits an object `timeRange` the tool rejects. Don't rely on `totalCount` either: it is null on any page fetched with a `cursor`, and always null for several list tools (e.g. `list-alert-contacts`, `list-tags`, `list-monitor-groups`, `list-psps`).
 
 ## Authorization model
 
@@ -145,7 +179,7 @@ Write/list tools that return pages (`list-monitors`, `list-incidents`, `list-int
 
 ## Error handling
 
-Errors come back as JSON-RPC errors with numeric `code`. Map them like this:
+Errors usually reach the client as plain text with no numeric code, and the wording varies by tool: `Monitor not found` (`get-monitor-details`) vs `Monitor not found or access denied` (`get-response-times`), `Incident not found` (`get-incident-details`) vs `Incident <id> not found` (activity log / alerts), `Invalid parameters: [field]: ...`, `Invalid field for DNS monitor: port. ...`. Match by **substring** (`not found`, `Invalid parameters`, `Invalid field`), not exact text, and map to the codes below:
 
 | Code | Name | Retryable? | What to do |
 | -- | -- | -- | -- |
@@ -162,10 +196,13 @@ See [`skills/errors/SKILL.md`](skills/errors/SKILL.md) for recovery recipes.
 
 ## Conventions for agents
 
-1. **Never guess IDs.** Call `list-monitors` (or `list-integrations`) to discover IDs before calling write tools.
-2. **Always verify after writes.** After `create-monitor` / `update-monitor`, call `get-monitor-details` to show the user the stored state — replication lag can mean an immediate `list-monitors` misses the new monitor.
-3. **Surface plan-related errors clearly.** Don't retry `-28001` / `-28002`. Summarise the cap and suggest upgrade or deletion.
-4. **Don't invent monitor types.** Only the 8 string enums above are accepted.
-5. **Don't send numeric `type` codes.** The MCP layer rejects them even though the underlying DB uses numeric codes.
-6. **Prefer `list-monitors` + `search` over long traversals.** Accounts can have thousands of monitors.
-7. **Cite real uptime, not estimates.** If you need numbers, call `get-monitor-stats` / `get-response-times` — don't infer.
+1. **Never guess IDs.** Call `list-monitors` (or `list-alert-contacts` / `list-integrations` for alert contacts) to discover IDs before calling write tools.
+2. **Call `get-user` before any `delete-*`.** It names the session account and whether the session may write. Deletes are permanent — confirm the account and target with the user first.
+3. **Always verify after writes.** After `create-monitor` / `update-monitor`, call `get-monitor-details` (integer `monitorId`) to show the user the stored state. Replication lag can make it return `Monitor not found` for a few seconds after a create — wait and retry once; never re-create.
+4. **Surface plan-related errors clearly.** Don't retry `-28001` / `-28002`. Summarise the cap and suggest upgrade or deletion.
+5. **Don't invent monitor types.** Only the 8 string enums above are accepted.
+6. **Don't send numeric `type` codes.** The MCP layer rejects them even though the underlying DB uses numeric codes.
+7. **Prefer `list-monitors` filters (`name`, `url`, `tags`, `groupId`, `filter`) over long traversals.** Accounts can have thousands of monitors.
+8. **Cite real uptime, not estimates.** If you need numbers, call `get-monitor-stats` / `get-response-times` — don't infer.
+9. **Match errors by substring.** Error texts are plain messages whose wording varies by tool — match on `not found` / `Invalid parameters` / `Invalid field`, never on an exact string or a numeric code alone.
+10. **Don't leak secrets.** `get-monitor-details` returns `customHttpHeaders` unredacted (may include `Authorization` tokens or API keys), and `list-alert-contacts` / `list-integrations` return email addresses and phone numbers in clear. Never echo header values or contact values back to the user unless asked; mask secrets.

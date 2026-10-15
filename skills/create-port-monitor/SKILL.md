@@ -1,6 +1,6 @@
 ---
 name: create-port-monitor
-description: Create a PORT monitor that opens a TCP connection to a host:port and alerts when the port is not accepting connections.
+description: Create a PORT monitor that opens a TCP connection to a host and port and alerts when the port stops accepting connections.
 tags: [monitoring, port, tcp, create, uptimerobot]
 ---
 
@@ -8,10 +8,9 @@ tags: [monitoring, port, tcp, create, uptimerobot]
 
 > **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
 
-Use when the user wants to check that a specific TCP port is open on a host — databases, SSH, SMTP, custom services, etc.
+Use to check that a TCP port is open on a host — databases, SSH, SMTP, custom services. For UDP services use `create-udp-monitor`; for HTTP status or content use `HTTP` / `KEYWORD`.
 
-**Tool:** `create-monitor`
-**Required params:** `friendlyName`, `type: "PORT"`, `url` (host or IP, no scheme), `port` (1–65535).
+**Tool:** `create-monitor` with `type: "PORT"`. The tool's own schema and description are the reference for every parameter — this page only covers what they don't say.
 
 ## Minimal call
 
@@ -24,54 +23,19 @@ Use when the user wants to check that a specific TCP port is open on a host — 
 }
 ```
 
-## Common optional params
+## Gotchas
 
-- `timeout` — how long to wait for the TCP handshake (1–60s).
-- `interval`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
-- `config.ipVersion` — `IPv4` or `IPv6`.
+- `url` is the bare host and `port` a separate integer — split `https://host:443` into `"url": "host"` and `"port": 443`.
+- `config.ipVersion: "ipv4Only"` is accepted and stored on PORT monitors (on create and on `update-monitor`), even though the schema describes it as HTTP/KEYWORD-only. `"IPv4"` / `"IPv6"` are rejected.
+- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
 
-## Examples
+## After creating
 
-SMTP over IPv4:
-
-```json
-{
-  "friendlyName": "Mail relay",
-  "type": "PORT",
-  "url": "smtp.example.com",
-  "port": 25,
-  "timeout": 15,
-  "interval": 300
-}
-```
-
-SSH with alert contacts:
-
-```json
-{
-  "friendlyName": "Bastion SSH",
-  "type": "PORT",
-  "url": "bastion.example.com",
-  "port": 22,
-  "assignedAlertContacts": [
-    { "alertContactId": "10", "threshold": 0, "recurrence": 0 }
-  ],
-  "tagNames": ["infra", "security"]
-}
-```
-
-## Common mistakes
-
-- Passing `https://host:443` as `url`. Split into `url: "host"` and `port: 443`.
-- Passing `port` as a string. It must be an integer 1–65535.
-- Passing `port` outside the valid range (e.g. 0 or 70000). The server rejects with `-29001`.
-- Using PORT for an HTTP health check where you actually want status code / body — prefer `HTTP` or `KEYWORD`.
-
-## After creation
-
-Call `get-monitor-details` to confirm host + port were stored.
+Call `get-monitor-details` with the integer `id` from the create response to show the stored state; if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
 
 ## Related
 
-- `create-udp-monitor` — for UDP services (DNS, NTP, QUIC, game servers).
-- `create-ping-monitor` — for reachability without a specific port.
+- `create-udp-monitor` — for UDP services.
+- `create-ping-monitor` — reachability without a specific port.
+- `update-monitor` — change an existing monitor.
+- `errors` — recovering from plan limits and invalid parameters.

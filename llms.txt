@@ -2,11 +2,11 @@
 
 > UptimeRobot monitors websites, APIs, servers, DNS, and services from a global checker network. It records up/down state and response times, opens incidents when targets fail, and sends alerts through configurable contacts (email, SMS, Slack, webhooks, and more). A remote MCP server exposes the full monitor lifecycle to AI agents.
 
-UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availability, minimum interval, and monitor counts depend on the active plan. The MCP server enforces plan limits and returns error code `-28002` when a request exceeds them.
+Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`). Monitor-type availability, minimum interval, and monitor counts depend on the active plan. The MCP server enforces plan limits: `-28001` when the monitor limit is reached, `-28002` when an interval or monitor type exceeds the plan.
 
 ## MCP
 
-- [MCP server](https://mcp.uptimerobot.com/mcp): Remote HTTP MCP endpoint. Connect via `mcp-remote` (`npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp`) and authorize through the OAuth browser flow on first use — no API key to paste. (Headless/CI can use an `Authorization: Bearer <API_KEY>` header instead.)
+- [MCP server](https://mcp.uptimerobot.com/mcp): Remote streamable-HTTP MCP endpoint. Connect to the URL directly and authorize through the OAuth browser flow on first use — no API key to paste. (Headless/CI: see the README for a manual setup.)
 - [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, error codes, and agent conventions.
 - [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor plugin, skills, and this file.
 - [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect and authorize Claude Code with UptimeRobot via OAuth.
@@ -28,14 +28,14 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 - [Create monitor skill (UDP)](https://uptimerobot.com/skills/create-udp-monitor/SKILL.md): UDP port with optional payload and packet-loss threshold.
 - [Manage monitors skill](https://uptimerobot.com/skills/manage-monitors/SKILL.md): List, inspect, pause, resume monitors.
 - [Update monitor skill](https://uptimerobot.com/skills/update-monitor/SKILL.md): Rename, retarget, retag, swap alert contacts, and tweak type-specific settings on an existing monitor.
-- [List integrations skill](https://uptimerobot.com/skills/list-integrations/SKILL.md): Discover alert-contact IDs to attach to monitors.
+- [List integrations skill](https://uptimerobot.com/skills/list-integrations/SKILL.md): Discover integration IDs (Slack, webhook, etc.) to attach to monitors; the list also includes personal contacts, so dedupe by id. Personal contact IDs (email, SMS, voice, push) come from `list-alert-contacts`; each `assignedAlertContacts` item needs `alertContactId`, `threshold`, and `recurrence`.
 - [Bulk pause skill](https://uptimerobot.com/skills/bulk-pause/SKILL.md): Pause and resume many monitors at once during deploys.
-- [Manage monitor groups skill](https://uptimerobot.com/skills/manage-monitor-groups/SKILL.md): Choose between tags and monitor groups — group membership can't be read back through any tool, so tags (which are) are usually the better default.
+- [Manage monitor groups skill](https://uptimerobot.com/skills/manage-monitor-groups/SKILL.md): Choose between tags and monitor groups. Group membership is set with `groupId` on `create-monitor` / `update-monitor` (`0` = no group) or via `create-monitor-group`, and read with `list-monitors` `groupId`.
 - [Maintenance windows skill](https://uptimerobot.com/skills/maintenance-windows/SKILL.md): Schedule one-off or recurring windows that suppress alerts for planned downtime, as an alternative to bulk pause.
 
 ## Observability
 
-- [Incidents skill](https://uptimerobot.com/skills/incidents/SKILL.md): List and inspect downtime incidents with checker IPs, logs, traceroute.
+- [Incidents skill](https://uptimerobot.com/skills/incidents/SKILL.md): List and inspect downtime incidents with request logs, error details, and activity-log checker nodes.
 - [Incident response skill](https://uptimerobot.com/skills/incident-response/SKILL.md): End-to-end downtime triage, incident-comment timeline logging, and recovery verification.
 - [Stats skill](https://uptimerobot.com/skills/stats/SKILL.md): Aggregated uptime percentages and per-monitor response-time time series.
 - [Status pages skill](https://uptimerobot.com/skills/status-pages/SKILL.md): Publish a public status page from monitors, groups, or tags, and manage incident/maintenance announcements on it.
@@ -43,7 +43,7 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 
 ## Product
 
-- [Pricing](https://uptimerobot.com/pricing/): Free, Solo, Team, Enterprise tiers.
+- [Pricing](https://uptimerobot.com/pricing/): Current plans and tiers.
 - [Features](https://uptimerobot.com/features/): Monitor types, alert contacts, status pages.
 - [Public API v3](https://uptimerobot.com/api/v3): REST alternative to MCP for non-agent integrations.
 - [Help center](https://uptimerobot.com/help/): End-user documentation.

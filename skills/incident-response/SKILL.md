@@ -10,7 +10,7 @@ tags: [incidents, downtime, triage, response, runbook, uptimerobot]
 
 The full loop a user runs when something's on fire:
 
-1. Find what's down (`list-monitors` with `DOWN` filter).
+1. Find what's down (`list-monitors` with `DOWN` filter, plus `list-incidents` with `status: "open"`).
 2. Pull incident details for the worst offenders (`get-incident-details`).
 3. Optionally silence flapping monitors while the underlying issue is being fixed (`update-monitor-status` → `PAUSED`).
 4. Log findings as you go with incident comments (requires the `incident-comments` plan feature).
@@ -24,19 +24,21 @@ Use this when the user says "what's down?", "is production still broken?", "tria
 { "filter": ["DOWN"], "limit": 50 }
 ```
 
-Paginate until `hasMore: false`. Group the results by tag or friendly-name prefix before reporting — the user typically cares "what system is down", not "which individual checks are failing".
+Paginate until `hasMore: false` by repeating this call (same `filter`, `limit`) with `cursor` set to `nextCursor` — don't copy the call embedded in `instructions`, it drops the filter. Each item has `id`, `name`, `url`, `type`, `status`, `currentStateDuration`, `lastIncidentId`, and `tags`. Group the results by tag or `name` prefix before reporting — the user typically cares "what system is down", not "which individual checks are failing".
 
-Also surface `NOT_STARTED` monitors on request — they're not actively monitored but show up in downtime reports.
-
-### Active-only view
-
-To exclude paused and unstarted:
+`DOWN` by itself excludes paused monitors. To also catch monitors that are failing but not yet confirmed down, add `LOOKS_DOWN`:
 
 ```json
-{ "filter": ["DOWN"], "limit": 50 }
+{ "filter": ["DOWN", "LOOKS_DOWN"], "limit": 50 }
 ```
 
-(`DOWN` by itself excludes `PAUSED` / `NOT_STARTED` automatically.)
+### Ongoing incidents
+
+```json
+{ "status": "open", "limit": 50 }
+```
+
+Call `list-incidents` with `status: "open"` to get every ongoing incident with its `id`, `monitorId`, `monitorName`, `startedAt`, `cause`, and `reason`. It ignores `timeRange`, so an outage that started long ago is still returned.
 
 ## Step 2 — Pull recent incidents
 
@@ -46,36 +48,39 @@ For each down monitor that the user wants to dig into:
 { "monitorId": 800123456, "timeRange": "24h", "limit": 5 }
 ```
 
-Returns a list of incidents (active and resolved). Note `incidentId` is a **string**.
+Returns a list of incidents (active and resolved). Each `id` is a **numeric string** such as `"363693836190769146"`, and `duration` is text such as `"15m 55s"`, not seconds.
 
 Lead with the active (unresolved) incident, then show recently-resolved ones as flap history.
 
 ## Step 3 — Diagnose one incident
 
 ```json
-{ "incidentId": "inc_abcdef1234567890" }
+{ "incidentId": "363693836190769146" }
 ```
 
 Returns:
 
-- Per-checker probe results (location, IP, HTTP status, error kind, response body snippet).
-- Traceroute hops where available.
-- Start time, duration, and root-cause category if assigned.
+- `startedAt`, `endedAt` (not set while ongoing), `duration`, `cause` (a number, e.g. `401`), `reason`.
+- `checkerLocations[]` and `requestLogs[]` (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is not ISO 8601 (`"2026-09-30 14:44:48.587"`).
+- `errorDetails` — `primaryError`, `errorCount`, `affectedRegions`.
+
+`checkerLocations` and `affectedRegions` can come back empty — count regions from `requestLogs[].region` instead.
+
+No traceroute or root-cause category is returned. For the checker IP and city per check, call `get-incident-activity-log` (`entries[].remoteNode`). For who was notified, call `get-incident-alerts`.
 
 Useful output pattern:
 
-- "All 5 checker locations saw connection refused on port 443 starting at 14:02 UTC."
-- "2 of 5 checkers (NA, EU) see 503; 3 others see 200 — looks regional."
-- "First hop fails on traceroute — likely a firewall rule."
+- "All 5 checker regions saw connection refused on port 443 starting at 14:02 UTC."
+- "2 of 5 regions (NA, EU) see 503; 3 others see 200 — looks regional."
 
-Don't paste the full log body unless asked — summarise the error kind and HTTP status.
+Don't paste the full request logs unless asked — summarise `cause` / `reason` and the HTTP status.
 
 ## Step 4 — Log findings as an incident comment thread (optional)
 
 Requires the `incident-comments` plan feature. Rather than only reporting a final summary at the end, add a comment each time you learn something material — it builds a timeline other responders (and future you, writing the postmortem) can read directly on the incident:
 
 ```json
-{ "incidentId": "inc_abcdef1234567890", "content": "5/5 checkers see connection refused on :443 since 14:02 UTC. Not regional — looks like the LB is down." }
+{ "incidentId": "363693836190769146", "content": "5/5 checkers see connection refused on :443 since 14:02 UTC. Not regional — looks like the LB is down." }
 ```
 
 `incidentId` here is a BigInt passed as a numeric string (same value as `get-incident-details`). If you posted something and later learn it was wrong (e.g. misidentified root cause), fix it with `update-incident-comment` (needs the numeric `commentId` from the create response or `list-incident-comments`) rather than leaving a stale comment alongside a correction — the thread should read as a clean timeline, not a debug log.
@@ -104,7 +109,7 @@ Once the user says the fix is deployed, confirm the monitor is actually green.
 { "monitorId": 800123456 }
 ```
 
-Call `get-monitor-details`. Expect `status: UP` and a recent `lastCheckedAt`.
+Call `get-monitor-details`. Expect `status: UP` and a short `currentStateDuration` that grows on the next check (there is no last-checked timestamp).
 
 ### Aggregate over the window
 
@@ -115,10 +120,10 @@ Call `get-monitor-details`. Expect `status: UP` and a recent `lastCheckedAt`.
 Call `get-monitor-stats` to see if overall uptime % is recovering. Pair with `get-response-times` on the specific monitor:
 
 ```json
-{ "monitorId": 800123456, "timeRange": "1h", "bucketSize": "1m" }
+{ "monitorId": 800123456, "timeRange": "1h", "bucketSize": 60 }
 ```
 
-Look for response times returning to baseline, not just "up vs down".
+`bucketSize` is an integer number of seconds. Look at `summary.avg` / `summary.p95` returning to baseline, not just "up vs down".
 
 ### Resume anything you paused
 
@@ -147,13 +152,14 @@ Related monitors also down during window: `prod-api-healthz`, `prod-api-db`.
 ## Common mistakes
 
 - Showing raw checker logs without summarising. The user wants cause-and-impact, not JSON.
-- Forgetting to filter out `NOT_STARTED` monitors when reporting "what's down" — they're not an outage.
+- Reporting `LOOKS_DOWN` monitors as confirmed outages. Label them "possibly down" until they reach `DOWN`.
+- Finding active incidents by `timeRange` alone. Use `list-incidents` with `status: "open"`.
 - Pausing monitors and not tracking what you paused. Resuming requires the list.
 - Claiming recovery from `status: UP` alone. Check `get-response-times` — a monitor can be UP with 10x response time and still degraded.
 - Treating a resolved-then-retriggered incident as one event. Sometimes `list-incidents` returns two rows for a flap.
 - Requesting `timeRange` > 90 days. Max is 90d.
 - Leaving an incorrect incident comment uncorrected instead of using `update-incident-comment` — the thread is the record other people read.
-- Trying to comment on an incident when the account's plan lacks the `incident-comments` feature — check for `-28002` and fall back to reporting in chat only.
+- Trying to comment on an incident when the account's plan lacks the `incident-comments` feature — if the call fails with `-28002` or an error message that mentions the plan or `incident-comments`, fall back to reporting in chat only.
 
 ## Related
 

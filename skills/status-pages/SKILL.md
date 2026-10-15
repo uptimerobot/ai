@@ -10,7 +10,9 @@ tags: [status-page, psp, announcements, public, uptimerobot]
 
 Use this when the user says "set up a status page", "publish uptime for customers", "post a maintenance notice on the status page", or "let people know we're investigating".
 
-Two linked resources: the **page** itself (`create/update/get/list-psp`) and **announcements** posted to it (`create/update/get/list/pin/unpin-psp-announcement`, requires the `psp-subscribers` plan feature).
+Two linked resources: the **page** itself (`create/update/get/list/delete-psp`) and **announcements** posted to it (`create/update/get/list/pin/unpin/delete-psp-announcement`, requires the `psp-subscribers` plan feature).
+
+`delete-psp` and `delete-psp-announcement` are permanent and cannot be undone (deleting a page also makes its announcements unreadable). Confirm the account with `get-user` first, and get explicit user confirmation before calling either.
 
 ## Step 1 — Decide what populates the page
 
@@ -20,28 +22,35 @@ Two linked resources: the **page** itself (`create/update/get/list-psp`) and **a
 | -- | -- |
 | `monitorIds` | Explicit list. Ignored if `autoAddMonitors: true`. The only field that populates the response's `monitorIds` array. |
 | `monitorGroupIds` | Resolves group membership into `monitorsCount` correctly (verified) — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md). |
-| `tagIds` | Resolves tagged monitors into `monitorsCount` correctly (verified). |
-| `autoAddMonitors: true` | Every *current* monitor on the account (`monitorsCount` matches the account's full monitor total). Per the tool description it also auto-adds *future* monitors, though that part isn't independently confirmed. Ignores `monitorIds`. |
+| `tagIds` | Resolves tagged monitors into `monitorsCount` correctly (verified). Takes numeric tag IDs from `list-tags`, not tag names. |
+| `autoAddMonitors: true` | Every *current* monitor on the account (`monitorsCount` matches the account's full monitor total). The schema only says "all monitors are added automatically" — whether monitors created later are also added isn't stated, so don't promise it. Ignores `monitorIds`. |
 
 **`monitorGroupIds`/`tagIds` resolve into `monitorsCount` but the `monitorIds` array in the response stays empty.** Don't read an empty `monitorIds` on a group/tag-scoped page as "no monitors are showing"; check `monitorsCount` instead. `autoAddMonitors: true` is stranger still: `monitorIds` comes back as `[0]` (a sentinel, not the real list and not `[]`) — don't read anything into that value on an auto-add page either.
 
-**Side effect worth knowing about, not a recommended workflow:** `monitorsCount` reflects real group membership, so a page scoped by `monitorGroupIds: [<id>]` indirectly reveals how many monitors are in a group — [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) has no direct read for this. But don't reach for this casually: since `create-psp` ignores `status: PAUSED` (below), the page is genuinely public the moment it's created, exposing real monitor topology/counts. Get explicit user confirmation before creating a page for this purpose, and immediately pause it afterward — don't do this autonomously as a routine check.
+**Side effect worth knowing about, not a recommended workflow:** `monitorsCount` reflects real group membership, so a page scoped by `monitorGroupIds: [<id>]` indirectly reveals how many monitors are in a group — [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) has no direct read for this. But don't reach for this casually: the page is public the moment it's created (see Step 2), exposing real monitor topology/counts. Get explicit user confirmation before creating a page for this purpose, and immediately pause it afterward — don't do this autonomously as a routine check.
 
 Ask before using `autoAddMonitors: true` — it's convenient but means internal/staging monitors show up on a public page unless the user is deliberate about it, and it touches every monitor on the account.
 
-## Step 2 — Create, then immediately unpublish if you want a draft
+## Step 2 — Create, unpublish, then add monitors
+
+`status` takes `PAUSED` or `ENABLED`, but **`create-psp` ignores `status: PAUSED`**: a new page is always created `ENABLED` (public) and stays public until `update-psp` pauses it. There is no way to create a page that is never public. If the user wants to review before going live, keep that public moment harmless:
+
+1. Create the page with no monitors (or with a `password`):
 
 ```json
-{ "friendlyName": "Acme API Status", "monitorIds": [800111, 800222], "status": "PAUSED" }
+{ "friendlyName": "Acme API Status" }
 ```
 
-**`create-psp` ignores `status: PAUSED`.** The page is created `ENABLED` (public) regardless of what you pass. If the user wants to review before going live, you must immediately follow up with a second call:
+2. Immediately unpublish it with `update-psp`:
 
 ```json
 { "pspId": 900123, "status": "PAUSED" }
 ```
 
-(via `update-psp` — that one *does* respect `status`.) Confirm with `get-psp` that it actually landed as `PAUSED` before telling the user the page is a private draft. Skipping this means a half-configured page (wrong monitors, no password) is public from the moment it's created.
+3. **Always** confirm with `get-psp`. Only tell the user the page is a private draft once `get-psp` shows `PAUSED`.
+4. Add the monitors with `update-psp` (`monitorIds`, `monitorGroupIds`, or `tagIds`), then re-check with `get-psp`.
+
+Creating with the monitors already attached means a half-configured page (real monitors, no password) is public from the moment it's created until the pause lands.
 
 Things MCP **cannot** do — tell the user to use the dashboard instead:
 - Upload a logo or favicon.
@@ -66,10 +75,21 @@ Announcement `status` has four states and only `pspId` is schema-required. **The
   "title": "Investigating elevated error rates",
   "content": "We're seeing increased 5xx errors on the API. Investigating.",
   "type": "Issue",
-  "status": "Published",
-  "startDate": "2026-07-02T14:05:00Z"
+  "status": "Published"
 }
 ```
+
+To publish immediately on create, set `status: Published` and **omit `startDate`** — the server stamps the current time; don't invent one. To schedule for later, send a future `startDate` and leave `status` unset (it defaults to `Pending` until the scheduled time).
+
+**Announcements may notify the page's subscribers.** Created and published announcements come back with `deliveryStatus: "InQueue"` — observed even on a `PAUSED` page — which suggests notifications to subscribers are queued. Whether they are actually sent hasn't been verified. On a page that has subscribers, tell the user and get confirmation before creating or publishing an announcement.
+
+**Updating an existing announcement** (`update-psp-announcement`, only provided fields change):
+
+- Publish now: `status: Published` **and** `startDate` set to the current UTC time — an omitted `startDate` keeps the stored schedule.
+- Reschedule: a future `startDate` **and** `status: Pending`. Only `Pending` announcements publish when their time arrives, so a future `startDate` alone on a `Published` announcement does not reschedule it.
+- Take down: `status: Offline` or `Archived`.
+
+**Date format.** `startDate`/`endDate` must be UTC ISO 8601 ending in `Z` — `YYYY-MM-DDTHH:mm:ssZ` (fractional seconds allowed) or `YYYY-MM-DDTHH:mmZ`. Offsets like `+02:00` are rejected; convert to UTC first. `endDate` may be `null` for no end.
 
 `type` is `Info`, `Maintenance`, or `Issue` — pick `Issue` for incident updates, `Maintenance` for planned work (cross-reference [`maintenance-windows`](../maintenance-windows/SKILL.md) if the user is also scheduling one), `Info` for everything else.
 
@@ -95,11 +115,14 @@ User: "We're down, post something on the status page and let me know when it's r
 
 ## Common mistakes
 
-- Assuming `create-psp` with `status: PAUSED` produces a draft — it doesn't; the page goes live immediately and needs a follow-up `update-psp` call to actually unpublish.
+- Passing `status: PAUSED` to `create-psp` and assuming it produced a draft — create ignores it and the page is public. Create without monitors (or with a password), `update-psp` `{pspId, status: "PAUSED"}`, confirm with `get-psp`, then add monitors.
 - Publishing (`status: ENABLED`) before the user has reviewed which monitors are included — internal monitors leak onto a public page.
 - Setting `autoAddMonitors: true` without asking — it includes every *current* monitor on the account; confirm before using since it also touches every internal/staging monitor.
 - Creating an announcement with only `pspId` set expecting a safe draft — it saves as `Pending` with `startDate: now`, which will auto-publish blank once the background job runs (not instantly, but not a stable draft either). Always fill `title` + `content` + `type` + `status`.
 - Assuming a `Pending` announcement checked moments after creation is stuck/broken because it hasn't auto-published yet — the transition job runs asynchronously; give it time before concluding it's not working.
+- Creating or publishing an announcement on a page with subscribers without asking — it may queue notifications to them (`deliveryStatus: "InQueue"`), even when the page is paused.
+- Hard-coding a `startDate` on a `status: Published` create — omit it and let the server stamp the time. Sending a future `startDate` alone to reschedule a `Published` announcement — also set `status: Pending`.
+- Sending dates with a timezone offset (`+02:00`) — use UTC with a trailing `Z`.
 - Leaving a resolved incident announcement pinned and `Published` — archive and unpin once it's over.
 - Promising logo upload or custom-domain DNS setup via MCP — both require the dashboard.
 

@@ -4,128 +4,128 @@
     {
       "name": "bulk-pause",
       "type": "skill-md",
-      "description": "Pause (or resume) many UptimeRobot monitors at once — by tag, search term, or state — around a deployment or maintenance window.",
+      "description": "Pause (or resume) many UptimeRobot monitors at once — by tag, name, URL, or state — around a deployment or maintenance window.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/bulk-pause/SKILL.md",
-      "digest": "sha256:a7d6e1906f63b0b9fecb316eb0de5127b33175eef5cbad299421a70246fd7a61"
+      "digest": "sha256:1cf69f450cffc3dacf937fb5809934a082d8258d820b0b142b00b057c95d71ec"
     },
     {
       "name": "conventions",
       "type": "skill-md",
       "description": "Conventions and gotchas for every UptimeRobot MCP tool call — monitor types, URL formats, HEARTBEAT URL handling, discovery-before-writes, pagination, time ranges, error codes, and output style. Use whenever you call any uptimerobot:* tool.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/conventions/SKILL.md",
-      "digest": "sha256:374f432a0a6c9fdb8d41802278cfbb12907c1842765529a7639d121cdb8a1bd9"
+      "digest": "sha256:f18b4c598feec294fc70bd56e3d5d58cb4b5d59db0e77249189e8058b65df489"
     },
     {
       "name": "create-api-monitor",
       "type": "skill-md",
-      "description": "Create an API monitor that calls an HTTP endpoint and runs up to five JSON/header assertions combined with AND/OR logic; alerts when assertions fail.",
+      "description": "Create an API monitor that calls an HTTP endpoint and runs 1–5 assertions on the response, combined with AND/OR logic; alerts when they fail.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-api-monitor/SKILL.md",
-      "digest": "sha256:5bd8432dd21f630c2be6b2ed9d7b0f62034443b665e2d21af646d439f56c8b0a"
+      "digest": "sha256:4c58644fd934c97e4889359f846078327348b2220e874ac44ee4e505cb84c737"
     },
     {
       "name": "create-dns-monitor",
       "type": "skill-md",
-      "description": "Create a DNS monitor that resolves records for a domain and alerts when they change or the DNS server does not respond.",
+      "description": "Create a DNS monitor that queries a domain and alerts when the DNS server does not answer or, optionally, when records differ from expected values.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-dns-monitor/SKILL.md",
-      "digest": "sha256:be85b5fd74a9dfdfcf8d7df3f8862e28686de068331ddc575c3b5970f03008d1"
+      "digest": "sha256:a352c88a0befea0154808778cca6663a49803f0615f875671cd219b72202ab08"
     },
     {
       "name": "create-heartbeat-monitor",
       "type": "skill-md",
-      "description": "Create a HEARTBEAT monitor (cron/job monitor) that expects the target to ping a generated URL on a schedule; alerts when expected pings stop arriving.",
+      "description": "Create a HEARTBEAT (cron/job) monitor: UptimeRobot generates a URL that the job must ping on schedule, and alerts when the pings stop.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-heartbeat-monitor/SKILL.md",
-      "digest": "sha256:bd39d05df51ebeb72fda79d090bcb2d6fc2e21ae233453534f3d2cb8c7b51a73"
+      "digest": "sha256:771e15a3f50d8fd7963c123758fffd9503d5595a4461d0e8c3dda9436eaa1823"
     },
     {
       "name": "create-http-monitor",
       "type": "skill-md",
-      "description": "Create an HTTP monitor in UptimeRobot to check that a URL returns a successful response on an interval.",
+      "description": "Create an HTTP monitor in UptimeRobot that checks a URL for a successful HTTP response on an interval.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-http-monitor/SKILL.md",
-      "digest": "sha256:6312e052e18d3eded30d933344d18914f2d2a933248c72569f27607d03e8e280"
+      "digest": "sha256:cd64fd56da66100164ac474083d1e91a9c067118670d30933fc1a985d85c6ea5"
     },
     {
       "name": "create-keyword-monitor",
       "type": "skill-md",
-      "description": "Create a KEYWORD monitor that fetches a URL and alerts when a given keyword appears (or is missing) in the response body.",
+      "description": "Create a KEYWORD monitor that fetches a URL and alerts when a given keyword appears in, or is missing from, the response.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-keyword-monitor/SKILL.md",
-      "digest": "sha256:8ca516577e822791bf23aa7c54ae6da2fd006c6e7a68447eee132772c5ab03c0"
+      "digest": "sha256:f74f5808ab944095b4d729726d03d3fc1e2f7be757de400990cd00bed32c3733"
     },
     {
       "name": "create-ping-monitor",
       "type": "skill-md",
-      "description": "Create a PING monitor that sends ICMP echo requests to a hostname or IP and alerts on packet loss / timeout.",
+      "description": "Create a PING monitor that sends ICMP echo requests to a hostname or IP and alerts when the host stops responding.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-ping-monitor/SKILL.md",
-      "digest": "sha256:2cb19b8d3acdaf8327e92937b5003144767997a24d9ebe12747808bf1b1d6099"
+      "digest": "sha256:a6f0fc718eda171e21abcdefd2b48b150086154780fd440b2f99738cdfcd57f7"
     },
     {
       "name": "create-port-monitor",
       "type": "skill-md",
-      "description": "Create a PORT monitor that opens a TCP connection to a host:port and alerts when the port is not accepting connections.",
+      "description": "Create a PORT monitor that opens a TCP connection to a host and port and alerts when the port stops accepting connections.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-port-monitor/SKILL.md",
-      "digest": "sha256:a36835be942794ef26445f3919ce412cf79afcf41c36c91bd56436edc1d464fa"
+      "digest": "sha256:3123c2c14686a9feed01a406be3ffbbd50b99b42eaa1007132c401f182c28bb9"
     },
     {
       "name": "create-udp-monitor",
       "type": "skill-md",
-      "description": "Create a UDP monitor that sends a UDP packet to a host:port and optionally checks the response keyword or packet-loss threshold.",
+      "description": "Create a UDP monitor that sends a packet to a host and port and alerts on no response, with optional payload, response keyword and packet-loss threshold.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-udp-monitor/SKILL.md",
-      "digest": "sha256:88045a134443edfb3cd5c59fef37cb568f1077f3d499459c92cce7b7644fb216"
+      "digest": "sha256:7d46934d440a2abab78f8f409932484ecea123fd23d003bfb91ee974a30e6cab"
     },
     {
       "name": "errors",
       "type": "skill-md",
-      "description": "Handle UptimeRobot MCP errors — codes, meanings, retry policy, and user-facing recovery suggestions.",
+      "description": "Interpret UptimeRobot MCP errors — map the plain-text messages to their meaning, decide whether to retry, and tell the user how to recover.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/errors/SKILL.md",
-      "digest": "sha256:fc94651287aef392c8e53ba90f43ea7bc28c1387eb0552487c777312d62feaf2"
+      "digest": "sha256:82ec7766da174a791d6b1125f540140467e633b4192133f550ef15d411696dd1"
     },
     {
       "name": "incident-response",
       "type": "skill-md",
       "description": "End-to-end incident workflow — find what's down, diagnose it, pause flapping monitors, and verify recovery.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/incident-response/SKILL.md",
-      "digest": "sha256:3ffb691cee5d03c172a268e2954c53d5c29542b23c2d0a4a2b11044ced5e1949"
+      "digest": "sha256:ae841b87b01368f046ea617c76146fb2d152c548736056c8edc443f934edd71a"
     },
     {
       "name": "incidents",
       "type": "skill-md",
-      "description": "List downtime incidents and fetch per-incident checker locations, IPs, logs, and traceroute data.",
+      "description": "List downtime incidents (including ongoing ones) and read one incident's details, activity log, and sent alerts.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/incidents/SKILL.md",
-      "digest": "sha256:a9d350be579e2ee83197edcd27a1b1e90346d2fb280c2521e009fc2941e188ec"
+      "digest": "sha256:4e29f69378ca484d608a2e702ac922503c7ff163df40ff4f672b3047a2002742"
     },
     {
       "name": "list-integrations",
       "type": "skill-md",
-      "description": "List the alert-contact integrations configured on the UptimeRobot account so you can attach them to new or existing monitors.",
+      "description": "Find the alert-contact IDs (integrations such as Slack or webhooks, plus personal email/SMS/voice/push contacts) to attach to UptimeRobot monitors.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/list-integrations/SKILL.md",
-      "digest": "sha256:637758b549d7ab49d576a76da2ae71cf7255d4a55e5051e0fd4e6b5c2dc6d931"
+      "digest": "sha256:5f5be02135173738bc85be7cd21c271ceb519be4fc9ecfc024bc1f6ea1d26294"
     },
     {
       "name": "maintenance-windows",
       "type": "skill-md",
       "description": "Schedule one-off or recurring maintenance windows that suppress alerts for planned downtime, as an alternative to bulk-pause.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/maintenance-windows/SKILL.md",
-      "digest": "sha256:dc956cfc29e8facb0fe0dba10aa0438037473cfabf4407fd896342580494dc45"
+      "digest": "sha256:b9085b8f972f66a891e1a9544b7d2f33a3a133f0481c359203afc26702ebc582"
     },
     {
       "name": "manage-monitor-groups",
       "type": "skill-md",
-      "description": "Choose between monitor groups and tags for organizing monitors — group membership is opaque and write-only over MCP, so tags are usually the better default.",
+      "description": "Choose between monitor groups and tags for organizing monitors, and create, fill, move between, or delete monitor groups. Tags are usually the better default.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/manage-monitor-groups/SKILL.md",
-      "digest": "sha256:b287375743f574d7ea27a25f92a0a2ea73122aabece1fa2e33b4ebc1bc57b0d1"
+      "digest": "sha256:fae661db97a1f3b0336d9c1b827fee94b54950a8f5f9197640eb0d57aa2c5fe5"
     },
     {
       "name": "manage-monitors",
       "type": "skill-md",
-      "description": "List monitors, fetch details, and pause or resume monitors in UptimeRobot.",
+      "description": "Find monitors with list-monitors filters, read one monitor's details, and pause or resume monitors in UptimeRobot.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/manage-monitors/SKILL.md",
-      "digest": "sha256:fe56d2f79b4784c3945eece4087f42d84eea21d1950834a42cc973a954d97b1d"
+      "digest": "sha256:c22c901df6a9dee6b4d20ede0f73bc6ca1538b634e690390a62b7bfd6a7490ad"
     },
     {
       "name": "monitor-health-summary",
       "type": "skill-md",
-      "description": "Generate a one-shot health snapshot — monitor counts by state, which are currently down, recent incident count, and total downtime — useful as a daily brief or ad-hoc check.",
+      "description": "Generate a one-shot health snapshot — monitor counts by state, which are currently down or paused, recent incident count, and total downtime — useful as a daily brief or ad-hoc check.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/monitor-health-summary/SKILL.md",
-      "digest": "sha256:5f503e9f3573c8debb444eafb80fd0ed8a75146c3f8fb24a4701d408bfab3c46"
+      "digest": "sha256:181397f380665d6fcd283833d9ab4c71ac53334b053f8132643bc0dc67102e39"
     },
     {
       "name": "quick-monitor-setup",
@@ -137,37 +137,37 @@
     {
       "name": "setup",
       "type": "skill-md",
-      "description": "Connect and authenticate the UptimeRobot MCP server (OAuth via mcp-remote), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` auth errors or first-time setup.",
+      "description": "Connect and authenticate the hosted UptimeRobot MCP server (OAuth over streamable HTTP), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` or plain-text auth errors (unauthorized, unauthenticated, token expired / invalid) or first-time setup.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/setup/SKILL.md",
-      "digest": "sha256:cda5acaa06bc709560cc972eaa4941919d6b1ce2b6c1f5b01254ed5460598ab0"
+      "digest": "sha256:47bd99433fca5601da8fcaa4e2056593546048c6572dfcec8bdd00ca558e205e"
     },
     {
       "name": "sla-report",
       "type": "skill-md",
       "description": "Generate a per-monitor SLA report for a time range — uptime percentage, total downtime, and incident count per monitor — formatted as Markdown for sharing in Confluence, Slack, or post-mortem docs.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/sla-report/SKILL.md",
-      "digest": "sha256:c22ddc259222d7e7d8e6f4ca39a9962ce7add5478e734f41078181d013134e6c"
+      "digest": "sha256:7faefc1bc8ef09abb0a54a9b3da10df61c8442b67957f291a7cd910813827154"
     },
     {
       "name": "stats",
       "type": "skill-md",
-      "description": "Query aggregated monitor statistics (up/down/paused counts, uptime percentage) and per-monitor response-time time series.",
+      "description": "Read account-wide monitor statistics (up/down/paused counts, uptime, incident totals) and per-monitor response-time series, and report the numbers in the right units.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/stats/SKILL.md",
-      "digest": "sha256:c941627290c06e4f150277bb41713a644d6a19be2eee759c5b95af3f8a28b370"
+      "digest": "sha256:56d1e330fc65ea61003df1e47c689eaeded66594ff2a4213a9359b874a89dff8"
     },
     {
       "name": "status-pages",
       "type": "skill-md",
       "description": "Create and publish a public status page from monitors, groups, or tags, and manage announcements (incident, maintenance, info notices) on it.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/status-pages/SKILL.md",
-      "digest": "sha256:b27b8fb22cacbf19c8233900f50ad215f43731a1f4a3e54c37823942751a19a6"
+      "digest": "sha256:1f8f0e36d7346ede0d6041d29d599e72d4c55e81bcea1e8bc924c2da8efe93e1"
     },
     {
       "name": "update-monitor",
       "type": "skill-md",
-      "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, tweak HTTP/keyword/API/heartbeat settings, and toggle SSL or domain reminders.",
+      "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, move between groups, and tweak type-specific settings — without losing the lists it replaces.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/update-monitor/SKILL.md",
-      "digest": "sha256:2cdab4bc3465d58a39d7152a61f084ef3ce596f6c7e9a256a736f97ad2810812"
+      "digest": "sha256:ff9dc59292c0b3c4d5c21c0d72b068fcd7e1df39a2ca01909fdaa2ed86082be9"
     }
   ]
 }
