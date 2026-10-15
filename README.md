@@ -10,7 +10,7 @@ This repo is UptimeRobot's single source of truth for AI agent integrations. It 
 - `**.mcp.json**` — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
 - `**codex.mcp.json**` — Codex-format MCP server config (`mcp_servers` snake_case key, referenced explicitly by the Codex manifest).
 - `**.agents/plugins/marketplace.json**` — repo-scoped Codex marketplace for local install and testing; Codex auto-discovers this file when the repo is open.
-- `**assets/logo.png**` — marketplace logo, declared as the `icon` in the Cursor and Codex manifests (Claude Code's plugin manifest has no icon field; the directory listing supplies its icon at submission time).
+- **The assets folder** — the marketplace logo, declared as the icon in the Cursor and Codex manifests (Claude Code's plugin manifest has no icon field; the directory listing supplies its icon at submission time).
 
 The `mcp.json`, `.mcp.json`, and `codex.mcp.json` files all connect directly to the hosted server at `https://mcp.uptimerobot.com/mcp` over streamable HTTP. Nothing runs locally: the client discovers the server's OAuth endpoints and runs the browser login itself. Three filenames exist only because Claude Code, Cursor, and Codex each expect their own convention (and Codex requires `mcp_servers` in snake_case rather than `mcpServers`).
 
@@ -116,8 +116,6 @@ Clients without registry support can connect to the same URL directly (OAuth on 
   }
 }
 ```
-
-Clients that only support local (stdio) servers can use the third-party [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge: `npx -y mcp-remote@0.15.1 https://mcp.uptimerobot.com/mcp`.
 
 #### Headless / CI (no browser)
 
