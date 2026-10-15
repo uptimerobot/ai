@@ -37,7 +37,7 @@ Show that URL to the user so they can wire it into their cron / job.
 
 ## Common optional params
 
-- `interval` — how often the job is expected to ping (seconds, 30–86400). Required for this monitor to be useful; without it, defaults apply but may not match the user's schedule.
+- `interval` — how often the job is expected to ping (seconds, up to 2678400 / 31 days). The minimum depends on the plan; too low returns `-28002 subscription_limit_exceeded`. Required for this monitor to be useful; without it, defaults apply but may not match the user's schedule.
 - `gracePeriod` — seconds of tolerance past `interval` before marking down (0–86400). Use this for jobs with variable duration.
 - `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds` — same as other types.
 

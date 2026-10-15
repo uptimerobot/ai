@@ -36,7 +36,7 @@ IP addresses work too:
 ## Common optional params
 
 - `interval`, `timeout`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds` — same as HTTP.
-- `config.ipVersion` — force `IPv4` or `IPv6`. Defaults to auto.
+- Do **not** send `config.ipVersion` — `create-monitor` only accepts it on HTTP / KEYWORD monitors. To probe over IPv6, pass an IPv6 literal (or an AAAA-only hostname) as `url`.
 
 ## Example with IPv6
 
@@ -45,13 +45,13 @@ IP addresses work too:
   "friendlyName": "Public DNS v6",
   "type": "PING",
   "url": "2001:4860:4860::8888",
-  "config": { "ipVersion": "IPv6" },
   "interval": 120
 }
 ```
 
 ## Common mistakes
 
+- Sending `config.ipVersion` (or the values `IPv4` / `IPv6`) — rejected with `-29001`. PING has no IP-version setting.
 - Passing `https://host.example.com` — PING requires a bare hostname or IP. Strip the scheme and path.
 - Expecting content or status code checks — PING cannot do those. Use HTTP / KEYWORD / API instead.
 - Hostname must resolve publicly. Internal-only hostnames will always be down; use a reachable public name or a public IP.

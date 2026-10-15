@@ -6,7 +6,7 @@ tags: [errors, troubleshooting, rate-limit, uptimerobot]
 
 # Errors
 
-The UptimeRobot MCP server returns structured JSON-RPC errors with numeric codes. Map them to user-facing messages rather than echoing raw codes.
+The UptimeRobot MCP server may return structured JSON-RPC errors with numeric codes, but most tool errors arrive as **plain text with no code** (for example `Monitor not found or access denied`). Map either form to the recovery recipes below, and give the user a plain explanation rather than echoing raw codes.
 
 ## Error codes
 
@@ -21,6 +21,21 @@ The UptimeRobot MCP server returns structured JSON-RPC errors with numeric codes
 | `-31002` | `access_denied` | No | The authorized account doesn't have permission for the requested action (e.g. a write tool with read-only access). |
 | `-32603` | `internal` | Maybe | Unexpected server error. One retry with backoff is fine; escalate on repeat. |
 | HTTP `429` | rate limit | Yes | Back off with exponential delay + jitter, then retry. |
+
+## Plain-text errors — map by message
+
+When the error has no numeric code, match on the message text (case-insensitive) and treat it as the code in the table above:
+
+| Message contains | Treat as | Example |
+| -- | -- | -- |
+| `Invalid parameters` | `-29001` | `Invalid parameters: [field]: reason` — names the offending field |
+| `Monitor not found` (incl. `or access denied`) | `-30001` | `Monitor not found or access denied` |
+| `<something> not found` (alert contact, incident, maintenance window, …) | `-30003` | `Alert contact not found`, `Incident not found` |
+| plan, limit, upgrade, or a feature name (`incident-comments`, `maintenance-window`, …) | `-28001` if about the monitor count, else `-28002` | |
+| `access denied`, `forbidden`, `read-only` (without "not found") | `-31002` | Call `get-user` first and check `account.accessLevel` — if the session can write, the cause is something else (often a wrong ID). |
+| `unauthorized`, `unauthenticated`, `token` (expired / invalid / missing) | `-31001` | Invoke `uptimerobot:setup`. |
+
+If nothing matches, show the message to the user as-is and don't retry.
 
 ## Recovery recipes
 
@@ -55,7 +70,7 @@ Fix the payload and resend.
 
 ### `-30001` / `-30003` not found
 
-Do not retry. Call `list-monitors` (or `list-integrations`) to discover valid IDs and retry with a correct one. If the user typed the ID, it may belong to a different UptimeRobot account.
+Do not retry the same call. Find a valid ID with the matching discovery tool — `list-monitors` for monitors, `list-alert-contacts` + `list-integrations` for alert contacts, `list-incidents` for incidents — then make a new call with that ID. If the user typed the ID, it may belong to a different UptimeRobot account.
 
 ### `-31001` unauthenticated
 
@@ -63,7 +78,7 @@ Do not retry the call. Immediately invoke the `uptimerobot:setup` skill — it r
 
 ### `-31002` access denied
 
-Do not retry the call. The authorized account lacks write permission for this action. Invoke the `uptimerobot:setup` skill to re-authenticate with an account that has write access.
+Do not retry the call. Call `get-user` and check `account.accessLevel` to confirm the session really is read-only. If it is, the authorized account lacks write permission for this action — invoke the `uptimerobot:setup` skill to re-authenticate with an account that has write access.
 
 ### HTTP 429 rate limit
 
@@ -85,4 +100,5 @@ Cap at ~5 attempts; if still throttled, surface the issue to the user. Bulk loop
 ## Related
 
 - `manage-monitors` — for discovering correct IDs after `-30001`.
+- `setup` — re-authenticate after `-31001` or an unauthorized / token-expired message.
 - `create-*-monitor` — each lists type-specific forbidden fields that trigger `-29001`.

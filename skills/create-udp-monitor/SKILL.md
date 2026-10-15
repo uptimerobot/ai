@@ -27,9 +27,9 @@ Use for UDP-based services — DNS (as a generic UDP check, not the DNS record m
 ## Common optional params
 
 - `config.udp.payload` — UDP payload to send. Some services only respond to specific probe bytes.
-- `config.udp.packetLossThreshold` — number. Packet-loss percentage above which the monitor is considered down.
+- `config.udp.packetLossThreshold` — number, **required whenever `config.udp` is sent** (omitting it is rejected with `-29001`). Packet-loss percentage above which the monitor is considered down.
 - `keywordValue` — expected substring in the response payload. Leave off if the service echoes anything or you only care about reachability.
-- `config.ipVersion` — `IPv4` / `IPv6`.
+- Do **not** send `config.ipVersion` — `create-monitor` only accepts it on HTTP / KEYWORD monitors.
 - `timeout`, `interval`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
 
 ## Example with payload and keyword

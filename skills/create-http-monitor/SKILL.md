@@ -25,18 +25,19 @@ Use when the user wants to monitor a website or HTTP(S) endpoint for reachabilit
 
 ## Common optional params
 
-- `interval` — seconds between checks (30–86400). Defaults to the plan's default. Free-plan minimum is higher than paid plans.
+- `interval` — seconds between checks, max 86400. The minimum depends on the plan (Free is higher than paid plans). Defaults to the plan's default.
 - `timeout` — request timeout in seconds (1–60).
-- `httpMethodType` — one of `HEAD`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`.
+- `httpMethodType` — one of `HEAD`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `QUERY`.
 - `authType` — `NONE` (default), `HTTP_BASIC`, `DIGEST`, `BEARER`. Pair with `httpUsername` / `httpPassword`.
 - `customHttpHeaders` — object, e.g. `{"X-Source": "uptimerobot"}`.
 - `successHttpResponseCodes` — array of strings that count as success, e.g. `["200", "201", "2xx"]`.
 - `followRedirections` — boolean, defaults to `true`.
 - `checkSSLErrors` — boolean, validates cert errors when `true`.
 - `sslExpirationReminder` / `domainExpirationReminder` — boolean flags for expiry alerts.
-- `responseTimeThreshold` — milliseconds; 0 disables slow-response alerts.
+- `responseTimeThreshold` — milliseconds, 100–60000 on create. Omit it to leave slow-response alerts off; `0` is rejected by `create-monitor` (it only disables via `update-monitor`).
+- `config.ipVersion` — `"ipv4Only"` or `"ipv6Only"` (HTTP / KEYWORD only on create; `IPv4` / `IPv6` are rejected).
 - `assignedAlertContacts` — see below.
-- `tagNames` — array of tag strings (max 20, ≤50 chars each).
+- `tagNames` — array of tag strings.
 - `maintenanceWindowsIds` — array of maintenance window IDs.
 
 ## Alert contacts
@@ -48,7 +49,7 @@ Use when the user wants to monitor a website or HTTP(S) endpoint for reachabilit
 ]
 ```
 
-`alertContactId` values come from `list-integrations`. `threshold` = minutes of downtime before this contact fires. `recurrence` = re-notify every N minutes while still down.
+Each item requires `alertContactId`, `threshold`, and `recurrence`. `alertContactId` (string or number) comes from `list-integrations` (Slack, webhook, PagerDuty, …) or `list-alert-contacts` (email, SMS, voice, push). `threshold` = minutes of downtime before this contact fires (0–1440). `recurrence` = re-notify every N minutes while still down (0–10080, `0` = no repeat).
 
 ## Full example with auth + headers
 
@@ -77,11 +78,12 @@ Use when the user wants to monitor a website or HTTP(S) endpoint for reachabilit
 - Passing a bare hostname (`"api.example.com"`) — HTTP monitors require a full URL with scheme. Use `PING` for hostname-only checks.
 - Sending numeric `type: 1` — MCP only accepts the string `"HTTP"`.
 - Listing forbidden fields like `port` or `gracePeriod` on an HTTP monitor. The server rejects with `-29001 invalid_parameters`.
+- Sending `responseTimeThreshold: 0` on create — the minimum is 100. Omit the field instead.
 - Setting `interval` below the plan minimum. Returns `-28002 subscription_limit_exceeded`.
 
 ## After creation
 
-Call `get-monitor-details` with the returned monitor id to confirm stored config. Read-after-write can lag a few seconds.
+Call `get-monitor-details` with the numeric `id` from the `create-monitor` response (pass it as an integer, not a string) to confirm stored config. Read-after-write can lag a few seconds: if it returns `Monitor not found` right after a successful create, wait ~3–5s and retry once before reporting a problem — do not call `create-monitor` again.
 
 ## Related
 

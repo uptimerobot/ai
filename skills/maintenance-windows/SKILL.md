@@ -37,10 +37,16 @@ Default to a maintenance window whenever the downtime is planned ahead of time o
 }
 ```
 
-- `date`/`time` are the **first** occurrence; `time` is UTC — confirm the user's intended timezone and convert before calling.
-- `days` is **required** for `weekly` (1–7, ISO weekday) and `monthly` (1–31, or `-1` for "last day of the month") recurrence. Omitting it on a recurring window is a validation error, not a silent default.
-- `duration` is minutes the window stays active from the daily start time — not an end date.
-- `autoAddMonitors: true` includes every monitor, including ones created later. Confirm with the user before using it — it's easy to end up suppressing alerts for something unrelated.
+- `date`/`time` are the **first** occurrence. `date` is `YYYY-MM-DD`; `time` is `HH:mm:ss` in UTC — confirm the user's intended timezone and convert before calling.
+- `days` is **required** for `weekly` (1–7) and `monthly` (1–31, or `-1` for "last day of the month") recurrence. Omitting it on a recurring window is a validation error, not a silent default. The schema doesn't say which weekday `1` is — after creating a weekly window, read it back with `get-maintenance-window` and confirm the schedule with the user rather than assuming a mapping.
+- `duration` is minutes the window stays active from each occurrence's start time — not an end date.
+- `autoAddMonitors: true` automatically includes all monitors (the schema doesn't say whether monitors created later are added too). Confirm with the user before using it — it's easy to end up suppressing alerts for something unrelated.
+
+## Reading and deleting windows
+
+- `list-maintenance-windows` — cursor-paginated. Its `cursor` must be greater than 0 (unlike other list tools, which accept `0`), so **omit `cursor` on the first page** and pass the returned cursor afterwards.
+- `get-maintenance-window` — one window by `maintenanceWindowId` (schedule, `days`, `monitorIds`, `status`).
+- `delete-maintenance-window` — permanent, cannot be undone. Confirm the account with `get-user` first, and get explicit user confirmation. To skip occurrences without losing the config, pause instead (below).
 
 ## The monitor-linkage asymmetry
 

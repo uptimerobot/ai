@@ -27,8 +27,9 @@ Use when the user wants to check that a specific TCP port is open on a host — 
 ## Common optional params
 
 - `timeout` — how long to wait for the TCP handshake (1–60s).
+- `portAlertCondition` — `CLOSED` (default) alerts when the port stops accepting connections; `OPEN` alerts when the port accepts connections (e.g. to catch a port that should stay closed).
 - `interval`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
-- `config.ipVersion` — `IPv4` or `IPv6`.
+- Do **not** send `config.ipVersion` — `create-monitor` only accepts it on HTTP / KEYWORD monitors.
 
 ## Examples
 

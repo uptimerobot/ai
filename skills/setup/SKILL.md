@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Connect and authenticate the hosted UptimeRobot MCP server (OAuth over streamable HTTP), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` auth errors or first-time setup.
+description: Connect and authenticate the hosted UptimeRobot MCP server (OAuth over streamable HTTP), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on `-31001` or plain-text auth errors (unauthorized, unauthenticated, token expired / invalid) or first-time setup.
 tags: [setup, auth, oauth, configuration, onboarding]
 ---
 
@@ -14,6 +14,7 @@ access. There is no API key to paste — the client stores the tokens itself.
 
 Invoke this skill when:
 - Any UptimeRobot tool returns `-31001 user_not_found` (the OAuth grant is missing, expired, or revoked).
+- Any UptimeRobot tool returns a plain-text auth error with no numeric code — e.g. a message that mentions `unauthorized`, `unauthenticated`, or a token that is expired, invalid, or missing. Treat it the same as `-31001`.
 - The MCP server fails to connect or returns an authentication error.
 - The user reports that UptimeRobot tools aren't working.
 - The user explicitly asks to connect or reconfigure UptimeRobot.
@@ -92,7 +93,7 @@ Then confirm connectivity with Step 4.
 
 ## Step 3 — Re-authenticate (fix a stale or revoked grant)
 
-Use this when a tool returns `-31001`, when `claude mcp list` shows
+Use this when a tool returns `-31001` or an unauthorized / token-expired message, when `claude mcp list` shows
 `✗ Failed to connect`, or when the user revoked access. Tell the user:
 
 > Run `/mcp`, select **uptimerobot**, and choose **Clear authentication**. Then

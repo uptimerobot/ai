@@ -10,7 +10,7 @@ tags: [monitoring, list, pause, resume, uptimerobot]
 
 Covers monitor discovery and status control:
 
-- `list-monitors` — paginated discovery with search + state filters.
+- `list-monitors` — paginated discovery with name / URL / tag / group / state filters.
 - `get-monitor-details` — full config for one monitor.
 - `update-monitor-status` — pause or resume.
 
@@ -20,7 +20,7 @@ For **creating** monitors see the `create-*-monitor` skills. For **editing** an 
 
 ```json
 {
-  "search": "api",
+  "name": "api",
   "filter": ["DOWN"],
   "limit": 50
 }
@@ -28,10 +28,16 @@ For **creating** monitors see the `create-*-monitor` skills. For **editing** an 
 
 Parameters:
 
-- `search` — full-text match against `friendlyName` and `url`.
-- `filter` — array, any of `UP`, `DOWN`, `PAUSED`, `NOT_STARTED`, `EXPIRING_DOMAIN`, `EXPIRING_SSL_CERTIFICATE`, `WITH_API_KEY`, `WITHOUT_API_KEY`.
-- `limit` — page size (clamped server-side).
-- `cursor` — from the previous page's `nextCursor`.
+- `name` — case-insensitive partial match on the monitor name.
+- `url` — case-insensitive partial match on the monitor URL.
+- `tags` — array of tag names; returns monitors carrying **any** of them.
+- `groupId` — only monitors in this monitor group.
+- `customField` — array of `"key:value"` strings (AND logic).
+- `filter` — array, any of `PAUSED`, `STARTED` (every non-paused monitor), `UP`, `LOOKS_DOWN`, `DOWN`, `EXPIRING_DOMAIN`, `EXPIRING_SSL_CERTIFICATE`, `WITH_API_KEY`, `WITHOUT_API_KEY`. There is no `NOT_STARTED` filter value.
+- `limit` — 1–100, default 10.
+- `cursor` — integer, from the previous page's `nextCursor`.
+
+There is **no `search` parameter** — use `name` or `url`. Monitors in the response carry `name` (not `friendlyName`); `friendlyName` is only the input field on create/update.
 
 The response includes an `instructions` field with the exact next-page call JSON. Follow it verbatim.
 

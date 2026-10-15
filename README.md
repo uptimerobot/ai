@@ -80,7 +80,7 @@ Launch Cursor and run **Developer: Reload Window** from the command palette.
 Verify the plugin is discovered:
 
 - **Settings → Rules, Skills, Subagents** — the `uptimerobot.mdc` rule and every `skills/*/SKILL.md` entry should be listed.
-- **Settings → Tools & MCPs** — `uptimerobot` should appear with 32 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
+- **Settings → Tools & MCPs** — `uptimerobot` should appear with 50 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
 
 ### Codex
 
@@ -94,7 +94,7 @@ If you want Codex to track the source explicitly:
 codex plugin marketplace add ./
 ```
 
-Verify the plugin is loaded: the 24 skills should be available and the `uptimerobot` MCP server should appear with 32 tools once connected.
+Verify the plugin is loaded: the 24 skills should be available and the `uptimerobot` MCP server should appear with 50 tools once connected.
 
 ### Other agents / direct MCP
 
@@ -135,26 +135,28 @@ Where the OAuth browser flow can't run, add the server to your own client config
 
 ## What the plugin provides
 
-32 tools via MCP, grouped by resource — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
+50 tools via MCP, grouped by resource — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
 
 ### Monitors
 
 | Tool                    | Purpose                                                                |
 | ----------------------- | ---------------------------------------------------------------------- |
-| `create-monitor`        | Create HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, or UDP monitors |
+| `create-monitor`        | Create HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, UDP, or VISUAL_COMPARISON monitors |
 | `update-monitor`        | Change name, URL, interval, alert contacts, tags, HTTP settings        |
 | `update-monitor-status` | Pause or resume a monitor                                              |
-| `list-monitors`         | Paginated list with search + state filters                             |
+| `list-monitors`         | Paginated list filtered by name, URL, tags, group, custom field, or state |
 | `get-monitor-details`   | Full config + current state for one monitor                            |
 | `get-monitor-stats`     | Aggregated up/down/paused counts + uptime %                            |
 | `get-response-times`    | Time-series response-time data with buckets                            |
+| `delete-monitor`        | Permanently delete a monitor and its history                           |
 
-### Monitor groups (plan-gated: `monitor-groups`)
+### Monitor groups (create/update/delete plan-gated: `monitor-groups`)
 
 | Tool                    | Purpose                                                     |
 | ------------------------ | ------------------------------------------------------------ |
 | `create-monitor-group`  | Create a group and assign monitors to it                    |
 | `update-monitor-group`  | Rename an existing group                                     |
+| `delete-monitor-group`  | Delete a group; its monitors move to another group or none   |
 | `get-monitor-group`     | Fetch a single group by ID                                   |
 | `list-monitor-groups`   | Paginated list of groups                                     |
 
@@ -166,8 +168,9 @@ Where the OAuth browser flow can't run, add the server to your own client config
 | `update-psp`  | Change name, domain, sort order, visibility, or publish status        |
 | `get-psp`     | Fetch a single status page by ID                                      |
 | `list-psps`   | Paginated list of status pages                                        |
+| `delete-psp`  | Permanently delete a status page                                      |
 
-### PSP announcements
+### PSP announcements (plan-gated: `psp-subscribers`)
 
 | Tool                        | Purpose                                              |
 | ---------------------------- | ------------------------------------------------------ |
@@ -177,6 +180,7 @@ Where the OAuth browser flow can't run, add the server to your own client config
 | `unpin-psp-announcement`    | Unpin an announcement                                    |
 | `get-psp-announcement`      | Fetch a single announcement by ID                        |
 | `list-psp-announcements`    | Paginated list of announcements for a status page        |
+| `delete-psp-announcement`   | Permanently delete an announcement                       |
 
 ### Maintenance windows (plan-gated: `maintenance-window`)
 
@@ -186,13 +190,16 @@ Where the OAuth browser flow can't run, add the server to your own client config
 | `update-maintenance-window`   | Change schedule, duration, monitors, or pause/resume the window   |
 | `get-maintenance-window`      | Fetch a single window by ID                                       |
 | `list-maintenance-windows`    | Paginated list of windows                                         |
+| `delete-maintenance-window`   | Permanently delete a window                                       |
 
 ### Incidents
 
 | Tool                    | Purpose                                                      |
 | ------------------------ | --------------------------------------------------------------- |
-| `list-incidents`        | Incidents across monitors, with time range + monitor filter     |
+| `list-incidents`        | Incidents across monitors, with time range, monitor, or open-only filter |
 | `get-incident-details`  | Per-incident checker locations, logs, traceroute                |
+| `get-incident-activity-log` | Incident timeline summary plus paginated entries            |
+| `get-incident-alerts`   | Alerts sent during an incident, with delivery summary           |
 
 ### Incident comments (plan-gated: `incident-comments`)
 
@@ -201,13 +208,36 @@ Where the OAuth browser flow can't run, add the server to your own client config
 | `create-incident-comment`  | Add a comment to an incident               |
 | `update-incident-comment`  | Edit an existing comment                   |
 | `list-incident-comments`   | Paginated list of comments on an incident  |
+| `delete-incident-comment`  | Permanently delete a comment               |
+
+### Alert contacts (personal)
+
+| Tool                    | Purpose                                                  |
+| ------------------------ | --------------------------------------------------------- |
+| `create-alert-contact`  | Create a personal email contact                          |
+| `update-alert-contact`  | Rename, pause/activate, or change notification events    |
+| `get-alert-contact`     | Fetch a single personal contact by ID                    |
+| `list-alert-contacts`   | Paginated list of email, SMS, voice, and push contacts   |
+| `delete-alert-contact`  | Permanently delete a personal contact                    |
 
 ### Integrations & tags
 
 | Tool                  | Purpose                                    |
 | ---------------------- | --------------------------------------------- |
-| `list-integrations`   | Available alert-contact integrations          |
+| `list-integrations`   | Slack, webhook, PagerDuty, etc. integrations  |
+| `delete-integration`  | Permanently delete an integration             |
 | `list-tags`            | Paginated list of tags on the account         |
+| `delete-tag`           | Delete a tag and remove it from every monitor |
+
+### Account & storm protection
+
+| Tool                                | Purpose                                                       |
+| ------------------------------------ | -------------------------------------------------------------- |
+| `get-user`                          | Session account, team, limits, and write permission            |
+| `get-storm-protection-settings`     | Read account-wide alert grouping settings                      |
+| `update-storm-protection-settings`  | Change alert grouping (plan-gated: `notification-grouping`)    |
+
+Alert contact IDs for `assignedAlertContacts` come from `list-alert-contacts` (personal) and `list-integrations`; each entry needs `alertContactId`, `threshold`, and `recurrence`. All `delete-*` tools are permanent — call `get-user` first to confirm which account the session acts on.
 
 ### No account needed
 
@@ -215,7 +245,7 @@ The [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill creates a
 
 ## Plan requirements
 
-UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns error code `-28002` (`subscription_limit_exceeded`) when a call would exceed them. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
+UptimeRobot plans are **Free, Solo, Team, Enterprise**. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these, returning `-28001` (`monitor_limit_exceeded`) when the monitor limit is reached and `-28002` (`subscription_limit_exceeded`) when an interval or monitor type exceeds the plan. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
 
 ## Troubleshooting
 
@@ -238,7 +268,10 @@ The MCP handshake sometimes completes after the client captures its tool list at
 | `-28001` | Monitor limit reached | Delete unused monitors or upgrade your plan |
 | `-28002` | Subscription limit | Interval too aggressive for your plan, or monitor type not included — loosen the interval or upgrade |
 | `-29001` | Invalid parameters | The error message names the offending fields; fix them and retry |
+| `-30001` | Monitor not found | Monitor doesn't exist or belongs to another account (may also arrive as the plain message `Monitor not found`) |
+| `-30003` | Resource not found | A referenced alert contact or maintenance window doesn't exist |
 | `-31001` | Authentication failed | See Authentication problems above |
+| `-31002` | Access denied | The session account lacks write permission — see Authentication problems above |
 | HTTP `429` | Rate limit | Back off and retry with exponential delay |
 
 For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).

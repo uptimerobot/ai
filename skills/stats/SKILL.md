@@ -32,10 +32,11 @@ Default is `"7d"` when omitted.
 
 Returns account-wide aggregates:
 
-- Counts of monitors in each state (`up`, `down`, `paused`, `notStarted`).
-- Overall uptime percentage across all active monitors.
-- Incident counts and total downtime duration for the range.
-- Plan-level monitor cap vs. current usage.
+- `monitorsUp`, `monitorsDegraded`, `monitorsDown`, `monitorsPaused` — counts of monitors in each state.
+- `overallUptime` — a **fraction from 0 to 1**, not a percentage. Multiply by 100 before showing it (`0.99942` → `99.942%`).
+- `totalIncidents`, `totalIncidentsDuration` (seconds), and `mtbf` for the range.
+- `totalMonitors` vs. `totalMonitorsLimit` — current usage vs. plan cap.
+- `startDate`, `endDate` — the range the server actually used.
 
 Use this to answer "how's everything looking?" or "what's our uptime this week?".
 
@@ -55,7 +56,19 @@ Parameters:
 - `timeRange` — same format as above.
 - `bucketSize` — seconds per bucket for aggregation. Smaller buckets → finer granularity and more data points. Omit to let the server pick a default based on the range.
 
-Response includes time series with min / max / average / p95 per bucket, plus overall summary stats for the range.
+Response shape:
+
+```json
+{
+  "responseTimes": [[1760486400, 212], [1760486700, 198]],
+  "summary": { "min": 150, "max": 940, "avg": 214, "p95": 410, "totalDataPoints": 288 },
+  "metadata": { "monitorId": 800123456, "bucketSize": 300, "timeRange": "24h" }
+}
+```
+
+- `responseTimes` — pairs of `[unixSeconds, milliseconds]`.
+- `summary` — min / max / avg / p95 in ms over the whole range.
+- `bucketSize` is an integer in **seconds** (`60`, `300`), not a string like `"1m"`.
 
 ## Examples
 
@@ -83,9 +96,10 @@ Custom range for incident post-mortem:
 
 ## Common mistakes
 
-- Asking for ranges older than 90 days — rejected. Break the question into chunks or tell the user UptimeRobot's MCP caps at 90 days.
+- Asking for a range longer than 90 days — rejected. The limit is on the range length (1h–90d). Break the question into chunks or tell the user UptimeRobot's MCP caps each call at 90 days.
 - Using `get-monitor-stats` to get per-monitor data. It's account-level only. For per-monitor detail use `get-monitor-details` + `get-response-times`.
-- Interpreting a missing `monitorId` monitor result as "the monitor is up". It means the monitor doesn't exist or isn't accessible — the tool throws `-30001`.
+- Interpreting a missing `monitorId` monitor result as "the monitor is up". It means the monitor doesn't exist or isn't accessible — the tool returns the plain-text error `Monitor not found or access denied` (treat it as `-30001`).
+- Showing `overallUptime` as-is. `0.999` is 99.9%, not 0.999%.
 - Omitting the time range in the final user summary. Always say "over the last 7 days" or similar.
 
 ## Output tips

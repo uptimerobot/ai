@@ -43,7 +43,7 @@ Only valid for URL-based types (HTTP, KEYWORD, PING, PORT, DNS, API, UDP). HEART
 { "monitorId": 800123456, "interval": 60 }
 ```
 
-Range: `30`–`86400` seconds. 30 s is paid plans only — Free returns `-28002 subscription_limit_exceeded`.
+Max `86400` seconds (1 day) for every type except HEARTBEAT, which goes up to `2678400` (31 days). The minimum depends on the plan (the schema floor is 15 s); an interval below the plan minimum returns `-28002 subscription_limit_exceeded`.
 
 ### 4. Tune request timeout and slow-response threshold
 
@@ -81,7 +81,7 @@ Seconds the server waits past the expected ping before marking the monitor DOWN.
 ] }
 ```
 
-`alertContactId` is a **string**, not a number. Use `list-integrations` to find the right ID. `threshold` = consecutive failures before firing; `recurrence` = re-alert interval in minutes (0 = no repeat).
+Every item needs `alertContactId`, `threshold`, and `recurrence`. `alertContactId` accepts a string or a number. Get IDs from `list-integrations` (Slack, webhook, PagerDuty, …) or `list-alert-contacts` (email, SMS, voice, push). `threshold` = minutes the monitor must be down before notifying (0–1440); `recurrence` = re-notify every N minutes while still down (0–10080, 0 = no repeat).
 
 ### 7. Remove an alert contact
 
@@ -99,15 +99,21 @@ Same pattern — fetch the current array, drop the entry, send back the remainin
 
 Useful for staging / internal domains where cert/domain expiry is expected or handled elsewhere.
 
-### 9. Retag (tag-based grouping)
+### 9. Retag or move to a group
 
-`update-monitor` itself only manages **tags** — it has no `groupId` field, so it can't move a monitor into a different group. (Reorganizing groups is still possible, just not through this tool — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) for the indirect `groupIds`-merge workflow.) To tag a monitor for lightweight filtering, replace the whole tag set in one call:
+To move a monitor into a monitor group, pass `groupId`; `0` removes it from its group:
+
+```json
+{ "monitorId": 800123456, "groupId": 42 }
+```
+
+Get group IDs from `list-monitor-groups` — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md). To tag a monitor for lightweight filtering, replace the whole tag set in one call:
 
 ```json
 { "monitorId": 800123456, "tagNames": ["production", "critical", "us-east-1"] }
 ```
 
-To add one tag without losing the others, merge first (like alert contacts). Max 20 tags, each 1–50 chars. Sending `[]` clears all tags.
+To add one tag without losing the others, merge first (like alert contacts). Sending `[]` clears all tags.
 
 ### 10. Update HTTP settings (HTTP / KEYWORD / API)
 
@@ -121,25 +127,23 @@ To add one tag without losing the others, merge first (like alert contacts). Max
 
 `followRedirections` and `checkSSLErrors` are rejected on PING / PORT / HEARTBEAT / DNS / UDP with `-29001`.
 
-### 11. Update HTTP auth + headers + expected codes (HTTP / KEYWORD / API)
+### 11. Update HTTP method + headers + expected codes (HTTP / KEYWORD / API)
 
 ```json
 {
   "monitorId": 800987654,
   "httpMethodType": "POST",
-  "authType": "BEARER",
-  "httpPassword": "<token the user gave you>",
   "customHttpHeaders": {
     "Content-Type": "application/json",
     "X-Client": "uptimerobot"
   },
-  "successHttpResponseCodes": ["200", "201", "204"],
-  "postValueType": "RAW_JSON",
-  "postValueData": "{\"ping\":true}"
+  "successHttpResponseCodes": ["200", "201", "204"]
 }
 ```
 
-These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `customHttpHeaders`, `successHttpResponseCodes`, `postValueData`, `postValueType`) apply to all **HTTP-based** types (HTTP, KEYWORD, API) — the example above just happens to use an API monitor. `postValueData` / `postValueType` only take effect when `httpMethodType` is a body method (`POST` / `PUT` / `PATCH`). For `BEARER`, put the token in `httpPassword`. Ask the user for the token in chat; never read it from environment variables or files. For `HTTP_BASIC` / `DIGEST`, use `httpUsername` + `httpPassword`. (`config.apiAssertions` in section 12 is the piece that's genuinely API-only.)
+These fields (`httpMethodType`, `customHttpHeaders`, `successHttpResponseCodes`) apply to all **HTTP-based** types (HTTP, KEYWORD, API) — the example above just happens to use an API monitor. (`config.apiAssertions` in section 12 is the piece that's genuinely API-only.)
+
+`update-monitor` does **not** accept `authType`, `httpUsername`, `httpPassword`, `postValueType`, `postValueData`, or `postContentType`. These can only be set on `create-monitor`; to change them, use the UptimeRobot dashboard or recreate the monitor.
 
 ### 12. Update API assertions
 
@@ -150,15 +154,15 @@ These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `cus
     "apiAssertions": {
       "logic": "AND",
       "checks": [
-        { "property": "status_code", "comparison": "equals", "target": "200" },
-        { "property": "response_body", "comparison": "contains", "target": "\"ok\":true" }
+        { "property": "$.status", "comparison": "equals", "target": "ok" },
+        { "property": "$.queueDepth", "comparison": "less_than", "target": 100 }
       ]
     }
   }
 }
 ```
 
-`logic` is `AND` or `OR`. 1–5 checks. Fully replaces the existing assertion set.
+`logic` is `AND` or `OR`. 1–5 checks. `property` is a JSONPath against the response body (same format as [`create-api-monitor`](../create-api-monitor/SKILL.md)). Fully replaces the existing assertion set.
 
 ### 13. Update KEYWORD match
 
@@ -197,10 +201,10 @@ These fields (`httpMethodType`, `authType`, `httpUsername`, `httpPassword`, `cus
 ### 16. Pin IP version
 
 ```json
-{ "monitorId": 800123456, "config": { "ipVersion": "IPv4" } }
+{ "monitorId": 800123456, "config": { "ipVersion": "ipv4Only" } }
 ```
 
-Valid values: `IPv4`, `IPv6` (mixed case — the same spelling the `create-*-monitor` skills use). If your URL is a literal IP, the server cross-checks it against this field and rejects mismatches.
+Valid values: `ipv4Only`, `ipv6Only` (exact spelling — `IPv4` / `IPv6` are rejected), or `null` to remove the preference. Only HTTP, KEYWORD and API monitors accept it. If your URL is a literal IP, the server cross-checks it against this field and rejects mismatches.
 
 ## Pause vs. update
 
@@ -211,8 +215,8 @@ Pausing is a separate tool — `update-monitor-status` with `{ "status": "PAUSED
 - Sending `type` — ignored/rejected. Create a new monitor for type changes.
 - Sending a field that doesn't belong to the monitor's type (e.g. `gracePeriod` on HTTP, `port` on HEARTBEAT, `keywordValue` on DNS). Returns `-29001 invalid_parameters`.
 - Treating `assignedAlertContacts` / `tagNames` as patches. They overwrite — always read-modify-write.
-- Passing `alertContactId` as a number. It's a string in every response and must be a string on write.
-- Asking for a monitor-group rename or reassignment. `update-monitor` can't do either — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md).
+- Sending `authType`, `httpUsername`, `httpPassword`, or `postValue*` fields — `update-monitor` doesn't accept them. Change them in the dashboard or recreate the monitor.
+- Asking for a monitor-group rename. `update-monitor` only moves a monitor between groups (`groupId`); renames use `update-monitor-group` — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md).
 - Updating when the authorized account lacks write access — returns `-31002 access_denied`. Re-authenticate with a write-capable account (see [`setup`](../setup/SKILL.md)).
 - Skipping the post-write `get-monitor-details`. A follow-up `list-monitors` can still show the old values due to replication lag.
 
@@ -220,6 +224,6 @@ Pausing is a separate tool — `update-monitor-status` with `{ "status": "PAUSED
 
 - [`manage-monitors`](../manage-monitors/SKILL.md) — list, get details, pause / resume.
 - [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) — dedicated group IDs, and the tags-vs-groups decision.
-- [`list-integrations`](../list-integrations/SKILL.md) — discover `alertContactId` values before attaching.
+- [`list-integrations`](../list-integrations/SKILL.md) — discover `alertContactId` values before attaching (personal email/SMS/voice/push contacts come from `list-alert-contacts`).
 - [`bulk-pause`](../bulk-pause/SKILL.md) — pause/resume many monitors during deploys.
 - [`errors`](../errors/SKILL.md) — recovery for `-28002`, `-29001`, `-30001`, `-31002`.

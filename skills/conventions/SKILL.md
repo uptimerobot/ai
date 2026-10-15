@@ -9,43 +9,49 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 ## Monitor types
 
-- Always send `type` as a string enum — one of `HTTP`, `KEYWORD`, `PING`, `PORT`, `HEARTBEAT`, `DNS`, `API`, `UDP`. Do not pass numeric type codes; the MCP layer rejects them.
+- Always send `type` as a string enum — one of `HTTP`, `KEYWORD`, `PING`, `PORT`, `HEARTBEAT`, `DNS`, `API`, `UDP`, `VISUAL_COMPARISON`. Do not pass numeric type codes; the MCP layer rejects them.
 - `HEARTBEAT` monitors must **not** include a `url` on creation. The server generates `https://heartbeat.uptimerobot.com/m<id>-<hash>` and returns it. Show that URL to the user after creation so they can wire up the heartbeat sender.
 - `PING`, `PORT`, `UDP`, `DNS`: `url` is a hostname or IP, never a full URL with scheme.
-- `HTTP`, `KEYWORD`, `API`: `url` must be a full URL with scheme (`https://...`).
+- `HTTP`, `KEYWORD`, `API`, `VISUAL_COMPARISON`: `url` must be a full URL with scheme (`https://...`).
 
 ## Discovery before writes
 
-- Before calling `update-monitor`, `update-monitor-status`, or referencing a monitor by ID, call `list-monitors` (optionally with `search`) to confirm the ID and current state.
-- Before referencing an alert contact in `assignedAlertContacts`, call `list-integrations` and use an `id` from the response.
+- Before calling `update-monitor`, `update-monitor-status`, or referencing a monitor by ID, call `list-monitors` (optionally filtered by `name`, `url`, or `tags` — there is no `search` parameter) to confirm the ID and current state.
+- Before referencing an alert contact in `assignedAlertContacts`, call **both** `list-alert-contacts` (personal email, SMS, voice, push) and `list-integrations` (Slack, webhooks, PagerDuty, Teams, …), dedupe by `id`, and use an `id` from the responses.
 
 ## Verification after writes
 
-- After `create-monitor` or `update-monitor`, call `get-monitor-details` to confirm the stored state before telling the user the change is live. Read-after-write replication can lag a few seconds.
+- After `create-monitor` or `update-monitor`, call `get-monitor-details` to confirm the stored state before telling the user the change is live. Read-after-write replication can lag a few seconds: if `get-monitor-details` returns `Monitor not found` immediately after a successful create, wait ~3–5s and retry once — never re-run `create-monitor`, which makes a duplicate.
+- `monitorId` is an integer. Pass the `id` exactly as returned by `create-monitor` / `list-monitors`; don't quote it, and don't use IDs from dashboard URLs, incidents of other accounts, or the user's memory without checking `list-monitors` first.
 
 ## Intervals and plan limits
 
-- Interval is in seconds. Minimum is 30s and depends on the plan. If the server returns `-28002 subscription_limit_exceeded`, do not retry — the plan cannot support that interval or monitor type. Tell the user.
+- Interval is in seconds. The schema accepts 15–86400 (HEARTBEAT up to 2678400 = 31 days); the real minimum depends on the plan. If the server returns `-28002 subscription_limit_exceeded`, do not retry — the plan cannot support that interval or monitor type. Tell the user.
 - Do not retry `-28001 monitor_limit_exceeded`. Recommend deleting unused monitors or upgrading the plan.
-- Plans are Free, Solo, Team, Enterprise. Never reference a "Pro" or "Business" plan — neither exists.
+- Don't assume plan names. Call `get-user` and read `activeSubscription.plan` (e.g. `"Scale"`) — plan names change over time and aren't a fixed list.
 
 ## Time ranges
 
 - `timeRange` accepts `"24h"`, `"7d"`, `"30d"` (range 1h–90d), or an ISO 8601 interval `"<start>/<end>"` (start before end, 1h–90d). Default is `"7d"`.
-- For anything older than 90 days, inform the user that UptimeRobot's MCP endpoints cap at 90 days of history.
+- The 90-day cap is on the range **length** per call. For a longer period, split it into ≤90-day chunks, or tell the user the MCP caps each call at 90 days.
 
 ## Pagination
 
-- Paginated tools (`list-monitors`, `list-incidents`, `list-integrations`) return an `instructions` field with the exact next-call JSON. Follow it verbatim; cursor shape is opaque.
+- Paginated tools return `nextCursor` and `hasMore`. Pass `nextCursor` as `cursor` and keep calling while `hasMore` is `true`. The `instructions` field is plain prose, not a JSON call — don't try to parse it.
+- Cursor types differ by tool:
+  - **Integer** — `list-monitors`, `list-integrations`, `list-alert-contacts`, `list-tags`, `list-monitor-groups`, `list-psps`, `list-psp-announcements`, `list-maintenance-windows`, `list-incident-comments`.
+  - **Numeric string** (an incident ID) — `list-incidents`.
+  - **Opaque string** — `get-incident-activity-log`, `get-incident-alerts`.
 
 ## Errors
 
 - `-28001` monitor limit, `-28002` subscription limit, `-29001` invalid params (incl. blacklisted URLs), `-30001` / `-30003` not found, `-31002` access denied (authorized account lacks write permission).
 - `-31001 user_not_found` means the OAuth grant is missing/expired/revoked — do not surface it raw; invoke the `uptimerobot:setup` skill to re-authenticate.
+- Many errors arrive as plain text with no numeric code (`Monitor not found or access denied`, `Incident not found`, `Alert contact not found`, `Invalid parameters: [field]: reason`). Map them by message — see the table in `errors`. Unauthorized / token-expired messages mean `-31001`.
 - HTTP 429 is the only code worth retrying (exponential backoff + jitter). Everything else is a client error — surface it to the user.
 
 ## Output style
 
-- Do not echo API keys, incident log contents, or traceroute hops unless the user explicitly asks.
+- Do not echo API keys, incident request logs, or redacted contact values unless the user explicitly asks.
 - When summarising many monitors, group by state (`DOWN` first, then `PAUSED`, then `UP`) and show counts before detail.
 - When quoting uptime percentages, always cite the time range.
