@@ -13,7 +13,7 @@
       "type": "skill-md",
       "description": "Conventions and gotchas for every UptimeRobot MCP tool call — monitor types, URL formats, HEARTBEAT URL handling, discovery-before-writes, pagination, time ranges, error codes, and output style. Use whenever you call any uptimerobot:* tool.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/conventions/SKILL.md",
-      "digest": "sha256:374f432a0a6c9fdb8d41802278cfbb12907c1842765529a7639d121cdb8a1bd9"
+      "digest": "sha256:e87d0a2fb0237507fc8d623926c4127e8b365266317bad4c0069b0451846829c"
     },
     {
       "name": "create-api-monitor",
@@ -48,7 +48,7 @@
       "type": "skill-md",
       "description": "Create a KEYWORD monitor that fetches a URL and alerts when a given keyword appears (or is missing) in the response body.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/create-keyword-monitor/SKILL.md",
-      "digest": "sha256:0043a63bfd5849fa2a0e043a3c0a688c44ce03bf59e5a74ea0aec7958268750d"
+      "digest": "sha256:06d1705b9bfe5ac1f07c1b842d8550c95f51928c7ff9536845f2b09faa4a13a1"
     },
     {
       "name": "create-ping-monitor",

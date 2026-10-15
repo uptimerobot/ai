@@ -59,7 +59,7 @@ KEYWORD-specific:
 
 - Leaving off `keywordType` — it is required.
 - Using an HTTP monitor when the user said "alert me if the page shows X" — use KEYWORD.
-- Case-sensitivity confusion. Default is case-sensitive; pass `keywordCaseType: 1` for insensitive.
+- Case-sensitivity confusion. Default is case-sensitive; set `keywordCaseType: 1` for insensitive.
 - `keywordValue` longer than 500 chars is rejected.
 - HEAD requests cannot match body content. If `httpMethodType` is `HEAD`, the keyword check will not work as expected.
 
