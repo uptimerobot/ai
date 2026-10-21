@@ -25,6 +25,7 @@ Typical flow: `get-monitor-stats` for the counts and uptime → `list-monitors` 
 - **`overallUptime` is a 0–1 fraction** — multiply by 100. **`totalIncidentsDuration` is seconds.** Per-incident `duration` is text like `"15m 55s"`, so use the stats total for "total downtime".
 - **Pagination: never copy the call in `instructions`** — on `list-monitors` it drops your `filter` (you'd get all monitors); on `list-incidents` its `timeRange` is an object the tool rejects. Repeat your own arguments with `cursor` set to `nextCursor` while `hasMore` is true. `totalCount` is only on the first page.
 - `filter: ["STARTED"]` is only "not checked yet", not "running". Count up / down / paused from `get-monitor-stats` instead.
+- **`LOOKS_DOWN` is not a confirmed outage** — the monitor is failing but not yet confirmed down. List those names separately as "possibly down"; say "down" only for `DOWN`.
 - `currentStateDuration` on each monitor tells you how long it has been down (e.g. "down for ~58 min").
 - Show paused monitors — they aren't being checked, so they aren't "healthy". Show `monitorsDegraded` when it's above zero.
 - State the time range next to every number.
@@ -36,6 +37,7 @@ Health summary — 2026-10-15 (last 24h)
 Status: 2 DOWN · 3 PAUSED · 41 UP (46 total)
 Uptime: 98.7% · Incidents: 4 (total downtime 2h 13m)
 Down: prod-api (~58 min), staging-db (~1h 15m)
+Possibly down (unconfirmed): billing-webhook
 Paused: deploy-preview, load-test-env, sandbox-api
 ```
 

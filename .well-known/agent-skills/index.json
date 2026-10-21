@@ -13,7 +13,7 @@
       "type": "skill-md",
       "description": "Conventions and gotchas for every UptimeRobot MCP tool call — monitor types, URL formats, HEARTBEAT URL handling, discovery-before-writes, pagination, time ranges, error codes, and output style. Use whenever you call any uptimerobot:* tool.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/conventions/SKILL.md",
-      "digest": "sha256:f18b4c598feec294fc70bd56e3d5d58cb4b5d59db0e77249189e8058b65df489"
+      "digest": "sha256:6173243a506c5eec453db380f6cdcfe9981b62cf2d933d4f6ad4ee43045d22c3"
     },
     {
       "name": "create-api-monitor",
@@ -76,7 +76,7 @@
       "type": "skill-md",
       "description": "Interpret UptimeRobot MCP errors — map the plain-text messages to their meaning, decide whether to retry, and tell the user how to recover.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/errors/SKILL.md",
-      "digest": "sha256:82ec7766da174a791d6b1125f540140467e633b4192133f550ef15d411696dd1"
+      "digest": "sha256:6150a2dcda393aa2d869ce19d99275c28bf9bc6ef02ac02f13a87a17a5ca7a57"
     },
     {
       "name": "incident-response",
@@ -125,7 +125,7 @@
       "type": "skill-md",
       "description": "Generate a one-shot health snapshot — monitor counts by state, which are currently down or paused, recent incident count, and total downtime — useful as a daily brief or ad-hoc check.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/monitor-health-summary/SKILL.md",
-      "digest": "sha256:181397f380665d6fcd283833d9ab4c71ac53334b053f8132643bc0dc67102e39"
+      "digest": "sha256:54e64cd3c34709fe17ac3db51d80bf32c965c4a27fcc9727f0fc63e6ed55b24b"
     },
     {
       "name": "quick-monitor-setup",
@@ -146,7 +146,7 @@
       "type": "skill-md",
       "description": "Generate a per-monitor SLA report for a time range — uptime percentage, total downtime, and incident count per monitor — formatted as Markdown for sharing in Confluence, Slack, or post-mortem docs.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/sla-report/SKILL.md",
-      "digest": "sha256:7faefc1bc8ef09abb0a54a9b3da10df61c8442b67957f291a7cd910813827154"
+      "digest": "sha256:7e9cd2b8a18a7eab0ec8a55dae0610e52f77a8b2a7fd3bc0858cac4dfb1447de"
     },
     {
       "name": "stats",
@@ -167,7 +167,7 @@
       "type": "skill-md",
       "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, move between groups, and tweak type-specific settings — without losing the lists it replaces.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/update-monitor/SKILL.md",
-      "digest": "sha256:ff9dc59292c0b3c4d5c21c0d72b068fcd7e1df39a2ca01909fdaa2ed86082be9"
+      "digest": "sha256:b4db7fdd05ae340c4aabf30d91b63fae80970fc9d8bd5bf7ea7343406bcb0a5a"
     }
   ]
 }

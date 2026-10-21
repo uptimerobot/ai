@@ -16,7 +16,7 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 ## Discovery before writes
 
-- Before calling `update-monitor`, `update-monitor-status`, or referencing a monitor by ID, call `list-monitors` (filter with `name`, `url`, `tags`, `groupId`, or `filter`; there is no `search` param) to confirm the ID and current state.
+- Before calling `update-monitor` or `update-monitor-status` on an existing monitor, call `list-monitors` (filter with `name`, `url`, `tags`, `groupId`, or `filter`; there is no `search` param) to confirm the ID and current state. After `create-monitor`, use the `id` it returns — no list call needed.
 - Before referencing an alert contact in `assignedAlertContacts`, get its ID from `list-alert-contacts` (personal email/SMS/voice/push) or `list-integrations` (Slack, webhook, etc. — it also returns the personal contacts, so dedupe by `id`). Each item needs `alertContactId`, `threshold` (minutes, 0–1440), and `recurrence` (minutes, 0–10080).
 - Before any `delete-*` call, call `get-user` to confirm the session account and write permission. Deletes are permanent — confirm the target with the user.
 
@@ -45,7 +45,7 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 - Errors usually arrive as a plain message with no code, worded differently per tool (`Monitor not found` vs `Monitor not found or access denied`, `Incident not found` vs `Incident <id> not found`, `Invalid parameters: [field]: ...`, `Invalid field for DNS monitor: port. ...`). Match by substring, not exact text.
 - `-28001` monitor limit, `-28002` subscription limit, `-29001` invalid params (incl. blacklisted URLs), `-30001` / `-30003` not found, `-31002` access denied (the authorized account lacks write permission).
-- HTTP 429 is the only code worth retrying (exponential backoff + jitter). Everything else is a client error — surface it to the user.
+- HTTP 429 is retryable with exponential backoff + jitter. A transient server or transport error (e.g. a 5xx, or a malformed-result `missing required resultType` glitch) may be retried **once** for a read; for a write, first check whether the change already landed (e.g. `list-monitors` by name) and never blind-retry. Everything else is a client error — surface it to the user.
 - **`-31001 user_not_found`**: Do not surface this as a raw error. The OAuth grant is missing, expired, or revoked. Immediately invoke the `uptimerobot:setup` skill — it re-runs the OAuth authorization flow and validates the connection. Do not attempt to retry the original tool call until setup completes successfully.
 
 ## Output style

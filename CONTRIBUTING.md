@@ -159,7 +159,7 @@ Deliberate omissions in `server.json` — please don't "fix" these:
 ### Publishing an update
 
 Bump `version` in `server.json` first — reuse of a published version is rejected.
-Use `0.1.0-1`, `0.1.0-2`, … prerelease strings for registry-metadata-only changes so
+Use `0.1.1-1`, `0.1.1-2`, … prerelease strings for registry-metadata-only changes so
 you don't burn a patch release on a typo. Keep `version` in step with the three
 `plugin.json` manifests (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`) —
 nothing in CI enforces this.

@@ -26,8 +26,9 @@ Use this when an UptimeRobot tool call fails and you need to know what it means 
 | plan, limit, upgrade, or a plan feature name (`monitor-groups`, `maintenance-window`, `incident-comments`, …) | Plan limit: monitor count (`-28001`) or interval / type / feature (`-28002`) | Don't retry. Explain the limit; suggest a longer interval, another type, deleting monitors, or upgrading. Paused monitors still count toward the monitor limit. |
 | `access denied`, `forbidden`, `read-only` (without "not found") | No write access (`-31002`) | Call `get-user` and check `account.accessLevel`. If it can write, the cause is something else (often a wrong ID). If it can't, re-authorize with an account that can write via `uptimerobot:setup`. |
 | `unauthorized`, `unauthenticated`, `token` (expired / invalid / missing) | Auth grant missing or expired (`-31001`) | Invoke `uptimerobot:setup`; don't ask the user to handle tokens. |
-| HTTP `429` / rate limit | Throttled | The only retryable case — back off (below). |
-| anything else | Unknown | Show the message as-is; at most one retry for an obvious server error. |
+| HTTP `429` / rate limit | Throttled | Retryable — back off (below). |
+| `missing required resultType`, a 5xx, or another transient server/transport error | Transient | Retry a read **once**. For a write, first check whether it already landed (e.g. `list-monitors` by name) — never blind-retry. |
+| anything else | Unknown | Show the message as-is; don't retry. |
 
 ## Gotchas
 

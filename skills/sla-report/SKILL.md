@@ -39,6 +39,8 @@ Call `get-monitor-stats` to get the aggregate uptime and total downtime for the 
 
 Exclude `PAUSED` monitors from the report unless the user explicitly wants them — they have no meaningful uptime data for the range. Note how many were excluded.
 
+Also exclude monitors still in `STARTED` (created or resumed but not yet checked) — they have no observations, so don't report them as clean or at 100%. List them as "no data yet".
+
 Track any monitors currently in `DOWN` or `LOOKS_DOWN` state — they need a callout in the narrative.
 
 ## Step 4 — Per-monitor incidents
@@ -50,6 +52,8 @@ For each monitor, fetch downtime incidents for the range:
 ```
 
 Paginate until `hasMore: false` by repeating your own args with `cursor` set to `nextCursor` — never copy the call in `instructions` (its `timeRange` is an object the tool rejects). Count the incidents yourself; `totalCount` is `null` on every page after the first.
+
+The range query can miss an incident that started before the range and is still ongoing. Also call `list-incidents` with the same `monitorId` and `status: "open"`, then merge both result sets by incident `id` so each incident is clipped and counted once.
 
 `duration` is human-readable text (`"15m 55s"`, `"1h 2m 3s"`), **not** seconds. To get downtime seconds per incident, either parse its `d` / `h` / `m` / `s` parts, or take `startedAt` from the list item and `endedAt` from `get-incident-details`. Then:
 
@@ -123,7 +127,7 @@ _Report generated 2026-04-30. Data from UptimeRobot._
 - Do **not** produce a table row for every 100% monitor — this adds no information and buries the issues.
 
 **"Still DOWN" callout:**
-- If any monitor is currently in `DOWN` or `LOOKS_DOWN` state, add the blockquote warning line before the Issues table. This is the most urgent information for a stakeholder reader.
+- If any monitor is currently `DOWN`, add the blockquote warning line ("currently DOWN") before the Issues table. Mention `LOOKS_DOWN` monitors separately as "possibly down (unconfirmed)" — not as confirmed outages. This is the most urgent information for a stakeholder reader.
 - Omit the blockquote entirely if all monitors are currently up.
 
 **If all monitors are clean:**

@@ -12,7 +12,7 @@ Use this to change an existing monitor's configuration. Updates are partial — 
 
 **Tools:** `list-monitors`, `get-monitor-details`, `update-monitor`, `list-alert-contacts`, `list-integrations`. The tools' own schemas and descriptions are the reference for parameters — this page only covers what they don't say.
 
-Flow: find the ID with `list-monitors` (never guess it), read the current state with `get-monitor-details`, send the change with `update-monitor`, then read it back with `get-monitor-details` before telling the user it worked.
+Flow: find the ID with `list-monitors` (never guess it), read the current state with `get-monitor-details`, send the change with `update-monitor`, then read it back with `get-monitor-details` before telling the user it worked. That read-back only verifies the fields it returns: `assignedAlertContacts` isn't one of them, so confirm contact changes against the full list the user gave you (or the dashboard). Maintenance-window membership is managed and verified with the maintenance-window tools, not `update-monitor`.
 
 `update-monitor` — add a tag while keeping the existing ones (merge with the `tags` you just read):
 

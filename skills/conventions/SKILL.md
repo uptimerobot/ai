@@ -16,7 +16,7 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 ## Discovery before writes
 
-- Before calling `update-monitor`, `update-monitor-status`, or referencing a monitor by ID, call `list-monitors` (optionally filtered by `name`, `url`, or `tags` — there is no `search` parameter) to confirm the ID and current state.
+- Before calling `update-monitor` or `update-monitor-status` on an existing monitor, call `list-monitors` (filter with `name`, `url`, `tags`, `groupId`, or `filter` — there is no `search` parameter) to confirm the ID and current state. After `create-monitor`, use the `id` it returns — no list call needed.
 - Before referencing an alert contact in `assignedAlertContacts`, call **both** `list-alert-contacts` (personal email, SMS, voice, push) and `list-integrations` (Slack, webhooks, PagerDuty, Teams, … — it also returns the personal contacts under the same ids), dedupe by `id`, and use an `id` from the responses.
 
 ## Verification after writes
@@ -50,7 +50,7 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 - `-28001` monitor limit, `-28002` subscription limit, `-29001` invalid params (incl. blacklisted URLs), `-30001` / `-30003` not found, `-31002` access denied (authorized account lacks write permission).
 - `-31001 user_not_found` means the OAuth grant is missing/expired/revoked — do not surface it raw; invoke the `uptimerobot:setup` skill to re-authenticate.
 - Most errors arrive as plain text with no numeric code, and the wording varies by tool: `Monitor not found` (e.g. `get-monitor-details`) vs `Monitor not found or access denied` (`get-response-times`), `Incident not found` vs `Incident <id> not found`, `Alert contact not found`, `Invalid parameters: [field]: reason`, `Invalid field for DNS monitor: port. ...`. Map them by **substring** (e.g. `not found`, `Invalid parameters`, `Invalid field`), never by exact text — see the table in `errors`. Unauthorized / token-expired messages mean `-31001`.
-- HTTP 429 is the only code worth retrying (exponential backoff + jitter). Everything else is a client error — surface it to the user.
+- HTTP 429 is retryable with exponential backoff + jitter. A transient server or transport error (e.g. a 5xx, or a malformed-result `missing required resultType` glitch) may be retried **once** for a read; for a write, first check whether the change already landed (e.g. `list-monitors` by name) and never blind-retry. Everything else is a client error — surface it to the user.
 
 ## Output style
 
