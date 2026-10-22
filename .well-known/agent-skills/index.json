@@ -121,6 +121,13 @@
       "digest": "sha256:fe56d2f79b4784c3945eece4087f42d84eea21d1950834a42cc973a954d97b1d"
     },
     {
+      "name": "manage-third-party-services",
+      "type": "skill-md",
+      "description": "Track the status of third-party providers (cloud, payment and other services with public status pages) as third-party services, search the provider catalog, choose components, and update, inspect or delete what the account tracks.",
+      "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/manage-third-party-services/SKILL.md",
+      "digest": "sha256:1799b4da97327a2c03998b133b53671e9fd4fbbdd919d6ad42338eb5249ccc50"
+    },
+    {
       "name": "monitor-health-summary",
       "type": "skill-md",
       "description": "Generate a one-shot health snapshot — monitor counts by state, which are currently down, recent incident count, and total downtime — useful as a daily brief or ad-hoc check.",

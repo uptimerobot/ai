@@ -32,6 +32,7 @@ UptimeRobot plans are Free, Solo, Team, and Enterprise. Monitor-type availabilit
 - [Bulk pause skill](https://uptimerobot.com/skills/bulk-pause/SKILL.md): Pause and resume many monitors at once during deploys.
 - [Manage monitor groups skill](https://uptimerobot.com/skills/manage-monitor-groups/SKILL.md): Choose between tags and monitor groups — group membership can't be read back through any tool, so tags (which are) are usually the better default.
 - [Maintenance windows skill](https://uptimerobot.com/skills/maintenance-windows/SKILL.md): Schedule one-off or recurring windows that suppress alerts for planned downtime, as an alternative to bulk pause.
+- [Manage third-party services skill](https://uptimerobot.com/skills/manage-third-party-services/SKILL.md): Search the provider catalog, track a third-party provider's status page, choose components, then update or delete the tracked service.
 
 ## Observability
 

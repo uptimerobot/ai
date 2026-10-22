@@ -80,7 +80,7 @@ Launch Cursor and run **Developer: Reload Window** from the command palette.
 Verify the plugin is discovered:
 
 - **Settings → Rules, Skills, Subagents** — the `uptimerobot.mdc` rule and every `skills/*/SKILL.md` entry should be listed.
-- **Settings → Tools & MCPs** — `uptimerobot` should appear with 32 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
+- **Settings → Tools & MCPs**, `uptimerobot` should appear with 40 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
 
 ### Codex
 
@@ -94,7 +94,7 @@ If you want Codex to track the source explicitly:
 codex plugin marketplace add ./
 ```
 
-Verify the plugin is loaded: the 24 skills should be available and the `uptimerobot` MCP server should appear with 32 tools once connected.
+Verify the plugin is loaded: the 25 skills should be available and the `uptimerobot` MCP server should appear with 40 tools once connected.
 
 ### Other agents / direct MCP
 
@@ -135,7 +135,7 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 
 ## What the plugin provides
 
-32 tools via MCP, grouped by resource — full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
+40 tools via MCP, grouped by resource, full list and payloads in `[AGENTS.md](AGENTS.md)` and `[skills/](skills/)`:
 
 ### Monitors
 
@@ -201,6 +201,19 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 | `create-incident-comment`  | Add a comment to an incident               |
 | `update-incident-comment`  | Edit an existing comment                   |
 | `list-incident-comments`   | Paginated list of comments on an incident  |
+
+### Third-party services
+
+| Tool                                 | Purpose                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| `search-third-party-providers`       | Search the provider catalog by provider or component name                |
+| `get-third-party-provider`           | Fetch one provider and its component tree by numeric ID                  |
+| `list-third-party-services`          | Paginated list of the third-party services the account tracks            |
+| `get-third-party-service`            | Full state of one tracked service by monitor ID                          |
+| `list-third-party-service-incidents` | Paginated provider incidents for tracked services, newest first          |
+| `create-third-party-service`         | Start tracking a provider, optionally limiting components and alerts     |
+| `update-third-party-service`         | Change tracked components, notification sensitivity, maintenance alerts  |
+| `delete-third-party-service`         | Permanently stop tracking a service                                      |
 
 ### Integrations & tags
 

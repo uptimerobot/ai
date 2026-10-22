@@ -13,6 +13,7 @@ Key entities:
 - **Alert contact** — a destination (email, Slack, webhook, SMS, Telegram, etc.) attached to monitors with a threshold and recurrence.
 - **Tag** — free-form label assigned to monitors.
 - **Maintenance window** — scheduled period where alerts for attached monitors are suppressed.
+- **Third-party service**, a tracked outside provider (cloud, payments, SaaS) whose public status page UptimeRobot watches. Not returned by `list-monitors`.
 
 Plans: **Free, Solo, Team, Enterprise**. Availability of specific monitor types and minimum intervals depends on the active plan. The MCP server enforces all limits.
 
@@ -24,7 +25,7 @@ Use the remote MCP server:
 - Transport: HTTP (streamable), launched via `mcp-remote` (`npx -y mcp-remote@latest https://mcp.uptimerobot.com/mcp`).
 - Auth: **OAuth**. On first connection `mcp-remote` opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, connect over plain HTTP with an `Authorization: Bearer <API_KEY>` header instead.)
 
-All 32 tools operate on the authorized account. There is no account impersonation.
+All 40 tools operate on the authorized account. There is no account impersonation.
 
 First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SKILL.md`](skills/setup/SKILL.md).
 
@@ -32,7 +33,7 @@ First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SK
 
 If the user has no UptimeRobot account or API key, use the [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill instead of the MCP tools: it creates a free HTTPS monitor from just the owner's email (an unauthenticated proof-of-work flow; the owner confirms by clicking a link in an activation email). When the user is connected via MCP, use `create-monitor`.
 
-## Tools (all 32)
+## Tools (all 40)
 
 Grouped by resource. Tools marked **plan-gated** require a specific plan feature (`monitor-groups`, `maintenance-window`, `incident-comments`, or `psp-subscribers`) and fail if the account's plan doesn't include it.
 
@@ -101,6 +102,21 @@ Grouped by resource. Tools marked **plan-gated** require a specific plan feature
 | `update-incident-comment` | Edit an existing comment's content. |
 | `list-incident-comments` | Cursor-paginated list of comments on an incident. |
 
+### Third-party services
+
+Track the status pages of outside providers. Providers are identified by their numeric ID from `search-third-party-providers`, tracked services by monitor ID. These monitors are not returned by `list-monitors`, and they spend their own allowance (`dependencyMonitorsCount` / `dependencyMonitorLimit` from `get-user`), not a monitor slot. `create-third-party-service` fails with `monitor_limit_exceeded` when the plan does not allow third-party services or the limit is reached. A third-party service cannot be paused: `update-monitor-status` with `PAUSED` is refused with `invalid_parameters`. See [`skills/manage-third-party-services/SKILL.md`](skills/manage-third-party-services/SKILL.md).
+
+| Name | When to use |
+| -- | -- |
+| `search-third-party-providers` | Search the provider catalog by provider or component name. Returns provider `id`, state, matched component and whether the account already tracks it. |
+| `get-third-party-provider` | Fetch one provider by numeric `providerId`, with its component tree. Component IDs select what to track. |
+| `list-third-party-services` | Cursor-paginated list of the account's tracked services, with optional `search` and sorting. |
+| `get-third-party-service` | Full state of one tracked service by `monitorId`: notification settings, tracked components, provider components. |
+| `list-third-party-service-incidents` | Cursor-paginated provider incidents for tracked services, newest first. Pass `monitorId` for one service. |
+| `create-third-party-service` | Start tracking a provider by `providerId`, optionally limiting components, notification sensitivity and alert contacts. Tracking an already-tracked provider returns the existing service. |
+| `update-third-party-service` | Change tracked components (full replacement), notification sensitivity or maintenance notifications. |
+| `delete-third-party-service` | Permanently stop tracking a service. Irreversible. Confirm the account with `get-user` first. |
+
 ### Integrations & tags
 
 | Name | When to use |
@@ -136,7 +152,7 @@ Default is `7d`.
 
 ## Pagination
 
-Write/list tools that return pages (`list-monitors`, `list-incidents`, `list-integrations`) return an `instructions` field containing the exact next-page tool call JSON. Follow it verbatim — cursor shape is opaque.
+Write/list tools that return pages (`list-monitors`, `list-incidents`, `list-integrations`, `list-third-party-services`, `list-third-party-service-incidents`) return an `instructions` field containing the exact next-page tool call JSON. Follow it verbatim, cursor shape is opaque.
 
 ## Authorization model
 
