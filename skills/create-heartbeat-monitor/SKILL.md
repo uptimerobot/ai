@@ -31,7 +31,7 @@ Use for cron jobs, backups and background workers. It is the inverse of the othe
 
 ## After creating
 
-The create response already has the stored `id`, `interval` and push URL, so no read-back is needed for those. Call `get-monitor-details` (integer `id`) only to confirm `gracePeriod` or other fields you set; if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
+The create response already has the stored `id`, `interval` and push URL, so no read-back is needed for those. Call `get-monitor-details` (integer `id`) only to confirm `gracePeriod` or other fields you set; if it returns `Monitor not found` right after the create, the monitor still exists (you have its `id`) — wait a few seconds and retry once; never re-create. If `create-monitor` itself failed, follow `errors` → "Before retrying a failed write".
 
 ## Related
 

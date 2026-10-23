@@ -57,7 +57,7 @@ Merge all results by incident `id`, clip each to the report range, and **drop an
 `duration` is human-readable text (`"15m 55s"`, `"1h 2m 3s"`), **not** seconds. To get downtime seconds per incident, either parse its `d` / `h` / `m` / `s` parts, or take `startedAt` from the list item and `endedAt` from `get-incident-details`. Then:
 
 - Clip each incident to the report range — an incident that started before the range counts only from the range start.
-- Treat an ongoing incident (no `endedAt`, or returned by `list-incidents` with `status: "open"`) as lasting until the range end (or now, if the range ends now).
+- Decide ongoing vs resolved from each incident's `status` field (`"Ongoing"` / `"Resolved"`, on list items and details), not from `endedAt`: list items never carry it, and details also return `endedAt: null` for a resolved incident with zero duration (count that as 0 seconds). Count an ongoing incident as lasting until the range end (or now, if the range ends now).
 - Sum the clipped seconds to get the monitor's total downtime.
 
 ## Step 4 — Per-monitor response times (optional)

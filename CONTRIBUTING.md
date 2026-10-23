@@ -167,10 +167,19 @@ nothing in CI enforces this.
 ```bash
 mcp-publisher validate
 
-mcp-publisher login dns --domain uptimerobot.com --private-key <hex private key>
+# Paste the hex key at the silent prompt, so it stays out of shell history.
+read -rs MCP_KEY
+mcp-publisher login dns --domain uptimerobot.com --private-key "$MCP_KEY"
+unset MCP_KEY
 
 mcp-publisher publish
+mcp-publisher logout   # removes the saved token — run it even if publish fails
 ```
+
+`mcp-publisher` (1.8.1) only accepts the key as `--private-key` — no prompt, environment
+variable or key file — so never type it inline: it would land in your shell history. Run
+this on your own machine; the key is briefly visible in the process list while the login
+runs.
 
 Verify with:
 
@@ -183,8 +192,8 @@ curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=com.uptime
 The `com.uptimerobot/*` namespace is proven by an Ed25519 key whose public half is
 published as a TXT record on the `uptimerobot.com` apex
 (`v=MCPv1; k=ed25519; p=<public key>`, managed in Cloudflare). The private key
-(`key.pem`) is **gitignored and lives in the team password manager**. Paste its hex
-form where the login command says `<hex private key>`; don't script reading it. Losing it
+(`key.pem`) **lives in the team password manager** — keep it outside the repo (`key.pem` is gitignored only as a safety net). Paste its hex
+form at the `read -rs` prompt above; don't put it in a script or a command line. Losing it
 means losing the ability to publish updates under this namespace.
 
 ## Testing a change

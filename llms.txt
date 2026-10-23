@@ -35,7 +35,7 @@ Plan names change over time — read the active plan from `get-user` (`activeSub
 
 ## Observability
 
-- [Incidents skill](https://uptimerobot.com/skills/incidents/SKILL.md): List and inspect downtime incidents with request logs, error details, and activity-log checker nodes.
+- [Incidents skill](https://uptimerobot.com/skills/incidents/SKILL.md): List and inspect downtime incidents with request logs, cause, and activity-log checker nodes.
 - [Incident response skill](https://uptimerobot.com/skills/incident-response/SKILL.md): End-to-end downtime triage, incident-comment timeline logging, and recovery verification.
 - [Stats skill](https://uptimerobot.com/skills/stats/SKILL.md): Aggregated uptime percentages and per-monitor response-time time series.
 - [Status pages skill](https://uptimerobot.com/skills/status-pages/SKILL.md): Publish a public status page from monitors, groups, or tags, and manage incident/maintenance announcements on it.

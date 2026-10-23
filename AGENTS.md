@@ -4,7 +4,7 @@ Orientation for coding agents (Claude Code, Cursor, Codex, Aider, etc.) that nee
 
 ## What UptimeRobot is
 
-UptimeRobot monitors websites, APIs, servers, DNS, and services. It probes each target on an interval (15s–24h; the plan sets the actual minimum), records up/down state plus response times, opens incidents on downtime, and fires alerts (email, SMS, webhooks, Slack, etc.) through **alert contacts**.
+UptimeRobot monitors websites, APIs, servers, DNS, and services. It probes each target on an interval (15s–24h, heartbeats up to 31 days; the plan sets the actual minimum), records up/down state plus response times, opens incidents on downtime, and fires alerts (email, SMS, webhooks, Slack, etc.) through **alert contacts**.
 
 Key entities:
 
@@ -24,7 +24,7 @@ Use the remote MCP server:
 - Transport: HTTP (streamable), connected directly — nothing runs locally.
 - Auth: **OAuth**. On first connection the client opens a browser to log into UptimeRobot and authorize — no API key to paste. (For headless/CI where a browser can't run, see the manual setup in the [README](README.md#headless--ci-no-browser).)
 
-All 50 tools act on the **session account** chosen at OAuth authorization (personal or a team account; re-authorize to switch). An API-key session always acts on the key owner's own account. Call `get-user` to see which account a session acts on and whether it may write.
+All tools act on the **session account** chosen at OAuth authorization (personal alert-contact tools act on the signed-in person; read-only sessions see only the read tools) (personal or a team account; re-authorize to switch). An API-key session always acts on the key owner's own account. Call `get-user` to see which account a session acts on and whether it may write.
 
 First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SKILL.md`](skills/setup/SKILL.md).
 
@@ -180,18 +180,18 @@ All `list-*` tools plus `get-incident-activity-log` and `get-incident-alerts` pa
 
 ## Error handling
 
-Tool errors reach the client as plain text with no numeric code, and the wording varies by tool: `Monitor not found` (`get-monitor-details`) vs `Monitor not found or access denied` (`get-response-times`), `Incident not found` (`get-incident-details`) vs `Incident <id> not found` (activity log / alerts), `Invalid parameters: [field]: ...`, `Invalid field for DNS monitor: port. ...`. Match by **substring**, not exact text, and take the **first row that matches**:
+Tool errors usually reach the client as plain text with no numeric code, and the wording varies by tool: `Monitor not found` (`get-monitor-details`) vs `Monitor not found or access denied` (`get-response-times`), `Incident not found` (`get-incident-details`) vs `Incident <id> not found` (activity log / alerts), `Invalid parameters: [field]: ...`, `Invalid field for DNS monitor: port. ...`. Match by **substring**, not exact text, and take the **first row that matches**:
 
 | Message contains | Meaning | Retry? | What to do |
 | -- | -- | -- | -- |
 | `Rate limit` | Too many calls (free accounts: 10 per minute, shared with the account's REST API traffic) | Yes | Wait the seconds the message gives, then retry. It is a tool result, not HTTP 429. |
-| `unauthorized`, `User not found`, `Invalid API key`, invalid / expired token | OAuth grant missing, expired or revoked | No | Invoke the `setup` skill to re-authenticate. |
+| `unauthorized`, `unauthenticated`, `requires authentication`, `User not found`, `Invalid API key`, invalid / expired token | OAuth grant (or configured API key) missing, expired or revoked | No | OAuth: invoke the `setup` skill to re-authenticate. API-key header session: the user must fix the key in their MCP config. |
 | `not found` | The ID doesn't exist or belongs to another account | No | Look the ID up with the matching `list-*` tool. From `create-monitor`, the monitor may exist anyway — check `list-monitors` before creating again. |
-| `Invalid parameters`, `Invalid field`, `is required`, `must be` | Bad input | No | Fix the payload (includes blacklisted URLs and fields a type doesn't take). |
+| `Invalid parameters`, `Invalid field`, `is required`, `must be`, `Missing required`, `Invalid values`, `Validation failed`, `blacklisted` | Bad input | No | Fix the payload (including blacklisted URLs and fields a type doesn't take). |
 | `requires roles`, `Write operations not permitted` | The session can't write, or the tool is admin-only | No | Check `get-user`; re-authorize with an account that can write. |
 | `Access denied` | Usually an ID from another account | No | Check `get-user`; if the session can write, re-check the ID. |
 | `plan`, `subscription`, `limit exceeded`, `monitor interval` | Interval, monitor count, monitor type, region or plan feature not allowed | No | Tell the user; suggest a longer interval, deleting monitors, or upgrading. |
-| `Internal server error`, `missing required resultType` | Server or protocol failure | Once, for reads | For writes, check whether the change landed before resending. |
+| `Internal server error`, `Internal error`, `Failed to`, `missing required resultType` | Server or protocol failure | Once, for reads, after about a minute | For writes, check whether the change landed before resending. |
 
 See [`skills/errors/SKILL.md`](skills/errors/SKILL.md) for recovery recipes.
 
@@ -199,7 +199,7 @@ See [`skills/errors/SKILL.md`](skills/errors/SKILL.md) for recovery recipes.
 
 1. **Never guess IDs.** Call `list-monitors` (or `list-alert-contacts` / `list-integrations` for alert contacts) to discover IDs before calling write tools.
 2. **Call `get-user` before any `delete-*`.** It names the session account and whether the session may write. Deletes are permanent — confirm the account and target with the user first.
-3. **Verify after writes.** `create-monitor` already returns the stored `id`, `name`, `type`, `url`, `interval` and `status`; call `get-monitor-details` (integer `monitorId`) only to confirm other fields you set. Always read back after `update-monitor`, which returns only a success message. If a create fails or seems to, wait a few seconds and check `list-monitors` by `url` (by `name` for HEARTBEAT) before anything else — never re-create blindly.
+3. **Verify after writes.** `create-monitor` already returns the stored `id`, `name`, `type`, `url`, `interval` and `status`; call `get-monitor-details` (integer `monitorId`) only to confirm other fields you set. Always read back after `update-monitor`, which returns only a success message. A `Monitor not found` read-back right after a successful create is replication lag — you have the `id`, so wait and retry once. If `create-monitor` itself failed, wait a few seconds and check `list-monitors` by `url` (by `name` for HEARTBEAT) before anything else — never re-create blindly.
 4. **Surface plan-related errors clearly.** Don't retry plan or limit errors. Summarise the cap and suggest upgrade or deletion.
 5. **Don't invent monitor types.** Use the 8 string enums above.
 6. **Don't send numeric `type` codes.** The MCP layer rejects them even though the underlying DB uses numeric codes.

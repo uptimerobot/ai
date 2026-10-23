@@ -169,4 +169,4 @@ writes themselves; this skill never reads, writes, or asks for an API key.
 ## Related
 
 - `manage-monitors` — list and control monitors once connected.
-- `errors` — full error code reference.
+- `errors` — what each error message means and how to recover.

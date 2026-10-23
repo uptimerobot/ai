@@ -11,10 +11,11 @@ tags: [incidents, downtime, triage, response, runbook, uptimerobot]
 The full loop a user runs when something's on fire:
 
 1. Find what's down (`list-monitors` with `DOWN` filter, plus `list-incidents` with `status: "open"`).
-2. Pull incident details for the worst offenders (`get-incident-details`).
-3. Optionally silence flapping monitors while the underlying issue is being fixed (`update-monitor-status` → `PAUSED`).
+2. Pull recent incidents for the affected monitors.
+3. Diagnose one incident (`get-incident-details`).
 4. Log findings as you go with incident comments (requires the `incident-comments` plan feature).
-5. After the fix, verify recovery with `get-monitor-stats` and/or `get-response-times`.
+5. Optionally silence flapping monitors while the underlying issue is being fixed (`update-monitor-status` → `PAUSED`).
+6. After the fix, verify recovery with `get-monitor-details` and `get-response-times`.
 
 Use this when the user says "what's down?", "is production still broken?", "triage the alerts", or "show me the outage".
 
@@ -38,7 +39,7 @@ Paginate until `hasMore: false` by repeating this call (same `filter`, `limit`) 
 { "status": "open", "limit": 50 }
 ```
 
-Call `list-incidents` with `status: "open"` to get every ongoing incident with its `id`, `monitorId`, `monitorName`, `startedAt`, `cause`, and `reason`. It ignores `timeRange`, so an outage that started long ago is still returned.
+Call `list-incidents` with `status: "open"` to get every ongoing incident with its `id`, `monitorId`, `monitorName`, `startedAt`, `cause`, `reason` and `type`. While `hasMore` is true, repeat the same arguments with `cursor` set to `nextCursor`. It ignores `timeRange`, so an outage that started long ago is still returned. It also returns `Slow Response` and `Visual Change` incidents — only `type: "Downtime"` is an outage.
 
 ## Step 2 — Pull recent incidents
 
@@ -60,7 +61,7 @@ Lead with the active (unresolved) incident, then show recently-resolved ones as 
 
 Returns:
 
-- `startedAt`, `endedAt` and `duration` (`endedAt` and `duration` are `null` while ongoing), `cause` (a number, e.g. `401`), `reason` — the readable cause.
+- `status` (`"Ongoing"` / `"Resolved"` — use this, not `endedAt`, to tell if it's over), `startedAt`, `endedAt` and `duration` (`null` while ongoing; `endedAt` is also `null` for a resolved incident with zero duration), `cause` (a number, e.g. `401`), `reason` — the readable cause.
 - `requestLogs[]` — the 10 newest checks (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is usually not ISO 8601 (`"2026-09-30 14:44:48.587"`, UTC).
 
 `checkerLocations` is always empty and `errorDetails` is a placeholder (`"Unknown error"`) — use `reason` for the cause and `requestLogs[].region` for regions.
@@ -94,7 +95,7 @@ If a monitor is flapping while the underlying issue is being fixed and the noise
 { "monitorId": 800123456, "status": "PAUSED" }
 ```
 
-Confirm with the user first — pausing a monitor also stops alerts, which is exactly what you want during known downtime but dangerous if the user forgets to resume.
+Confirm with the user first — pausing a monitor also stops alerts, which is exactly what you want during known downtime but dangerous if the user forgets to resume. Pausing a monitor that is down **resolves its open incident** at that moment (the downtime is cut short and the incident leaves `status: "open"`); resuming starts fresh, and a new incident opens if it's still down. Tell the user before pausing a monitor mid-outage.
 
 Store the paused IDs so you can resume them later. [`maintenance-windows`](../maintenance-windows/SKILL.md) is a better choice when the downtime is planned ahead of time rather than reactive.
 
@@ -110,13 +111,9 @@ Once the user says the fix is deployed, confirm the monitor is actually green.
 
 Call `get-monitor-details`. Expect `status: UP` and a short `currentStateDuration` that grows on the next check (there is no last-checked timestamp).
 
-### Aggregate over the window
+### Response times over the window
 
-```json
-{ "timeRange": "1h" }
-```
-
-Call `get-monitor-stats` to see if overall uptime % is recovering. Pair with `get-response-times` on the specific monitor:
+`get-monitor-stats` is account-wide only, so it can't confirm one monitor's recovery. Use `get-response-times` on the specific monitor:
 
 ```json
 { "monitorId": 800123456, "timeRange": "1h", "bucketSize": 60 }

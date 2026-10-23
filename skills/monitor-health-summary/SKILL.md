@@ -12,7 +12,7 @@ Use this for "how's everything looking?", a health check, or a morning brief.
 
 **Tools:** `get-monitor-stats`, `list-monitors`, `list-incidents`, optionally `get-response-times`. The tools' own schemas and descriptions are the reference for parameters — this page only covers what they don't say.
 
-Typical flow: `get-monitor-stats` for the counts, uptime and total downtime → `list-monitors` with `filter: ["DOWN", "LOOKS_DOWN"]` (and `["PAUSED"]`) for names, and `["STARTED"]` to count monitors not checked yet → `list-incidents` for the same range. Spot-check `get-response-times` only for the few monitors that are down, not for every monitor.
+Typical flow: `get-monitor-stats` for the counts, uptime and total downtime → `list-monitors` with `filter: ["DOWN", "LOOKS_DOWN"]` (and `["PAUSED"]`) for names, and `["STARTED"]` to count monitors not checked yet → `list-incidents` for the same range, counting only `type: "Downtime"` (the stats count excludes slow-response incidents too). Spot-check `get-response-times` only for the few monitors that are down, not for every monitor.
 
 `list-monitors` — what's down right now:
 

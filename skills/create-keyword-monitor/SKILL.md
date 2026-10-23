@@ -34,7 +34,7 @@ Use when a 200 is not enough and a specific string must be present (login page s
 
 ## After creating
 
-The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (`keywordValue`, `keywordType`, `keywordCaseType`); if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (`keywordValue`, `keywordType`, `keywordCaseType`); if it returns `Monitor not found` right after the create, the monitor still exists (you have its `id`) — wait a few seconds and retry once; never re-create. If `create-monitor` itself failed, follow `errors` → "Before retrying a failed write".
 
 ## Related
 

@@ -12,7 +12,7 @@ There is no single "pause all" tool. The workflow is: enumerate the target monit
 
 Use this when the user says "pause everything", "silence alerts during deploy", "mute the api monitors", or "bring them all back online".
 
-> **Prefer [`maintenance-windows`](../maintenance-windows/SKILL.md) for scheduled downtime.** Maintenance windows suppress *alerts* without changing monitor state and don't count against your plan's active-monitor cap on resume. Only bulk-pause when the user explicitly wants the monitors stopped, or when a maintenance window isn't suitable (ad-hoc, very short, or already in the middle of a deploy).
+> **Prefer [`maintenance-windows`](../maintenance-windows/SKILL.md) for scheduled downtime.** Maintenance windows suppress *alerts* without changing monitor state, so nothing needs resuming afterwards. Only bulk-pause when the user explicitly wants the monitors stopped, or when a maintenance window isn't suitable (ad-hoc, very short, or already in the middle of a deploy).
 
 ## Step 1 — List the target monitors
 
@@ -55,21 +55,21 @@ Pausing 14 monitors tagged `deploy-api`:
 - ...
 ```
 
-Wait for confirmation if the count is non-trivial (>5).
+Wait for confirmation if the count is non-trivial (>5). Pausing a monitor that is down **resolves its open incident** at that moment (the downtime is cut short and the incident leaves `status: "open"`); resuming starts fresh, and a new incident opens if it's still down. Tell the user before pausing a monitor mid-outage.
 
-## Step 3 — Pause each monitor
+## Step 3 — Record the IDs
+
+Before pausing anything, store the list of `monitorId`s somewhere retrievable (chat context, a note file, a gist) — you'll need it to resume. Don't rely on re-filtering later: the user may have added or renamed monitors in the interim, and a tag-based filter can quietly pick up unrelated monitors on resume.
+
+## Step 4 — Pause each monitor
 
 ```json
 { "monitorId": 800123456, "status": "PAUSED" }
 ```
 
-Loop over the collected IDs. If a call returns `Rate limit reached`, wait the seconds it states and continue (see `errors` skill). Free accounts get 10 tool calls per minute, so pace long lists.
+Loop over the collected IDs. If a call returns `Rate limit reached`, wait the seconds it states, retry **that same monitor**, and only then move to the next ID (see `errors` skill). Free accounts get 10 tool calls per minute, so pace long lists.
 
-Then wait a few seconds (reads can lag) and confirm by ID. For a handful of monitors, call `get-monitor-details` on each stored ID and check `status`. For many, call `list-monitors` with only `filter: ["PAUSED"]` (paginate while `hasMore` is true; an account can have hundreds of paused monitors) and check every stored ID is in it. Report any that aren't paused.
-
-## Step 4 — Track what you paused
-
-Before pausing, store the list of `monitorId`s somewhere retrievable (chat context, a note file, a gist) — you'll need it to resume. Don't rely on re-filtering later: the user may have added or renamed monitors in the interim, and a tag-based filter can quietly pick up unrelated monitors on resume.
+Then wait a few seconds (reads can lag) and confirm by ID. For a handful of monitors, call `get-monitor-details` on each stored ID and check `status`. For many, call `list-monitors` with only `filter: ["PAUSED"]` and `limit: 100` (paginate while `hasMore` is true; an account can have hundreds of paused monitors) and check every stored ID is in it. Report any that aren't paused.
 
 ## Step 5 — Resume
 
@@ -79,7 +79,7 @@ Same loop, flip the status:
 { "monitorId": 800123456, "status": "STARTED" }
 ```
 
-Resuming a monitor can return `Monitor limit exceeded` if the account is now over its active-monitor cap (e.g. the user added new monitors while these were paused). Surface which ones failed and suggest deleting or upgrading — **do not retry**.
+Paused monitors still count toward the monitor limit, so resuming normally succeeds. It can return `Monitor limit exceeded` only if the account is over its limit — e.g. after a plan downgrade. Surface which ones failed and suggest deleting or upgrading — **do not retry**.
 
 Confirm the same way, by the stored IDs — not by re-filtering on tags or name (a monitor renamed or retagged meanwhile would drop out and look resumed). None should still be `PAUSED`; freshly resumed monitors show `STARTED` until their first check.
 
@@ -89,8 +89,8 @@ User: "Pause everything tagged `deploy-web` for the next 20 minutes."
 
 1. `list-monitors` with `{ "tags": ["deploy-web"], "filter": ["UP", "DOWN", "LOOKS_DOWN", "STARTED"], "limit": 100 }`, paginate (same args + `cursor`) → 8 monitors.
 2. Echo the 8 names and `type`s. User confirms.
-3. For each: `update-monitor-status` with `{"monitorId": ..., "status": "PAUSED"}`.
-4. Note the 8 IDs. Tell the user: "Paused 8 monitors. Run `resume deploy-web` when you're done."
+3. Note the 8 IDs.
+4. For each: `update-monitor-status` with `{"monitorId": ..., "status": "PAUSED"}`, then confirm. Tell the user: "Paused 8 monitors. Run `resume deploy-web` when you're done."
 5. On resume: loop with `STARTED`. Report which recovered and which errored.
 
 ## Common mistakes

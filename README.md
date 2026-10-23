@@ -5,7 +5,7 @@ This repo is UptimeRobot's single source of truth for AI agent integrations. It 
 - **llms.txt** and **AGENTS.md** — discovery and orientation for LLMs and coding agents.
 - **.claude-plugin**, **.cursor-plugin**, and **.codex-plugin** folders — installable plugin manifests for Claude Code, Cursor, and Codex.
 - **skills** folder — workflow skills (setup, no-account quick monitor, bulk pause, SLA reports, incident response, status pages) plus short per-tool reference pages that cover only what the MCP tool schemas don't say. See [Skills](#skills).
-- **rules** folder — shared rules loaded by both Cursor and Claude Code.
+- **rules** folder — Cursor rules (`.mdc`). Claude Code gets the same rules from the `conventions` skill.
 - **mcp.json** — Cursor-format MCP server config (dot-less filename).
 - **.mcp.json** — Claude Code MCP server config (dot-prefixed so Claude Code auto-registers the server when the plugin loads).
 - **codex.mcp.json** — Codex-format MCP server config (`mcp_servers` snake_case key, referenced explicitly by the Codex manifest).
@@ -58,7 +58,7 @@ If you just want the MCP tools without the rest of the plugin (dotfiles, CI boot
 claude mcp add --transport http uptimerobot https://mcp.uptimerobot.com/mcp
 ```
 
-Then run `/mcp`, select **uptimerobot**, and choose **Authenticate** to complete the OAuth browser flow. Run `/plugin` to confirm `uptimerobot MCP Server` shows ✓ connected.
+Then run `/mcp`, select **uptimerobot**, and choose **Authenticate** to complete the OAuth browser flow. Run `/mcp` (or `claude mcp list` in a terminal) to confirm `uptimerobot` shows ✓ connected.
 
 ### Cursor
 
@@ -119,7 +119,7 @@ Clients without registry support can connect to the same URL directly (OAuth on 
 
 #### Headless / CI (no browser)
 
-Where the OAuth browser flow can't run, add the server to your own client config with a Main API key from the dashboard (**Integrations & API**) instead. This is a manual setup — the plugin itself never reads or sends an API key:
+Where the OAuth browser flow can't run, add the server to your own client config with an API key from the dashboard (**Integrations & API**) instead — a **Read-only** key unless the job needs to write. Keep the key in an environment variable, not in the file, and never commit it. This is a manual setup — the plugin itself never reads or sends an API key:
 
 ```json
 {
@@ -127,11 +127,13 @@ Where the OAuth browser flow can't run, add the server to your own client config
     "uptimerobot": {
       "type": "http",
       "url": "https://mcp.uptimerobot.com/mcp",
-      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
+      "headers": { "Authorization": "Bearer ${UPTIMEROBOT_API_KEY}" }
     }
   }
 }
 ```
+
+Claude Code expands `${UPTIMEROBOT_API_KEY}` from the environment; other clients have their own syntax (Cursor: `${env:UPTIMEROBOT_API_KEY}`).
 
 ## What the plugin provides
 
@@ -197,7 +199,7 @@ Where the OAuth browser flow can't run, add the server to your own client config
 | Tool                    | Purpose                                                      |
 | ------------------------ | --------------------------------------------------------------- |
 | `list-incidents`        | Incidents across monitors, with time range, monitor, or open-only filter |
-| `get-incident-details`  | Per-incident request logs and error details                     |
+| `get-incident-details`  | Per-incident request logs and cause                             |
 | `get-incident-activity-log` | Incident timeline summary plus paginated entries            |
 | `get-incident-alerts`   | Alerts sent during an incident, with delivery summary           |
 
@@ -281,18 +283,18 @@ The MCP handshake sometimes completes after the client captures its tool list at
 
 ### Tool errors
 
-Tool errors reach the client as plain text with no numeric code, and the wording varies by tool — match by substring, not exact text.
+Tool errors usually reach the client as plain text with no numeric code, and the wording varies by tool — match by substring, not exact text.
 
 | Message contains (first match wins) | Meaning | What to do |
 | --- | --- | --- |
 | `Rate limit` | Too many calls (10 per minute on the free plan, shared with the account's REST API use) | Wait the seconds the message gives, then retry |
-| `unauthorized`, `User not found`, `Invalid API key`, invalid / expired token | Authentication failed | See Authentication problems above |
-| `not found` | The ID doesn't exist or belongs to another account | Look the ID up again |
-| `Invalid parameters`, `Invalid field`, `is required`, `must be` | Bad input | The message names the offending fields; fix them and retry |
+| `unauthorized`, `unauthenticated`, `requires authentication`, `User not found`, `Invalid API key`, invalid / expired token | Authentication failed | OAuth: see Authentication problems above. API-key header: replace the key in your MCP config |
+| `not found` | The ID doesn't exist or belongs to another account | Look the ID up again. After a failed `create-monitor`, check `list-monitors` first — it may have been created anyway |
+| `Invalid parameters`, `Invalid field`, `is required`, `must be`, `Missing required`, `Invalid values`, `Validation failed`, `blacklisted` | Bad input | The message names the offending fields; fix them and retry |
 | `requires roles`, `Write operations not permitted` | No write access | See Authentication problems above |
 | `Access denied` | Usually an ID from another account | Check the ID; if it's right, see Authentication problems above |
 | `plan`, `subscription`, `limit exceeded`, `monitor interval` | Monitor limit, interval, monitor type, or plan feature not included | Loosen the interval, delete unused monitors, or upgrade |
-| `Internal server error`, `missing required resultType` | Server or protocol failure | Wait a minute and retry once |
+| `Internal server error`, `Internal error`, `Failed to`, `missing required resultType` | Server or protocol failure | Wait a minute and retry a read once. For a write, check whether it landed first — never blind-retry |
 
 For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
 
