@@ -27,7 +27,7 @@ Use this to find monitors, inspect one, or pause / resume one. For changing a mo
 - Responses use `name`; `friendlyName` is only an input field on create/update.
 - `get-monitor-details` doesn't return the monitor's alert contacts, maintenance windows or group. For group membership use `list-monitors` with `groupId`.
 - `get-monitor-details` returns `customHttpHeaders` unredacted (bearer tokens, API keys). Don't echo header values to the user.
-- For a HEARTBEAT monitor the push URL is in `heartbeatUrl`; its `url` field is only the bare hash.
+- For a HEARTBEAT monitor `url` is only the bare hash; the full push URL is in `heartbeatUrl` from `get-monitor-details` (not in `list-monitors`).
 - Resuming (`status: "STARTED"`) counts against the plan's monitor limit and can fail with a limit error. After pausing or resuming, confirm with `get-monitor-details`.
 
 ## Related

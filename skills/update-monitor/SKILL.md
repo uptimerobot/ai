@@ -37,11 +37,12 @@ Flow: find the ID with `list-monitors` (never guess it), read the current state 
 - **`assignedAlertContacts` and `tagNames` are full replacements, not patches.** Sending only the new item removes all the others; `[]` clears them.
 - **The current alert contacts can't be read back.** `get-monitor-details` has no `assignedAlertContacts` (nor `maintenanceWindowsIds`). So for "add a contact, keep the existing ones", ask the user for the complete list (or have them check the dashboard) — don't guess and don't send only the new one. For tags, merge with the `tags` field from `get-monitor-details`.
 - Contact IDs come from `list-alert-contacts` (personal email/SMS/voice/push) and `list-integrations` (Slack, webhook, …). `list-integrations` also repeats the personal contacts — dedupe by `id`. See [`list-integrations`](../list-integrations/SKILL.md).
-- **`authType` is silently ignored.** `update-monitor` returns `Monitor <id> updated successfully` but the stored value doesn't change. Auth settings can only be set at create time (or in the dashboard). Always verify with `get-monitor-details` before reporting success.
+- **Some fields are silently ignored:** `authType`, `httpUsername`, `httpPassword`, `keywordType`, `postValueData` / `postValueType`, and `maintenanceWindowsIds`. `update-monitor` returns `Monitor <id> updated successfully` but nothing changes. Set them at create time or in the dashboard (maintenance windows: with the maintenance-window tools). Always verify with `get-monitor-details` before reporting success.
+- `responseTimeThreshold` reads back as `0` in `get-monitor-details`; the stored thresholds are in `regionData`.
 - Fields that don't fit the monitor's type are rejected with a plain-text message, no numeric code — e.g. `Invalid field for HTTP monitor: gracePeriod. gracePeriod applies only to HEARTBEAT monitors.` Match on `Invalid field`. DNS monitors reject `port` on update (it can only be set at create).
 - `config.ipVersion` takes `ipv4Only` / `ipv6Only` (not `IPv4` / `IPv6`).
 - `groupId` moves the monitor into a group (`0` = no group). `get-monitor-details` doesn't show the group; check membership with `list-monitors` + `groupId`. See [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md).
-- `get-monitor-details` returns `customHttpHeaders` and `httpUsername` unredacted (often bearer tokens or API keys). Don't echo header values back to the user.
+- `get-monitor-details` returns `customHttpHeaders` and `httpUsername` unredacted (often bearer tokens or API keys). Don't echo header values or usernames back to the user unless asked; mask them.
 
 ## Related
 

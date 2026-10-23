@@ -21,15 +21,7 @@ Before calling any tools, confirm two things if not already clear:
 
 If the user says "last month", convert to the ISO interval for the previous calendar month.
 
-## Step 2 — Account aggregate
-
-```json
-{ "timeRange": "30d" }
-```
-
-Call `get-monitor-stats` to get the aggregate uptime and total downtime for the opening summary. `overallUptime` is a fraction from 0 to 1 — multiply by 100 for the percentage. `totalIncidentsDuration` is in seconds.
-
-## Step 3 — List monitors in scope
+## Step 2 — List monitors in scope
 
 ```json
 { "name": "prod", "limit": 50 }
@@ -43,17 +35,24 @@ Also exclude monitors still in `STARTED` (created or resumed but not yet checked
 
 Track any monitors currently in `DOWN` or `LOOKS_DOWN` state — they need a callout in the narrative.
 
-## Step 4 — Per-monitor incidents
+## Step 3 — Per-monitor incidents
 
-For each monitor, fetch downtime incidents for the range:
+For each monitor, fetch incidents for the range as an ISO interval, starting a day early (see below) — e.g. for April 2026:
 
 ```json
-{ "monitorId": 800123456, "timeRange": "30d", "limit": 50 }
+{ "monitorId": 800123456, "timeRange": "2026-03-31T00:00:00Z/2026-04-30T23:59:59Z", "limit": 50 }
 ```
 
 Paginate until `hasMore: false` by repeating your own args with `cursor` set to `nextCursor` — never copy the call in `instructions` (its `timeRange` is an object the tool rejects). Count the incidents yourself; `totalCount` is `null` on every page after the first.
 
-The range query can miss an incident that started before the range and is still ongoing. Also call `list-incidents` with the same `monitorId` and `status: "open"`, then merge both result sets by incident `id` so each incident is clipped and counted once.
+Count only incidents with `type: "Downtime"` — the list also returns `Slow Response` and `Visual Change` incidents.
+
+The range query returns incidents that **started** in the range, so it misses any that started earlier and overlapped it:
+
+- **Still ongoing:** also call `list-incidents` with the same `monitorId` and `status: "open"`, paginating the same way.
+- **Already resolved:** that's why the query starts a day early; clip to the report range afterwards. The query can't exceed 90 days, so for a range longer than 89 days start it as early as the cap allows. Incidents that started before the query are missed — say so in the report.
+
+Merge all results by incident `id`, clip each to the report range, and **drop any incident whose clipped overlap is 0 seconds** (the extra queries also return incidents from the day before the range, and open incidents that started after it). Count and classify only what remains.
 
 `duration` is human-readable text (`"15m 55s"`, `"1h 2m 3s"`), **not** seconds. To get downtime seconds per incident, either parse its `d` / `h` / `m` / `s` parts, or take `startedAt` from the list item and `endedAt` from `get-incident-details`. Then:
 
@@ -61,19 +60,19 @@ The range query can miss an incident that started before the range and is still 
 - Treat an ongoing incident (no `endedAt`, or returned by `list-incidents` with `status: "open"`) as lasting until the range end (or now, if the range ends now).
 - Sum the clipped seconds to get the monitor's total downtime.
 
-## Step 5 — Per-monitor response times (optional)
+## Step 4 — Per-monitor response times (optional)
 
 Only fetch response times if the user explicitly asks for latency data. For a standard stakeholder report, skip this step — response times add technical noise that non-engineering readers don't need.
 
-If requested, call `get-response-times` without `bucketSize` to get the full-range summary:
+If requested, call `get-response-times`. `summary` always covers the whole range; omit `bucketSize` and the server picks one:
 
 ```json
 { "monitorId": 800123456, "timeRange": "30d" }
 ```
 
-Use `summary.avg` and `summary.p95` (milliseconds) from the response.
+Use `summary.avg` and `summary.p95` (milliseconds) from the response. `p95` is over bucket averages, so label it "p95 of averages" if precision matters.
 
-## Step 6 — Compute and render
+## Step 5 — Compute and render
 
 For each monitor, calculate uptime %:
 
@@ -82,6 +81,12 @@ uptime_pct = (range_seconds - downtime_seconds) / range_seconds * 100
 ```
 
 Where `range_seconds` is derived from the time range (e.g. 30 days = 2,592,000 seconds).
+
+The overall SLA in the headline is computed from the same monitors — never taken from `get-monitor-stats`, which covers the whole account, weighs paused monitors and paused time as up, and ignores your scope:
+
+```
+overall_pct = sum(range_seconds - downtime_seconds) / (monitor_count * range_seconds) * 100
+```
 
 Split monitors into two groups:
 - **Issues**: monitors with at least 1 incident in the range, sorted by uptime % ascending (worst first).
@@ -94,7 +99,7 @@ Render as Markdown. This ensures the output renders correctly when pasted into S
 ```markdown
 ## SLA Report — Apr 1–Apr 30, 2026 (30 days)
 
-42 monitors active. Overall SLA: **99.94%**.
+42 monitors active. Overall SLA: **99.977%**.
 3 monitors had incidents this month; 39 were fully healthy.
 2 monitors excluded (paused).
 
@@ -104,9 +109,9 @@ Render as Markdown. This ensures the output renders correctly when pasted into S
 
 | Monitor | Uptime | Downtime | Incidents |
 |---|---|---|---|
-| prod-cdn | 99.12% | 6h 21min | 5 |
-| prod-api | 99.94% | 26min | 2 |
-| staging-auth | 99.96% | 17min | 1 |
+| prod-cdn | 99.118% | 6h 21min | 5 (missed three nines) |
+| prod-api | 99.940% | 26min | 2 |
+| staging-auth | 99.961% | 17min | 1 |
 
 ### ✓ Clean — 39 monitors at 100%
 
@@ -151,7 +156,7 @@ _Report generated 2026-04-30. Data from UptimeRobot._
 
 If the account has more than ~20 monitors, ask the user to narrow scope with a `name`, `url`, or `tags` filter before looping per-monitor calls. Looping `list-incidents` for 100 monitors will be slow and may hit rate limits.
 
-If rate-limited (HTTP 429), pause and retry with exponential backoff — see `errors`.
+If a call returns `Rate limit reached`, wait the seconds it states and retry — see `errors`. Free accounts get 10 tool calls per minute.
 
 ## Common mistakes
 
@@ -159,10 +164,10 @@ If rate-limited (HTTP 429), pause and retry with exponential backoff — see `er
 - Rounding `99.942%` to `99.9%` when the user cares about SLA thresholds — they're different outcomes for a monthly SLA. Keep at least three decimals.
 - Forgetting to paginate `list-incidents` per monitor — partial pages silently under-report downtime and inflate uptime %.
 - Including `PAUSED` monitors with `100.00%` uptime — they're unmonitored, not healthy. Exclude and note the count.
-- Using `get-monitor-stats` for per-monitor uptime — that tool returns account-level aggregates only.
+- Using `get-monitor-stats` for the headline or per-monitor uptime — it is account-wide, can't be scoped, and counts paused time as up.
+- Counting `Slow Response` or `Visual Change` incidents as downtime.
 - Treating `incidentId` as a number. It's always a numeric string.
 - Summing `duration` as if it were seconds. It's text like `"15m 55s"` — parse it or use `startedAt` / `endedAt`.
-- Showing `overallUptime` as-is. It's a fraction (`0.9994` = 99.94%).
 - Omitting the "still DOWN" callout — a monitor that is currently down is the most important thing in the report.
 
 ## Related

@@ -20,10 +20,10 @@ Two linked resources: the **page** itself (`create/update/get/list/delete-psp`) 
 
 | Field | Behavior |
 | -- | -- |
-| `monitorIds` | Explicit list. Ignored if `autoAddMonitors: true`. The only field that populates the response's `monitorIds` array. |
+| `monitorIds` | Explicit list. If you also send `autoAddMonitors: true`, `monitorIds` wins and auto-add stays off. The only field that populates the response's `monitorIds` array. |
 | `monitorGroupIds` | Resolves group membership into `monitorsCount` correctly (verified) — see [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md). |
 | `tagIds` | Resolves tagged monitors into `monitorsCount` correctly (verified). Takes numeric tag IDs from `list-tags`, not tag names. |
-| `autoAddMonitors: true` | Every *current* monitor on the account (`monitorsCount` matches the account's full monitor total). The schema only says "all monitors are added automatically" — whether monitors created later are also added isn't stated, so don't promise it. Ignores `monitorIds`. |
+| `autoAddMonitors: true` | Every monitor on the account, including monitors created later. Only applies when `monitorIds` isn't sent. |
 
 **`monitorGroupIds`/`tagIds` resolve into `monitorsCount` but the `monitorIds` array in the response stays empty.** Don't read an empty `monitorIds` on a group/tag-scoped page as "no monitors are showing"; check `monitorsCount` instead. `autoAddMonitors: true` is stranger still: `monitorIds` comes back as `[0]` (a sentinel, not the real list and not `[]`) — don't read anything into that value on an auto-add page either.
 
@@ -81,7 +81,7 @@ Announcement `status` has four states and only `pspId` is schema-required. **The
 
 To publish immediately on create, set `status: Published` and **omit `startDate`** — the server stamps the current time; don't invent one. To schedule for later, send a future `startDate` and leave `status` unset (it defaults to `Pending` until the scheduled time).
 
-**Announcements may notify the page's subscribers.** Created and published announcements come back with `deliveryStatus: "InQueue"` — observed even on a `PAUSED` page — which suggests notifications to subscribers are queued. Whether they are actually sent hasn't been verified. On a page that has subscribers, tell the user and get confirmation before creating or publishing an announcement.
+**Announcements may notify the page's subscribers.** Whether subscribers are emailed hasn't been verified. `deliveryStatus: "InQueue"` is set on every new announcement, so it tells you nothing either way. On a page that has subscribers, tell the user and get confirmation before creating or publishing an announcement.
 
 **Updating an existing announcement** (`update-psp-announcement`, only provided fields change):
 
@@ -117,10 +117,10 @@ User: "We're down, post something on the status page and let me know when it's r
 
 - Passing `status: PAUSED` to `create-psp` and assuming it produced a draft — create ignores it and the page is public. Create without monitors (or with a password), `update-psp` `{pspId, status: "PAUSED"}`, confirm with `get-psp`, then add monitors.
 - Publishing (`status: ENABLED`) before the user has reviewed which monitors are included — internal monitors leak onto a public page.
-- Setting `autoAddMonitors: true` without asking — it includes every *current* monitor on the account; confirm before using since it also touches every internal/staging monitor.
+- Setting `autoAddMonitors: true` without asking — it includes every monitor on the account, including ones created later; confirm before using since it also exposes every internal/staging monitor.
 - Creating an announcement with only `pspId` set expecting a safe draft — it saves as `Pending` with `startDate: now`, which will auto-publish blank once the background job runs (not instantly, but not a stable draft either). Always fill `title` + `content` + `type` + `status`.
 - Assuming a `Pending` announcement checked moments after creation is stuck/broken because it hasn't auto-published yet — the transition job runs asynchronously; give it time before concluding it's not working.
-- Creating or publishing an announcement on a page with subscribers without asking — it may queue notifications to them (`deliveryStatus: "InQueue"`), even when the page is paused.
+- Creating or publishing an announcement on a page with subscribers without asking — it may notify them, even when the page is paused.
 - Hard-coding a `startDate` on a `status: Published` create — omit it and let the server stamp the time. Sending a future `startDate` alone to reschedule a `Published` announcement — also set `status: Pending`.
 - Sending dates with a timezone offset (`+02:00`) — use UTC with a trailing `Z`.
 - Leaving a resolved incident announcement pinned and `Published` — archive and unpin once it's over.
@@ -131,4 +131,4 @@ User: "We're down, post something on the status page and let me know when it's r
 - [`manage-monitor-groups`](../manage-monitor-groups/SKILL.md) — groups/tags feeding `monitorGroupIds` / `tagIds`.
 - [`maintenance-windows`](../maintenance-windows/SKILL.md) — pair a `Maintenance`-type announcement with an actual suppression window.
 - [`incident-response`](../incident-response/SKILL.md) — the incident this announcement is usually about.
-- [`errors`](../errors/SKILL.md) — `-28002 subscription_limit_exceeded` when the plan lacks `psp-subscribers`.
+- [`errors`](../errors/SKILL.md) — the `requires a plan with the "psp-subscribers" feature` error when the plan lacks it.

@@ -63,7 +63,9 @@ Wait for confirmation if the count is non-trivial (>5).
 { "monitorId": 800123456, "status": "PAUSED" }
 ```
 
-Loop over the collected IDs. If you hit HTTP 429, back off with jitter (see `errors` skill).
+Loop over the collected IDs. If a call returns `Rate limit reached`, wait the seconds it states and continue (see `errors` skill). Free accounts get 10 tool calls per minute, so pace long lists.
+
+Then wait a few seconds (reads can lag) and confirm by ID. For a handful of monitors, call `get-monitor-details` on each stored ID and check `status`. For many, call `list-monitors` with only `filter: ["PAUSED"]` (paginate while `hasMore` is true; an account can have hundreds of paused monitors) and check every stored ID is in it. Report any that aren't paused.
 
 ## Step 4 — Track what you paused
 
@@ -77,7 +79,9 @@ Same loop, flip the status:
 { "monitorId": 800123456, "status": "STARTED" }
 ```
 
-Resuming a monitor can return `-28001 monitor_limit_exceeded` if the account is now over its active-monitor cap (e.g. the user added new monitors while these were paused). Surface which ones failed and suggest deleting or upgrading — **do not retry**.
+Resuming a monitor can return `Monitor limit exceeded` if the account is now over its active-monitor cap (e.g. the user added new monitors while these were paused). Surface which ones failed and suggest deleting or upgrading — **do not retry**.
+
+Confirm the same way, by the stored IDs — not by re-filtering on tags or name (a monitor renamed or retagged meanwhile would drop out and look resumed). None should still be `PAUSED`; freshly resumed monitors show `STARTED` until their first check.
 
 ## Full example flow
 
@@ -96,12 +100,12 @@ User: "Pause everything tagged `deploy-web` for the next 20 minutes."
 - Pausing monitors already in `PAUSED` state — harmless but noisy. Filter them out up front.
 - Using `filter: ["STARTED"]` to mean "running" — it returns only never-checked monitors, so the batch comes back empty or incomplete.
 - Copying the `instructions` next-call JSON when paginating — it drops `tags` / `filter` / `name`, so later pages contain unrelated monitors.
-- Retrying `-28001 monitor_limit_exceeded` on resume. It's a cap, not a rate limit.
+- Retrying `Monitor limit exceeded` on resume. It's a cap, not a rate limit.
 - Using `update-monitor` with `status: ...` instead of `update-monitor-status`. Status lives on the dedicated tool.
 
 ## Related
 
 - `manage-monitors` — for the underlying `list-monitors` and `update-monitor-status` tools.
 - [`maintenance-windows`](../maintenance-windows/SKILL.md) — the scheduled/recurring alternative.
-- `errors` — for `-28001`, `-31002`, and 429 handling.
+- `errors` — for the monitor limit, missing write access, and rate limits.
 - `incident-response` — when pausing is a response to ongoing incidents rather than a deploy.

@@ -30,7 +30,7 @@ Use for basic network reachability of a host or IP. PING checks nothing about HT
 
 ## After creating
 
-Call `get-monitor-details` with the integer `id` from the create response to show the stored state; if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (tags, timeout, `config.ipVersion`); if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
 
 ## Related
 

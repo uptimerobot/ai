@@ -12,7 +12,7 @@ Use this for planned or recurring downtime (deploys, patching). A window suppres
 
 **Tools:** `create-maintenance-window`, `update-maintenance-window`, `get-maintenance-window`, `list-maintenance-windows`, `delete-maintenance-window`. The tools' own schemas and descriptions are the reference for parameters — this page only covers what they don't say.
 
-`create-maintenance-window` — weekly, 90 minutes from 02:00 UTC:
+`create-maintenance-window` — every Monday, 90 minutes from 02:00:
 
 ```json
 {
@@ -34,13 +34,13 @@ Use this for planned or recurring downtime (deploys, patching). A window suppres
 
 ## Gotchas
 
-- **The weekday behind each `days` number is not confirmed.** No response shows it — the tools just echo `days: [1]`, so reading the window back proves nothing. `1` is probably Monday. Tell the user which number you sent and ask them to check the weekday in the dashboard; don't state the mapping as fact.
+- **Weekly `days` are ISO weekdays: `1` = Monday … `7` = Sunday.** Monthly `days` are dates `1`–`31`; `-1` (last day of the month) is accepted, but the server's scheduling code doesn't match it to any day — use explicit dates instead.
 - `days` is required for `weekly` and `monthly`. Without it you get plain text with no code: `days is required and must be non-empty for "weekly" maintenance windows`.
 - **New windows are always created active** (there is no `status` on create). If the user wants a draft, pause it right after creating.
-- `time` is UTC — convert from the user's timezone first. `date`/`time` are the first occurrence; `duration` is minutes.
+- **The timezone of `time` is unclear.** The schema says UTC, but the server's scheduling code reads `date`/`time` in the account's timezone. Tell the user the time you sent and ask them to check the start time in the dashboard. `date`/`time` are the first occurrence; `duration` is minutes.
 - **`list-maintenance-windows` rejects `cursor: 0`** (other list tools accept it). Omit `cursor` on the first page.
 - The window owns the monitor list: `update-monitor` has no maintenance-window field and `get-monitor-details` doesn't show windows. Change a window's monitors with `update-maintenance-window` `monitorIds`, sending the complete list (read it first with `get-maintenance-window`).
-- `autoAddMonitors: true` covers every monitor — confirm with the user before using it.
+- **`autoAddMonitors: true` doesn't attach existing monitors over MCP** — the window reads back `monitorIds: [0]` (a marker, not a list), and the server doesn't link the monitors you already have. Pass the IDs in `monitorIds` instead, and check the result with `get-maintenance-window`.
 - `delete-maintenance-window` is permanent; pausing is usually what the user wants. Call `get-user` and confirm before deleting.
 
 ## Related

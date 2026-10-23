@@ -60,11 +60,10 @@ Lead with the active (unresolved) incident, then show recently-resolved ones as 
 
 Returns:
 
-- `startedAt`, `endedAt` (not set while ongoing), `duration`, `cause` (a number, e.g. `401`), `reason`.
-- `checkerLocations[]` and `requestLogs[]` (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is not ISO 8601 (`"2026-09-30 14:44:48.587"`).
-- `errorDetails` — `primaryError`, `errorCount`, `affectedRegions`.
+- `startedAt`, `endedAt` and `duration` (`endedAt` and `duration` are `null` while ongoing), `cause` (a number, e.g. `401`), `reason` — the readable cause.
+- `requestLogs[]` — the 10 newest checks (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is usually not ISO 8601 (`"2026-09-30 14:44:48.587"`, UTC).
 
-`checkerLocations` and `affectedRegions` can come back empty — count regions from `requestLogs[].region` instead.
+`checkerLocations` is always empty and `errorDetails` is a placeholder (`"Unknown error"`) — use `reason` for the cause and `requestLogs[].region` for regions.
 
 No traceroute or root-cause category is returned. For the checker IP and city per check, call `get-incident-activity-log` (`entries[].remoteNode`). For who was notified, call `get-incident-alerts`.
 
@@ -133,7 +132,7 @@ For each paused monitor ID you stored in step 5:
 { "monitorId": 800123456, "status": "STARTED" }
 ```
 
-Watch for `-28001 monitor_limit_exceeded` on resume (see `errors`).
+Watch for `Monitor limit exceeded` on resume (see `errors`).
 
 ## Reporting back to the user
 
@@ -159,7 +158,7 @@ Related monitors also down during window: `prod-api-healthz`, `prod-api-db`.
 - Treating a resolved-then-retriggered incident as one event. Sometimes `list-incidents` returns two rows for a flap.
 - Requesting `timeRange` > 90 days. Max is 90d.
 - Leaving an incorrect incident comment uncorrected instead of using `update-incident-comment` — the thread is the record other people read.
-- Trying to comment on an incident when the account's plan lacks the `incident-comments` feature — if the call fails with `-28002` or an error message that mentions the plan or `incident-comments`, fall back to reporting in chat only.
+- Trying to comment on an incident when the account's plan lacks the `incident-comments` feature — if the call fails with an error that mentions the plan or `incident-comments`, fall back to reporting in chat only.
 
 ## Related
 
@@ -169,4 +168,4 @@ Related monitors also down during window: `prod-api-healthz`, `prod-api-db`.
 - `bulk-pause` — when many monitors need silencing at once.
 - [`maintenance-windows`](../maintenance-windows/SKILL.md) — the scheduled alternative to pausing during known downtime.
 - [`status-pages`](../status-pages/SKILL.md) — post a public-facing announcement alongside internal incident comments.
-- `errors` — `-28001` on resume, `-28002` for plan-gated features, `-30001` on stale IDs, 429 handling during heavy loops.
+- `errors` — monitor limit on resume, plan-gated features, `not found` on stale IDs, rate limits during heavy loops.

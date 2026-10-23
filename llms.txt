@@ -2,12 +2,12 @@
 
 > UptimeRobot monitors websites, APIs, servers, DNS, and services from a global checker network. It records up/down state and response times, opens incidents when targets fail, and sends alerts through configurable contacts (email, SMS, Slack, webhooks, and more). A remote MCP server exposes the full monitor lifecycle to AI agents.
 
-Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`). Monitor-type availability, minimum interval, and monitor counts depend on the active plan. The MCP server enforces plan limits: `-28001` when the monitor limit is reached, `-28002` when an interval or monitor type exceeds the plan.
+Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`). Monitor-type availability, minimum interval, and monitor counts depend on the active plan. The MCP server enforces plan limits and returns a plain-text error when a monitor count, interval or monitor type exceeds the plan. Tool calls are rate-limited (10 per minute on the free plan).
 
 ## MCP
 
 - [MCP server](https://mcp.uptimerobot.com/mcp): Remote streamable-HTTP MCP endpoint. Connect to the URL directly and authorize through the OAuth browser flow on first use — no API key to paste. (Headless/CI: see the README for a manual setup.)
-- [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, error codes, and agent conventions.
+- [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, errors, and agent conventions.
 - [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor plugin, skills, and this file.
 - [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect and authorize Claude Code with UptimeRobot via OAuth.
 
@@ -39,7 +39,7 @@ Plan names change over time — read the active plan from `get-user` (`activeSub
 - [Incident response skill](https://uptimerobot.com/skills/incident-response/SKILL.md): End-to-end downtime triage, incident-comment timeline logging, and recovery verification.
 - [Stats skill](https://uptimerobot.com/skills/stats/SKILL.md): Aggregated uptime percentages and per-monitor response-time time series.
 - [Status pages skill](https://uptimerobot.com/skills/status-pages/SKILL.md): Publish a public status page from monitors, groups, or tags, and manage incident/maintenance announcements on it.
-- [Errors skill](https://uptimerobot.com/skills/errors/SKILL.md): MCP error codes, recovery, and rate-limit handling.
+- [Errors skill](https://uptimerobot.com/skills/errors/SKILL.md): MCP error messages, recovery, and rate-limit handling.
 
 ## Product
 

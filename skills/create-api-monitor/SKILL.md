@@ -36,7 +36,7 @@ Use when specific fields of a (usually JSON) response must hold — not just the
 
 ## After creating
 
-Call `get-monitor-details` with the integer `id` from the create response to show the stored state (`config.apiAssertions`); if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (`config.apiAssertions`); if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
 
 ## Related
 

@@ -33,12 +33,12 @@ Use to check that a website or HTTP(S) endpoint responds with a success code. Pi
 
 ## After creating
 
-Call `get-monitor-details` with the integer `id` from the create response to show the stored state; if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (tags, timeout, HTTP settings); if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
 
 ## Related
 
 - `create-keyword-monitor` — assert text is (or isn't) in the body.
 - `create-api-monitor` — assertions on the response body.
 - `update-monitor` — change an existing monitor.
-- `errors` — recovering from plan limits, invalid parameters, `429`.
+- `errors` — recovering from plan limits, invalid parameters, rate limits.
 - `conventions` — ID discovery and verification rules.

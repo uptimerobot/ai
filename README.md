@@ -52,7 +52,7 @@ On first connection a browser opens for the OAuth flow. Run `/plugin` to confirm
 
 #### MCP server only (scripted)
 
-If you just want the MCP tools without the rest of the plugin (dotfiles, CI bootstrap), see `[skills/setup/SKILL.md](skills/setup/SKILL.md)`. Short version:
+If you just want the MCP tools without the rest of the plugin (dotfiles, CI bootstrap), see [skills/setup/SKILL.md](skills/setup/SKILL.md). Short version:
 
 ```bash
 claude mcp add --transport http uptimerobot https://mcp.uptimerobot.com/mcp
@@ -263,7 +263,7 @@ The tools' own schemas cover parameters, so the skills focus on multi-step workf
 
 ## Plan requirements
 
-Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`) instead of assuming a fixed list. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these, returning `-28001` (`monitor_limit_exceeded`) when the monitor limit is reached and `-28002` (`subscription_limit_exceeded`) when an interval or monitor type exceeds the plan. See `[skills/errors/SKILL.md](skills/errors/SKILL.md)`.
+Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`) instead of assuming a fixed list. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns a plain-text error (e.g. `Monitor creation limit exceeded`, `You can not use this monitor interval. Use higher interval.`, or `requires a plan with the "<feature>" feature enabled`). Tool calls are rate-limited too: 10 per minute on the free plan, more on paid plans. See [skills/errors/SKILL.md](skills/errors/SKILL.md).
 
 ## Troubleshooting
 
@@ -276,23 +276,25 @@ The MCP handshake sometimes completes after the client captures its tool list at
 | Symptom | Fix |
 | --- | --- |
 | OAuth browser didn't open | Run `/mcp`, select **uptimerobot**, choose **Authenticate**, and open the URL it shows manually if the browser still doesn't launch |
-| Tools return `-31001 user_not_found` | Run `/mcp`, select **uptimerobot**, and choose **Clear authentication**, then **Authenticate** again |
-| Write tools return `-31002 access_denied` | Re-authenticate via `/mcp` with an account that has write permission |
+| Tools return `unauthorized`, `User not found`, or an invalid / expired token error | Run `/mcp`, select **uptimerobot**, and choose **Clear authentication**, then **Authenticate** again |
+| Write tools return `requires roles` or `Write operations not permitted` | Re-authenticate via `/mcp` with an account that has write permission. In a team account, `delete-monitor`, `delete-tag` and `update-storm-protection-settings` are admin-only |
 
-### API error codes
+### Tool errors
 
-| Code | Meaning | What to do |
+Tool errors reach the client as plain text with no numeric code, and the wording varies by tool — match by substring, not exact text.
+
+| Message contains (first match wins) | Meaning | What to do |
 | --- | --- | --- |
-| `-28001` | Monitor limit reached | Delete unused monitors or upgrade your plan |
-| `-28002` | Subscription limit | Interval too aggressive for your plan, or monitor type not included — loosen the interval or upgrade |
-| `-29001` | Invalid parameters | The error message names the offending fields; fix them and retry |
-| `-30001` | Monitor not found | Monitor doesn't exist or belongs to another account (usually arrives as a plain message such as `Monitor not found` or `Monitor not found or access denied`) |
-| `-30003` | Resource not found | A referenced alert contact or maintenance window doesn't exist |
-| `-31001` | Authentication failed | See Authentication problems above |
-| `-31002` | Access denied | The session account lacks write permission — see Authentication problems above |
-| HTTP `429` | Rate limit | Back off and retry with exponential delay |
+| `Rate limit` | Too many calls (10 per minute on the free plan, shared with the account's REST API use) | Wait the seconds the message gives, then retry |
+| `unauthorized`, `User not found`, `Invalid API key`, invalid / expired token | Authentication failed | See Authentication problems above |
+| `not found` | The ID doesn't exist or belongs to another account | Look the ID up again |
+| `Invalid parameters`, `Invalid field`, `is required`, `must be` | Bad input | The message names the offending fields; fix them and retry |
+| `requires roles`, `Write operations not permitted` | No write access | See Authentication problems above |
+| `Access denied` | Usually an ID from another account | Check the ID; if it's right, see Authentication problems above |
+| `plan`, `subscription`, `limit exceeded`, `monitor interval` | Monitor limit, interval, monitor type, or plan feature not included | Loosen the interval, delete unused monitors, or upgrade |
+| `Internal server error`, `missing required resultType` | Server or protocol failure | Wait a minute and retry once |
 
-Errors usually reach the client as plain text with no code, and the wording varies by tool — match by substring (`not found`, `Invalid parameters`, `Invalid field`), not exact text. For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
+For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
 
 ## Contributing
 

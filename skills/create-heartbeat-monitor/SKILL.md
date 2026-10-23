@@ -26,12 +26,12 @@ Use for cron jobs, backups and background workers. It is the inverse of the othe
 ## Gotchas
 
 - Send no `url`. The create response's `url` is the full push URL (`https://heartbeat.uptimerobot.com/m<id>-<hash>`) — show it to the user so they can call it from the job (e.g. `curl -fsS --retry 3 "<push URL>"` on success only).
-- In `get-monitor-details` and `list-monitors`, `url` is only the bare hash; the full push URL is in `heartbeatUrl`.
+- Later, `url` is only the bare hash. The full push URL is in `heartbeatUrl` from `get-monitor-details`; `list-monitors` doesn't return it.
 - Set `interval` to the job's real schedule and use `gracePeriod` to absorb run-time variance; both are stored as sent.
 
 ## After creating
 
-Call `get-monitor-details` with the integer `id` from the create response to show the stored state (the push URL is in `heartbeatUrl`); if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
+The create response already has the stored `id`, `interval` and push URL, so no read-back is needed for those. Call `get-monitor-details` (integer `id`) only to confirm `gracePeriod` or other fields you set; if it returns `Monitor not found` right after the create, wait a few seconds and retry once — never re-create.
 
 ## Related
 
