@@ -1,6 +1,6 @@
 ---
 name: create-port-monitor
-description: Create a PORT monitor that opens a TCP connection to a host and port and alerts when the port stops accepting connections.
+description: Create a PORT monitor that opens a TCP connection to a host and port and alerts when the port stops accepting connections (the default, `portAlertCondition: "CLOSED"`) or, with `"OPEN"`, when it starts accepting them.
 tags: [monitoring, port, tcp, create, uptimerobot]
 ---
 

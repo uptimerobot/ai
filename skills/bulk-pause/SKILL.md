@@ -55,7 +55,7 @@ Pausing 14 monitors tagged `deploy-api`:
 - ...
 ```
 
-Wait for confirmation if the count is non-trivial (>5). Pausing a monitor that is down **resolves its open incident** at that moment (the downtime is cut short and the incident leaves `status: "open"`); resuming starts fresh, and a new incident opens if it's still down. Tell the user before pausing a monitor mid-outage.
+Wait for confirmation if the count is non-trivial (>5). Pausing a monitor that is down **resolves its open incident** at that moment: the incident becomes `Resolved`, its downtime stops counting, and it no longer appears in `list-incidents` with `status: "open"`. If the monitor is still down after resuming, a new incident opens. Tell the user before pausing a monitor mid-outage.
 
 ## Step 3 — Record the IDs
 

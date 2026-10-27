@@ -33,6 +33,10 @@ Exclude `PAUSED` monitors from the report unless the user explicitly wants them 
 
 Also exclude monitors still in `STARTED` (created or resumed but not yet checked) — they have no observations, so don't report them as clean or at 100%. List them as "no data yet".
 
+A monitor created during the range has no data before it existed. Get `createDateTime` from `get-monitor-details`, and if it is after the range start, measure that monitor from its creation time. These extra calls count toward the rate limit, so pace them.
+
+Pause history isn't available over MCP, so time a monitor spent paused during the range can't be excluded and counts as up. Say so in the report.
+
 Track any monitors currently in `DOWN` or `LOOKS_DOWN` state — they need a callout in the narrative.
 
 ## Step 3 — Per-monitor incidents
@@ -80,13 +84,15 @@ For each monitor, calculate uptime %:
 uptime_pct = (range_seconds - downtime_seconds) / range_seconds * 100
 ```
 
-Where `range_seconds` is derived from the time range (e.g. 30 days = 2,592,000 seconds).
+Where `range_seconds` is the monitor's observed range: the report range (e.g. 30 days = 2,592,000 seconds), starting at its creation time if it was created during the range.
 
 The overall SLA in the headline is computed from the same monitors — never taken from `get-monitor-stats`, which covers the whole account, weighs paused monitors and paused time as up, and ignores your scope:
 
 ```
-overall_pct = sum(range_seconds - downtime_seconds) / (monitor_count * range_seconds) * 100
+overall_pct = sum(range_seconds - downtime_seconds) / sum(range_seconds) * 100
 ```
+
+If no monitors are left after the exclusions, don't compute a percentage — report that no in-scope monitor has data for the range.
 
 Split monitors into two groups:
 - **Issues**: monitors with at least 1 incident in the range, sorted by uptime % ascending (worst first).
@@ -118,7 +124,7 @@ Render as Markdown. This ensures the output renders correctly when pasted into S
 _No incidents. Monitors: prod-worker, prod-db, prod-cache… (and 36 more)_
 
 ---
-_Report generated 2026-04-30. Data from UptimeRobot._
+_Report generated 2026-04-30. Data from UptimeRobot. Time a monitor spent paused during the range counts as up._
 ```
 
 **Rules for the Issues table:**
@@ -149,7 +155,7 @@ No incidents recorded this month.
 _Monitors: prod-cdn, prod-api, prod-auth… (and 39 more)_
 
 ---
-_Report generated 2026-04-30. Data from UptimeRobot._
+_Report generated 2026-04-30. Data from UptimeRobot. Time a monitor spent paused during the range counts as up._
 ```
 
 ## Handling large monitor counts

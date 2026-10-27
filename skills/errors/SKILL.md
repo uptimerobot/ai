@@ -32,7 +32,7 @@ Use this when an UptimeRobot tool call fails and you need to know what it means 
 
 A failed write may still have landed. Check before you resend:
 
-- **Update or status change** — you already have the monitor `id`. Read it with `get-monitor-details` and compare the fields you changed. Resend only if they don't match.
+- **Update or status change** — you already have the monitor `id`. Read it with `get-monitor-details` and compare the fields you changed. Resend only if a field it returns shows the old value. It can't show alert contacts, maintenance windows or group membership — if the update changed only those, don't resend automatically: check group membership with `list-monitors` + `groupId`, and ask the user before retrying anything else.
 - **Create** — you have no `id`. Wait a few seconds (reads can lag), then call `list-monitors` with `url` — or `name` for a HEARTBEAT monitor, which has no URL to search. `name` and `url` are partial matches. If exactly one monitor matches the intended `name`, `type` and `url` **and it wasn't there before you tried** (check before creating, or compare `createDateTime` from `get-monitor-details`), the create landed: use that `id`. If none or several match, tell the user and ask before creating again — a second create can leave a duplicate.
 - **Anything else** (status pages, maintenance windows, announcements, alert contacts, …) — read it back with the matching `get-*` tool if you have its ID, or find it with the matching `list-*` tool after a create, before resending.
 

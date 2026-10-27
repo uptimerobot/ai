@@ -15,6 +15,8 @@ access. There is no API key to paste — the client stores the tokens itself.
 Invoke this skill when:
 - Any UptimeRobot tool returns an auth error — e.g. a message that mentions `unauthorized`, `unauthenticated`, `User not found`, `Invalid API key`, or a token that is expired, invalid, or missing (the OAuth grant is missing, expired, or revoked).
 - The MCP server fails to connect or returns an authentication error.
+
+If the server was set up with an API-key `Authorization` header (headless / CI — see the README) and returns `Invalid API key`, the steps below won't help: tell the user the key is invalid or revoked and to put a valid key in their MCP config, then reconnect.
 - The user reports that UptimeRobot tools aren't working.
 - The user explicitly asks to connect or reconfigure UptimeRobot.
 
