@@ -16,18 +16,17 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 ## Discovery before writes
 
-- Before calling `update-monitor` or `update-monitor-status` on an existing monitor, call `list-monitors` (filter with `name`, `url`, `tags`, `groupId`, or `filter` — there is no `search` parameter) to confirm the ID and current state. `name` and `url` are partial matches: write only when exactly one monitor matches what the user described; if several do, ask which one. After `create-monitor`, use the `id` it returns — no list call needed.
-- Before referencing an alert contact in `assignedAlertContacts`, call **both** `list-alert-contacts` (personal email/SMS/voice/push) and `list-integrations` (Slack, webhook, etc. — it also returns the personal contacts, so dedupe by `id`). Each item needs `alertContactId`, `threshold` (minutes, 0–1440), and `recurrence` (minutes, 0–10080).
+- Before calling `update-monitor` or `update-monitor-status` on an existing monitor, call `list-monitors` (filter with `name`, `url`, `tags`, `groupId`, or `filter` — there is no `search` parameter) to confirm the ID and current state. `name` and `url` are partial matches: for a single-monitor request, write only when exactly one monitor matches what the user described; if several do, ask which one. For batches, follow [`bulk-pause`](../skills/bulk-pause/SKILL.md) and confirm the list with the user. Before `create-monitor`, check `list-monitors` (with `limit: 100`, paginating while `hasMore` is true) for an existing monitor with the same `url` (or `name` for HEARTBEAT) — if one with the same type and target exists, show it to the user and ask before creating (the server refuses an exact-target duplicate). The list also lets you tell a new monitor from an old one if the create fails. After a successful create, use the `id` it returns.
+- Before referencing an alert contact in `assignedAlertContacts`, call **both** `list-alert-contacts` (personal email/SMS/voice/push) and `list-integrations` (Slack, webhook, etc.), dedupe by `id`, and use an `id` from the responses. `list-integrations` also returns the account's personal contacts; tell them apart by `type`. Each item needs `alertContactId`, `threshold` (minutes, 0–1440), and `recurrence` (minutes, 0–10080).
 - Before any `delete-*` call, call `get-user` to confirm the session account and write permission. Deletes are permanent — confirm the target with the user.
 
-## Verification after writes
+## Errors, retries and verifying writes
 
-- `create-monitor` returns the stored `id`, `name`, `type`, `url` (the push URL for HEARTBEAT), `interval` and `status`. Call `get-monitor-details` afterwards only to confirm other fields you set (tags, timeout, `config`, HTTP settings, …). `update-monitor` returns only a success message, so read the monitor back after it; after `update-monitor-status`, confirm the new `status`. `get-monitor-details` can't show alert contacts, maintenance windows or group — say so instead of claiming they were verified.
-- `Monitor not found` from `get-monitor-details` right after a successful create is replication lag: you have the `id`, so wait a few seconds and retry once. If `create-monitor` itself failed (including with `Monitor not found`), the monitor may still exist: wait a few seconds and check `list-monitors` by `url` (by `name` for HEARTBEAT) before anything else. Never re-run `create-monitor` blindly — it makes a duplicate.
+Follow the [`errors`](../skills/errors/SKILL.md) skill — the single source for what each error message means, when to retry (including rate limits), how to verify a write, and how to check whether a failed write landed. Never blind-retry a write: the server refuses an exact duplicate monitor, but a retried create with different target settings (URL, method, headers, body, regions, IP version, port, keyword) makes a second one.
 
 ## Intervals and plan limits
 
-- Interval is in seconds: 15–86400 in the schema (`HEARTBEAT` up to 2678400 = 31 days). The plan sets the real minimum. If a write fails with a plan or limit message (e.g. `You can not use this monitor interval`, `limit exceeded`), do not retry — tell the user the plan can't support that interval, monitor type or monitor count, and suggest a longer interval, deleting unused monitors, or upgrading.
+- Interval is in seconds: 15–86400 in the schema (`HEARTBEAT` up to 2678400 = 31 days). The plan sets the real minimum. Plan-limit errors are covered in `errors` — don't retry them.
 - Don't assume plan names. Read `activeSubscription.plan` from `get-user` (e.g. `"Scale"`).
 
 ## Time ranges
@@ -40,23 +39,11 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 - All `list-*` tools plus `get-incident-activity-log` and `get-incident-alerts` paginate. While `hasMore` is true, repeat your own arguments and pass `nextCursor` back as `cursor` exactly as returned — its type varies (integer, numeric string, or opaque string).
 - Don't copy the next-call JSON embedded in `instructions`: `list-monitors` drops your filters (widening to every monitor), `list-integrations` drops `limit`, `list-incidents` emits an object `timeRange` the tool rejects.
 - Don't rely on `totalCount` from `list-*` tools: it is null on any page fetched with a `cursor`, and always null for several list tools (e.g. `list-alert-contacts`, `list-tags`, `list-monitor-groups`, `list-psps`). Count the items yourself.
-
-## Errors
-
-- Tool errors usually arrive as plain text with no numeric code, worded differently per tool (`Monitor not found` vs `Monitor not found or access denied`, `Incident not found` vs `Incident <id> not found`, `Invalid parameters: [field]: ...`, `Invalid field for DNS monitor: port. ...`). Match by substring, not exact text — see the table in `errors`.
-- Check these in order; the first match wins:
-  1. **Rate limit** — `Rate limit reached` / `Rate limit exceeded` (a tool result, not HTTP 429). Wait the seconds it states, then retry. Free accounts get 10 calls per minute, shared with the account's REST API traffic, so pace loops and skip calls you don't need.
-  2. **Auth** — `unauthorized`, `unauthenticated`, `requires authentication`, `User not found`, `Invalid API key`, or an invalid / expired token: the OAuth grant is missing, expired or revoked. Don't surface it raw; invoke the `uptimerobot:setup` skill and don't retry the original call until setup succeeds. In a session set up with an API-key header (headless / CI), setup can't help — the user must fix the key in their MCP config.
-  3. **Not found** — `not found` (including `Monitor not found or access denied`): look the ID up again. From `create-monitor` it may have been created anyway — check before creating again (`errors` → "Before retrying a failed write").
-  4. **Bad input** — `Invalid parameters`, `Invalid field`, `is required`, `must be`, `Missing required`, `Invalid values`, `Validation failed`, `blacklisted`: fix the field.
-  5. **No write access** — `requires roles` or `Write operations not permitted`. A bare `Access denied` usually means the ID belongs to another account; check `get-user` to tell which.
-  6. **Plan limit** — `plan`, `subscription`, `limit exceeded`, `monitor interval`: don't retry; tell the user.
-  7. **Transient** — `Internal server error`, `Internal error`, `Failed to`, `missing required resultType`: retry a read **once**, after about a minute. For a write, never blind-retry: for an update, read the monitor back by its `id` and compare the changed fields; for a create or any other resource, follow `errors` → "Before retrying a failed write".
-  8. Anything else is a client error — surface it to the user.
+- `list-incidents` restarts from the first page if the cursor incident disappears (e.g. it resolved between pages, or a relative `timeRange` moved). Dedupe by `id` and keep paging until `hasMore` is false, and prefer an absolute ISO `timeRange` when paging.
 
 ## Output style
 
-- Do not echo API keys or incident log contents unless the user explicitly asks.
-- `get-monitor-details` returns `customHttpHeaders` and `httpUsername` unredacted and `list-alert-contacts` returns email/phone values in clear. Never echo header values, usernames or contact values unless asked; mask secrets.
+- Never echo API keys or tokens. The server returns header values unmasked (`customHttpHeaders`, incident `requestLogs[]` headers) — always mask them yourself (e.g. `Authorization: Bearer ****`), even when the user asks for full logs or details. Also mask secret-looking values in request and response bodies, URLs and query strings (tokens, keys, passwords) — except a HEARTBEAT push URL, which the user needs in full to wire up their job; the rest of a log can be shown on request.
+- `get-monitor-details` returns `customHttpHeaders` and `httpUsername` unredacted and `list-alert-contacts` / `list-integrations` return email/phone values in clear. Never echo usernames or contact values unless asked, and never echo header values at all.
 - When summarising many monitors, group by state (`DOWN` first, then `PAUSED`, then `UP`) and show counts before detail.
 - When quoting uptime percentages, always cite the time range.

@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Connect and authenticate the hosted UptimeRobot MCP server (OAuth over streamable HTTP), OR diagnose why `uptimerobot:*` MCP tools aren't visible in the current session. Invoke this skill any time you cannot see UptimeRobot tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on plain-text auth errors (unauthorized, unauthenticated, token expired / invalid) or first-time setup.
+description: Connect and authenticate the hosted UptimeRobot MCP server (OAuth over streamable HTTP), OR diagnose why UptimeRobot MCP tools (any tool whose name contains `uptimerobot`) aren't available in the current session. Invoke this skill when no such tools exist even after loading deferred tools, before telling the user the MCP is misconfigured — Step 0 detects the most common case (server already connected, tools loaded after session start) and resolves it without re-authenticating. Also invoke on plain-text auth errors (unauthorized, unauthenticated, token expired / invalid) or first-time setup.
 tags: [setup, auth, oauth, configuration, onboarding]
 ---
 
@@ -13,18 +13,18 @@ endpoints and opens a browser where the user logs into UptimeRobot and authorize
 access. There is no API key to paste — the client stores the tokens itself.
 
 Invoke this skill when:
-- Any UptimeRobot tool returns an auth error — e.g. a message that mentions `unauthorized`, `unauthenticated`, `User not found`, `Invalid API key`, or a token that is expired, invalid, or missing (the OAuth grant is missing, expired, or revoked).
+- Any UptimeRobot tool returns an auth error — e.g. a message that mentions `unauthorized`, `unauthenticated`, `Invalid API key`, or a token that is expired, invalid, or missing (the OAuth grant is missing, expired, or revoked).
 - The MCP server fails to connect or returns an authentication error.
-
-If the server was set up with an API-key `Authorization` header (headless / CI — see the README) and returns `Invalid API key`, the steps below won't help: tell the user the key is invalid or revoked and to put a valid key in their MCP config, then reconnect.
 - The user reports that UptimeRobot tools aren't working.
 - The user explicitly asks to connect or reconfigure UptimeRobot.
+
+If the server was set up with an API-key `Authorization` header (headless / CI — see the README) and returns `Invalid API key`, the steps below won't help: tell the user the key is invalid or revoked, and to replace it in the environment variable their MCP config reads (never paste the key into the config file itself), then reconnect.
 
 ---
 
 ## Step 0 — Check whether setup is already done
 
-**Always run this step first.** It prevents the most common failure mode: looping
+**Run this step first when the UptimeRobot tools are missing** (Claude Code only — in Cursor or Codex, skip to that client's setup in the README). If you came here because a tool returned an auth error, the server is connected — go straight to **Step 3**. This step prevents the most common failure mode: looping
 the user through setup every session even though the MCP server is already
 configured and connected. The MCP connection sometimes finishes after the
 assistant's tool list is captured, so the absence of UptimeRobot tools at session
@@ -38,7 +38,7 @@ claude mcp list 2>&1 | grep -i uptimerobot
 
 Interpret the output:
 
-- **A line containing `uptimerobot` and `✓ Connected`**: configuration already works and the OAuth grant is valid. Do **not** re-authenticate. Tell the user:
+- **A line containing `uptimerobot` and `✓ Connected`**: configuration already works and the OAuth grant is valid. Do **not** re-authenticate. First check whether the tools are listed under another name or only need loading (see the preflight) — if so, use them. Otherwise tell the user:
 
   > Your UptimeRobot MCP server is already configured and connected (`claude mcp list` shows ✓). The tools aren't showing up in this session — that usually means the MCP connection finished after my tool list was captured.
   >
@@ -52,7 +52,7 @@ Interpret the output:
 
 - **No `uptimerobot` line at all**: the server hasn't been registered yet. Go to **Step 1**.
 
-- **Multiple `uptimerobot` entries** (e.g. `claude.ai UptimeRobot` plus a plain `uptimerobot`): only the plain `uptimerobot` (the plugin's server) matters for this skill. The `claude.ai`-prefixed one is a separate cloud MCP server unrelated to this plugin.
+- **Multiple `uptimerobot` entries** (e.g. `claude.ai UptimeRobot`, `plugin:uptimerobot:uptimerobot`, or a plain `uptimerobot`): they all point at the same hosted server. If any of them is `✓ Connected`, its tools work — use them.
 
 ---
 
@@ -106,7 +106,7 @@ Then confirm connectivity with Step 4.
 
 ## Step 4 — Validate connectivity
 
-Run `claude mcp list 2>&1 | grep uptimerobot` and confirm a line shows
+Run `claude mcp list 2>&1 | grep -i uptimerobot` and confirm a line shows
 `✓ Connected`.
 
 If yes, tell the user:
@@ -114,9 +114,10 @@ If yes, tell the user:
 > Connected! The authorization is cached locally and persists across sessions and
 > projects.
 >
-> **Important:** to use the UptimeRobot tools in this session, fully quit Claude
-> Code (close the terminal) and relaunch. The server is connected now, but its
-> tools are loaded at session start.
+> **Important:** if the UptimeRobot tools weren't available in this session, fully
+> quit Claude Code (close the terminal) and relaunch — tools are loaded at session
+> start. If they were already available and you only re-authorized (Step 3), retry
+> the original call instead; no restart is needed.
 
 Then optionally call `list-monitors` once tools are available in a fresh session —
 but do not block this skill on that.
@@ -132,7 +133,7 @@ but do not block this skill on that.
 **`requires roles` or `Write operations not permitted` when the user later runs a write operation** (a bare `Access denied` usually means a wrong ID — check `get-user` first; if the session can write, don't re-authenticate):
 The authorized account doesn't have write permission for that action (in a team account, `delete-monitor`, `delete-tag` and `update-storm-protection-settings` are admin-only). Tell the user
 to authorize with an account that has write access, then re-run Step 3 to
-re-authenticate.
+re-authenticate. If the server is set up with an API-key header (headless / CI), re-authenticating won't help: the key is read-only — the user must put a Main API key in the environment variable their MCP config reads.
 
 **MCP server not reachable (network error):**
 Tell the user:

@@ -6,7 +6,7 @@ tags: [monitoring, http, create, uptimerobot]
 
 # Create an HTTP monitor
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
 Use to check that a website or HTTP(S) endpoint responds with a success code. Pick `KEYWORD` to match body text, `API` for assertions on the response, and `PING` / `PORT` for host-level checks.
 
@@ -31,9 +31,13 @@ Use to check that a website or HTTP(S) endpoint responds with a success code. Pi
 - `get-monitor-details` returns `customHttpHeaders` unredacted. Don't echo header values (tokens, API keys) back to the user.
 - Validation errors come back as plain text (`Invalid parameters: [field]: …`) with no numeric code — match on the message.
 
+## Before creating
+
+Call `list-monitors` with the same `url`, `limit: 100`, paginating while `hasMore` is true, and keep the full result. If a monitor of the same type and target already exists, show it to the user and ask before creating (the server refuses an exact-target duplicate). The list also lets you tell a new monitor from an old one if the create fails (see [`errors`](../errors/SKILL.md)).
+
 ## After creating
 
-The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (tags, timeout, HTTP settings); if it returns `Monitor not found` right after the create, the monitor still exists (you have its `id`) — wait a few seconds and retry once; never re-create. If `create-monitor` itself failed, follow `errors` → "Before retrying a failed write".
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (tags, timeout, HTTP settings). For a `Monitor not found` read-back or a failed create, follow [`errors`](../errors/SKILL.md).
 
 ## Related
 
@@ -41,4 +45,4 @@ The create response already has the stored `id`, `name`, `type`, `url`, `interva
 - `create-api-monitor` — assertions on the response body.
 - `update-monitor` — change an existing monitor.
 - `errors` — recovering from plan limits, invalid parameters, rate limits.
-- `conventions` — ID discovery and verification rules.
+- `conventions` — ID discovery (write verification: `errors`).

@@ -1,6 +1,6 @@
 # Contributing
 
-This repo is a Claude Code + Cursor plugin. Most contributions add a new
+This repo is a Claude Code, Cursor and Codex plugin. Most contributions add a new
 **skill**, **command**, **agent**, or **rule**. Keep additions small and
 focused — one concept per file/directory.
 
@@ -20,11 +20,11 @@ reference files or scripts.
 
 ```markdown
 ---
-name: sync-timezones
-description: Synchronize DST offsets using the syncTimezones CLI in api-internal.
+name: weekly-report
+description: Summarise last week's uptime for every monitor tagged production.
 ---
 
-# Sync timezones
+# Weekly report
 
 Steps the agent should follow…
 ```
@@ -32,7 +32,7 @@ Steps the agent should follow…
 Optional supporting files:
 
 ```
-skills/sync-timezones/
+skills/weekly-report/
 ├── SKILL.md
 ├── reference.md          # extra context the model can open on demand
 └── scripts/
@@ -60,16 +60,16 @@ don't delete or rename a skill without arranging a redirect.
 ## Commands (`commands/<command-name>.md`)
 
 A command is a single markdown file that becomes a slash command
-(e.g. `/uptimerobot-ai:deploy`). Frontmatter is optional; when present it
+(e.g. `/uptimerobot:deploy`). Frontmatter is optional; when present it
 mirrors the skill format.
 
 ```markdown
 ---
-description: Run the local UptimeRobot dev stack.
+description: Show monitors that are down right now.
 ---
 
-Run `cd ~/repos/dev-local && .bin/ur start` and wait for all services to be
-healthy before returning.
+Call `list-monitors` with `filter: ["DOWN", "LOOKS_DOWN"]` and list each monitor's
+name and how long it has been down.
 ```
 
 ## Agents (`agents/<agent-name>.md`)
@@ -93,9 +93,9 @@ apply.
 
 ```mdc
 ---
-description: Enforce TypeScript style across api-internal.
+description: Enforce JavaScript style in this repo's scripts.
 globs:
-  - "apps/api-internal/**/*.ts"
+  - "scripts/**/*.mjs"
 alwaysApply: false
 ---
 
@@ -159,16 +159,20 @@ Deliberate omissions in `server.json` — please don't "fix" these:
 ### Publishing an update
 
 Bump `version` in `server.json` first — reuse of a published version is rejected.
-Use `0.1.1-1`, `0.1.1-2`, … prerelease strings for registry-metadata-only changes so
-you don't burn a patch release on a typo. Keep `version` in step with the three
-`plugin.json` manifests (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`) —
-nothing in CI enforces this.
+For registry-metadata-only changes, use a prerelease of the *next* patch (after
+`0.1.1`: `0.1.2-1`, `0.1.2-2`, …) so you don't burn a patch release on a typo — a
+prerelease sorts below its release, so `0.1.1-1` would rank under `0.1.1`. Those
+suffixes go in `server.json` only.
+Otherwise keep `version` in step with the three `plugin.json` manifests
+(`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`) — nothing in CI enforces this.
 
 ```bash
 mcp-publisher validate
 
-# Paste the hex key at the silent prompt, so it stays out of shell history.
+# Either paste the hex key at a silent prompt…
 read -rs MCP_KEY
+# …or derive it from key.pem (kept outside the repo) without printing it:
+# MCP_KEY="$(openssl pkey -in /path/outside/repo/key.pem -noout -text | grep -A3 'priv:' | tail -n +2 | tr -d ' :\n')"
 mcp-publisher login dns --domain uptimerobot.com --private-key "$MCP_KEY"
 unset MCP_KEY
 
@@ -193,15 +197,16 @@ The `com.uptimerobot/*` namespace is proven by an Ed25519 key whose public half 
 published as a TXT record on the `uptimerobot.com` apex
 (`v=MCPv1; k=ed25519; p=<public key>`, managed in Cloudflare). The private key
 (`key.pem`) **lives in the team password manager** — keep it outside the repo (`key.pem` is gitignored only as a safety net). Paste its hex
-form at the `read -rs` prompt above; don't put it in a script or a command line. Losing it
+form at the `read -rs` prompt above (or derive it as shown); never type the literal key into a command or commit it in a script. Losing it
 means losing the ability to publish updates under this namespace.
 
 ## Testing a change
 
 Before opening a PR:
 
-1. Lint the JSON: `python -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" .claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/hooks.json mcp.json .mcp.json codex.mcp.json server.json`.
+1. If you touched a `SKILL.md`, regenerate the skills index with `node scripts/generate-agent-skills-index.mjs` — the PR check fails on a stale index.
+2. Lint the JSON: `python -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" .claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/hooks.json mcp.json .mcp.json codex.mcp.json server.json .well-known/agent-skills/index.json .agents/plugins/marketplace.json`.
    If you touched `server.json`, also run `mcp-publisher validate`.
-2. Install the plugin locally in Claude Code and/or Cursor and verify the new
+3. Install the plugin locally in Claude Code and/or Cursor and verify the new
    skill/command/agent/rule loads and runs as expected.
-3. Update `README.md` if you added a new top-level directory or convention.
+4. Update `README.md` if you added a new top-level directory or convention.

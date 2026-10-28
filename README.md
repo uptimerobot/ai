@@ -35,7 +35,7 @@ The MCP server auto-registers via `.mcp.json` as soon as the plugin loads. The f
 
 #### Local clone (manual plugin install)
 
-To run the full plugin (skills, rules, commands, and the auto-registered MCP server) straight from a local checkout — no marketplace required — clone the repo and load it with the `--plugin-dir` flag:
+To run the full plugin (skills and the auto-registered MCP server) straight from a local checkout — no marketplace required — clone the repo and load it with the `--plugin-dir` flag:
 
 ```bash
 git clone https://github.com/uptimerobot/ai.git
@@ -80,7 +80,7 @@ Launch Cursor and run **Developer: Reload Window** from the command palette.
 Verify the plugin is discovered:
 
 - **Settings → Rules, Skills, Subagents** — the `uptimerobot.mdc` rule and every `skills/*/SKILL.md` entry should be listed.
-- **Settings → Tools & MCPs** — `uptimerobot` should appear with 50 tools once the MCP server connects. Complete the OAuth browser flow on first connection.
+- **Settings → Tools & MCPs** — `uptimerobot` should appear with up to 50 tools (fewer for read-only or team sessions) once the MCP server connects. Complete the OAuth browser flow on first connection.
 
 ### Codex
 
@@ -94,7 +94,7 @@ If you want Codex to track the source explicitly:
 codex plugin marketplace add ./
 ```
 
-Verify the plugin is loaded: the UptimeRobot skills should be available and the `uptimerobot` MCP server should appear with 50 tools once connected.
+Verify the plugin is loaded: the UptimeRobot skills should be available and the `uptimerobot` MCP server should appear with up to 50 tools (fewer for read-only or team sessions) once connected.
 
 ### Other agents / direct MCP
 
@@ -144,11 +144,11 @@ Claude Code expands `${UPTIMEROBOT_API_KEY}` from the environment; other clients
 | Tool                    | Purpose                                                                |
 | ----------------------- | ---------------------------------------------------------------------- |
 | `create-monitor`        | Create HTTP, KEYWORD, PING, PORT, HEARTBEAT, DNS, API, or UDP monitors |
-| `update-monitor`        | Change name, URL, interval, alert contacts, tags, HTTP settings        |
+| `update-monitor`        | Change name, URL, interval, alert contacts, tags, HTTP settings (list and map fields replace the whole value — see AGENTS.md) |
 | `update-monitor-status` | Pause or resume a monitor                                              |
 | `list-monitors`         | Paginated list filtered by name, URL, tags, group, custom field, or state |
 | `get-monitor-details`   | Full config + current state for one monitor                            |
-| `get-monitor-stats`     | Aggregated up/down/paused counts + uptime %                            |
+| `get-monitor-stats`     | Aggregated up/down/paused counts + uptime (a 0–1 fraction)             |
 | `get-response-times`    | Time-series response-time data with buckets                            |
 | `delete-monitor`        | Permanently delete a monitor and its history                           |
 
@@ -167,7 +167,7 @@ Claude Code expands `${UPTIMEROBOT_API_KEY}` from the environment; other clients
 | Tool          | Purpose                                                              |
 | ------------- | --------------------------------------------------------------------- |
 | `create-psp`  | Create a status page from monitors, groups, or tags (always created public; pause with `update-psp`) |
-| `update-psp`  | Change name, domain, sort order, visibility, or publish status        |
+| `update-psp`  | Change name, domain, sort order, visibility, publish status, or monitors (monitor lists replace the whole list) |
 | `get-psp`     | Fetch a single status page by ID                                      |
 | `list-psps`   | Paginated list of status pages                                        |
 | `delete-psp`  | Permanently delete a status page                                      |
@@ -227,7 +227,7 @@ Claude Code expands `${UPTIMEROBOT_API_KEY}` from the environment; other clients
 | Tool                  | Purpose                                    |
 | ---------------------- | --------------------------------------------- |
 | `list-integrations`   | Slack, webhook, PagerDuty, etc. integrations (also lists personal contacts) |
-| `delete-integration`  | Permanently delete an integration (use `delete-alert-contact` for ids in `list-alert-contacts`) |
+| `delete-integration`  | Permanently delete an integration (check `type` first — personal contacts (email, SMS, voice, push) are deleted with `delete-alert-contact`) |
 | `list-tags`            | Paginated list of tags on the account         |
 | `delete-tag`           | Delete a tag and remove it from every monitor |
 
@@ -239,7 +239,7 @@ Claude Code expands `${UPTIMEROBOT_API_KEY}` from the environment; other clients
 | `get-storm-protection-settings`     | Read account-wide alert grouping settings                      |
 | `update-storm-protection-settings`  | Change alert grouping (plan-gated: `notification-grouping`)    |
 
-Alert contact IDs for `assignedAlertContacts` come from `list-alert-contacts` (personal) and `list-integrations` (which also returns the personal contacts — dedupe by `id`); each entry needs `alertContactId`, `threshold`, and `recurrence`. All `delete-*` tools are permanent — call `get-user` first to confirm which account the session acts on.
+Alert contact IDs for `assignedAlertContacts` come from `list-alert-contacts` (personal) and `list-integrations` (which also returns the account's personal contacts — dedupe by `id`, and tell them apart by `type`); each entry needs `alertContactId`, `threshold`, and `recurrence`. All `delete-*` tools are permanent — call `get-user` first to confirm which account the session acts on.
 
 ### No account needed
 
@@ -255,7 +255,7 @@ The tools' own schemas cover parameters, so the skills focus on multi-step workf
 | --- | --- |
 | [`setup`](skills/setup/SKILL.md) | Connecting the MCP server, or the UptimeRobot tools aren't showing up |
 | [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) | Someone has no UptimeRobot account and wants a monitor from just an email |
-| [`conventions`](skills/conventions/SKILL.md) | Always: verify after writes, `get-user` before deletes, pagination, error matching, no secrets in replies |
+| [`conventions`](skills/conventions/SKILL.md) | Always: discovery before writes, `get-user` before deletes, pagination, no secrets in replies — and error handling and write verification via [`errors`](skills/errors/SKILL.md) |
 | [`bulk-pause`](skills/bulk-pause/SKILL.md) | Pausing and resuming many monitors around a deploy |
 | [`sla-report`](skills/sla-report/SKILL.md) / [`monitor-health-summary`](skills/monitor-health-summary/SKILL.md) | Uptime/SLA reports and account health summaries |
 | [`incident-response`](skills/incident-response/SKILL.md) | Investigating a downtime, commenting on it, confirming recovery |
@@ -265,38 +265,26 @@ The tools' own schemas cover parameters, so the skills focus on multi-step workf
 
 ## Plan requirements
 
-Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`) instead of assuming a fixed list. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns a plain-text error (e.g. `Monitor creation limit exceeded`, `You can not use this monitor interval. Use higher interval.`, or `requires a plan with the "<feature>" feature enabled`). Tool calls are rate-limited too: 10 per minute on the free plan, more on paid plans. See [skills/errors/SKILL.md](skills/errors/SKILL.md).
+Plan names change over time — read the active plan from `get-user` (`activeSubscription.plan`, e.g. `Scale`) instead of assuming a fixed list. Monitor-type availability, interval minimums, and monitor limits depend on the active plan — the MCP server enforces these and returns a plain-text error. Tool calls are rate-limited too (10 per minute on the free plan). See [skills/errors/SKILL.md](skills/errors/SKILL.md).
 
 ## Troubleshooting
 
 ### Tools not showing up in Claude / Cursor
 
-The MCP handshake sometimes completes after the client captures its tool list at session start, so the tools appear absent even though the server is connected. Fix: fully quit the client (close the terminal, not just `/exit`) and relaunch. Run `claude mcp list` to confirm `uptimerobot` shows `✓ Connected` before relaunching.
+The MCP handshake sometimes completes after the client captures its tool list at session start, so the tools appear absent even though the server is connected. Fix in Claude Code: fully quit (close the terminal, not just `/exit`) and relaunch; run `claude mcp list` first to confirm `uptimerobot` shows `✓ Connected`. Fix in Cursor: reload the window or restart Cursor, and check **Settings → Tools & MCPs**.
 
 ### Authentication problems
 
 | Symptom | Fix |
 | --- | --- |
 | OAuth browser didn't open | Run `/mcp`, select **uptimerobot**, choose **Authenticate**, and open the URL it shows manually if the browser still doesn't launch |
-| Tools return `unauthorized`, `User not found`, or an invalid / expired token error | Run `/mcp`, select **uptimerobot**, and choose **Clear authentication**, then **Authenticate** again |
+| Tools return `unauthorized` or an invalid / expired token error | Run `/mcp`, select **uptimerobot**, and choose **Clear authentication**, then **Authenticate** again |
 | Write tools return `requires roles` or `Write operations not permitted` | Re-authenticate via `/mcp` with an account that has write permission. In a team account, `delete-monitor`, `delete-tag` and `update-storm-protection-settings` are admin-only |
+| Headless / CI session (API-key header) returns `Invalid API key` or `Write operations not permitted` | `/mcp` re-authentication won't help — replace the key in the environment variable your config reads (a Main key if the job writes) |
 
 ### Tool errors
 
-Tool errors usually reach the client as plain text with no numeric code, and the wording varies by tool — match by substring, not exact text.
-
-| Message contains (first match wins) | Meaning | What to do |
-| --- | --- | --- |
-| `Rate limit` | Too many calls (10 per minute on the free plan, shared with the account's REST API use) | Wait the seconds the message gives, then retry |
-| `unauthorized`, `unauthenticated`, `requires authentication`, `User not found`, `Invalid API key`, invalid / expired token | Authentication failed | OAuth: see Authentication problems above. API-key header: replace the key in your MCP config |
-| `not found` | The ID doesn't exist or belongs to another account | Look the ID up again. After a failed `create-monitor`, check `list-monitors` first — it may have been created anyway |
-| `Invalid parameters`, `Invalid field`, `is required`, `must be`, `Missing required`, `Invalid values`, `Validation failed`, `blacklisted` | Bad input | The message names the offending fields; fix them and retry |
-| `requires roles`, `Write operations not permitted` | No write access | See Authentication problems above |
-| `Access denied` | Usually an ID from another account | Check the ID; if it's right, see Authentication problems above |
-| `plan`, `subscription`, `limit exceeded`, `monitor interval` | Monitor limit, interval, monitor type, or plan feature not included | Loosen the interval, delete unused monitors, or upgrade |
-| `Internal server error`, `Internal error`, `Failed to`, `missing required resultType` | Server or protocol failure | Wait a minute and retry a read once. For a write, check whether it landed first — never blind-retry |
-
-For the full error reference and recovery recipes see [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
+Tool errors arrive as plain text whose wording varies by tool. What each message means and how to recover is in [`skills/errors/SKILL.md`](skills/errors/SKILL.md).
 
 ## Contributing
 

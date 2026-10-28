@@ -6,7 +6,7 @@ tags: [incidents, downtime, triage, response, runbook, uptimerobot]
 
 # Incident response
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
 The full loop a user runs when something's on fire:
 
@@ -46,23 +46,23 @@ Call `list-incidents` with `status: "open"` to get every ongoing incident with i
 For each down monitor that the user wants to dig into:
 
 ```json
-{ "monitorId": 800123456, "timeRange": "24h", "limit": 5 }
+{ "monitorId": 800123456, "timeRange": "2026-04-29T14:00:00Z/2026-04-30T14:00:00Z", "limit": 20 }
 ```
 
-Returns a list of incidents (active and resolved). Each `id` is a **numeric string** such as `"363693836190769146"`, and `duration` is text such as `"15m 55s"`, not seconds.
+Returns a list of incidents (active and resolved). Each `id` is a **numeric string** such as `"123456789012345678"`, and `duration` is text such as `"15m 55s"`, not seconds.
 
-Lead with the active (unresolved) incident, then show recently-resolved ones as flap history.
+Use the last 24 hours as an absolute ISO interval (as above), so paging is stable; paginate while `hasMore` is true. This returns only incidents that started in that window. Take the active incident from Step 1's `status: "open"` results (it may have started earlier), then show these recently resolved ones as flap history.
 
 ## Step 3 — Diagnose one incident
 
 ```json
-{ "incidentId": "363693836190769146" }
+{ "incidentId": "123456789012345678" }
 ```
 
 Returns:
 
 - `status` (`"Ongoing"` / `"Resolved"` — use this, not `endedAt`, to tell if it's over), `startedAt`, `endedAt` and `duration` (`null` while ongoing; `endedAt` is also `null` for a resolved incident with zero duration), `cause` (a number, e.g. `401`), `reason` — the readable cause.
-- `requestLogs[]` — the 10 newest checks (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is usually not ISO 8601 (`"2026-09-30 14:44:48.587"`, UTC). Headers can carry tokens and API keys: never show header values to the user — not even when they ask for the full logs — and mask any secret-looking value (e.g. `Authorization: Bearer ****`).
+- `requestLogs[]` — the 10 newest checks (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is usually not ISO 8601 (`"2026-09-30 14:44:48.587"`, UTC). Headers can carry tokens and API keys: never show header values to the user — not even when they ask for the full logs — and mask any secret-looking value in headers, request and response bodies, and URLs (e.g. `Authorization: Bearer ****`).
 
 `checkerLocations` is always empty and `errorDetails` is a placeholder (`"Unknown error"`) — use `reason` for the cause and `requestLogs[].region` for regions.
 
@@ -70,17 +70,17 @@ No traceroute or root-cause category is returned. For the checker IP and city pe
 
 Useful output pattern:
 
-- "All 5 checker regions saw connection refused on port 443 starting at 14:02 UTC."
-- "2 of 5 regions (NA, EU) see 503; 3 others see 200 — looks regional."
+- "All 4 checker regions saw connection refused on port 443 starting at 14:02 UTC."
+- "2 of 4 regions (NA, EU) see 503; the other 2 see 200 — looks regional."
 
 Don't paste the full request logs unless asked — summarise `cause` / `reason` and the HTTP status.
 
 ## Step 4 — Log findings as an incident comment thread (optional)
 
-Requires the `incident-comments` plan feature. Rather than only reporting a final summary at the end, add a comment each time you learn something material — it builds a timeline other responders (and future you, writing the postmortem) can read directly on the incident:
+Requires the `incident-comments` plan feature. Comments are visible to the whole team, so ask the user once before you start posting. Rather than only reporting a final summary at the end, add a comment each time you learn something material — it builds a timeline other responders (and future you, writing the postmortem) can read directly on the incident:
 
 ```json
-{ "incidentId": "363693836190769146", "content": "5/5 checkers see connection refused on :443 since 14:02 UTC. Not regional — looks like the LB is down." }
+{ "incidentId": "123456789012345678", "content": "4/4 regions see connection refused on :443 since 14:02 UTC. Not regional — looks like the LB is down." }
 ```
 
 `incidentId` here is a BigInt passed as a numeric string (same value as `get-incident-details`). If you posted something and later learn it was wrong (e.g. misidentified root cause), fix it with `update-incident-comment` (needs the numeric `commentId` from the create response or `list-incident-comments`) rather than leaving a stale comment alongside a correction — the thread should read as a clean timeline, not a debug log.
@@ -103,6 +103,16 @@ Store the paused IDs so you can resume them later. [`maintenance-windows`](../ma
 
 Once the user says the fix is deployed, confirm the monitor is actually green.
 
+### Resume anything you paused — first
+
+For each paused monitor ID you stored in step 5:
+
+```json
+{ "monitorId": 800123456, "status": "STARTED" }
+```
+
+Watch for `Monitor limit exceeded` on resume (see `errors`). A paused monitor is never checked, so resume it before the checks below, then wait for at least one check interval: it shows `STARTED` until its first check.
+
 ### Current state of one monitor
 
 ```json
@@ -121,16 +131,6 @@ Call `get-monitor-details`. Expect `status: UP` and a short `currentStateDuratio
 
 `bucketSize` is an integer number of seconds. Look at `summary.avg` / `summary.p95` returning to baseline, not just "up vs down".
 
-### Resume anything you paused
-
-For each paused monitor ID you stored in step 5:
-
-```json
-{ "monitorId": 800123456, "status": "STARTED" }
-```
-
-Watch for `Monitor limit exceeded` on resume (see `errors`).
-
 ## Reporting back to the user
 
 Typical structured summary:
@@ -139,7 +139,7 @@ Typical structured summary:
 Incident on `prod-api` (monitor 800123456)
 - Started: 2026-04-21T14:02:00Z
 - Duration: 18 min (resolved)
-- Impact: 5/5 checker locations saw 503 Service Unavailable
+- Impact: 4/4 checker regions saw 503 Service Unavailable
 - Root cause: deploy-related, resolved after rollback at 14:20 UTC
 - Currently: UP. Response times at 220ms (baseline 190ms).
 Related monitors also down during window: `prod-api-healthz`, `prod-api-db`.

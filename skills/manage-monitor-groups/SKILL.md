@@ -6,7 +6,7 @@ tags: [monitor-groups, tags, organize, groups, uptimerobot]
 
 # Manage monitor groups
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
 Use this when the user wants to organize monitors ("put these in a group", "tag these as production", "a section per team on the status page").
 
@@ -28,6 +28,7 @@ Use this when the user wants to organize monitors ("put these in a group", "tag 
 
 ## Gotchas
 
+- **Moving a monitor into or out of a group can change public status pages** scoped by that group (`get-psp` doesn't show which groups a page uses — ask the user before moving monitors between groups that may be on a status page).
 - **Membership is only readable through `list-monitors` + `groupId`.** `get-monitor-details` has no group field, and the group tools return only `id`, `name` and dates. To find a monitor's group, check candidate groups with `list-monitors`.
 - **`update-monitor-group` only renames.** Move monitors with `update-monitor` `groupId`.
 - `create-monitor-group` with `groupIds` moves **every** monitor out of the listed groups. For a partial move, use `update-monitor` per monitor.

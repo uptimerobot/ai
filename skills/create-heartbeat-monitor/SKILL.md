@@ -1,12 +1,12 @@
 ---
 name: create-heartbeat-monitor
-description: Create a HEARTBEAT (cron/job) monitor: UptimeRobot generates a URL that the job must ping on schedule, and alerts when the pings stop.
+description: "Create a HEARTBEAT (cron/job) monitor: UptimeRobot generates a URL that the job must ping on schedule, and alerts when the pings stop."
 tags: [monitoring, heartbeat, cron, job-monitoring, create, uptimerobot]
 ---
 
 # Create a HEARTBEAT monitor
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
 Use for cron jobs, backups and background workers. It is the inverse of the other types: UptimeRobot probes nothing and waits for the job to request a generated URL; if no request arrives within `interval` (plus `gracePeriod`), the monitor goes down.
 
@@ -29,9 +29,13 @@ Use for cron jobs, backups and background workers. It is the inverse of the othe
 - Later, `url` is only the bare hash. The full push URL is in `heartbeatUrl` from `get-monitor-details`; `list-monitors` doesn't return it.
 - Set `interval` to the job's real schedule and use `gracePeriod` to absorb run-time variance; both are stored as sent.
 
+## Before creating
+
+Call `list-monitors` with the same `name`, `limit: 100`, paginating while `hasMore` is true, and keep the full result. If a HEARTBEAT monitor with the same name (case-insensitive) already exists, show it to the user and ask before creating (the server refuses it as a duplicate). The list also lets you tell a new monitor from an old one if the create fails (see [`errors`](../errors/SKILL.md)).
+
 ## After creating
 
-The create response already has the stored `id`, `interval` and push URL, so no read-back is needed for those. Call `get-monitor-details` (integer `id`) only to confirm `gracePeriod` or other fields you set; if it returns `Monitor not found` right after the create, the monitor still exists (you have its `id`) — wait a few seconds and retry once; never re-create. If `create-monitor` itself failed, follow `errors` → "Before retrying a failed write".
+The create response already has the stored `id`, `interval` and push URL, so no read-back is needed for those. Call `get-monitor-details` (integer `id`) only to confirm `gracePeriod` or other fields you set. For a `Monitor not found` read-back or a failed create, follow [`errors`](../errors/SKILL.md).
 
 ## Related
 

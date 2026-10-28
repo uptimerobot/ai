@@ -8,7 +8,7 @@ Plan names change over time — read the active plan from `get-user` (`activeSub
 
 - [MCP server](https://mcp.uptimerobot.com/mcp): Remote streamable-HTTP MCP endpoint. Connect to the URL directly and authorize through the OAuth browser flow on first use — no API key to paste. (Headless/CI: see the README for a manual setup.)
 - [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, errors, and agent conventions.
-- [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor plugin, skills, and this file.
+- [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor / Codex plugin, skills, and this file.
 - [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect and authorize Claude Code with UptimeRobot via OAuth.
 
 ## Quick Monitor Setup (no account)
@@ -37,9 +37,12 @@ Plan names change over time — read the active plan from `get-user` (`activeSub
 
 - [Incidents skill](https://uptimerobot.com/skills/incidents/SKILL.md): List and inspect downtime incidents with request logs, cause, and activity-log checker nodes.
 - [Incident response skill](https://uptimerobot.com/skills/incident-response/SKILL.md): End-to-end downtime triage, incident-comment timeline logging, and recovery verification.
-- [Stats skill](https://uptimerobot.com/skills/stats/SKILL.md): Aggregated uptime percentages and per-monitor response-time time series.
+- [Stats skill](https://uptimerobot.com/skills/stats/SKILL.md): Aggregated uptime (a 0–1 fraction) and per-monitor response-time time series.
 - [Status pages skill](https://uptimerobot.com/skills/status-pages/SKILL.md): Publish a public status page from monitors, groups, or tags, and manage incident/maintenance announcements on it.
-- [Errors skill](https://uptimerobot.com/skills/errors/SKILL.md): MCP error messages, recovery, and rate-limit handling.
+- [Errors skill](https://uptimerobot.com/skills/errors/SKILL.md): The single source for MCP error messages, retries, rate limits, and verifying writes.
+- [Conventions skill](https://uptimerobot.com/skills/conventions/SKILL.md): Rules for every tool call — discovery before writes, pagination, time ranges, and output style.
+- [SLA report skill](https://uptimerobot.com/skills/sla-report/SKILL.md): Per-monitor uptime, downtime and incident counts for a time range, as a shareable Markdown report.
+- [Monitor health summary skill](https://uptimerobot.com/skills/monitor-health-summary/SKILL.md): A one-shot snapshot of monitor states, recent incidents and downtime.
 
 ## Product
 
