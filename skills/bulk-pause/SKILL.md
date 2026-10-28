@@ -59,7 +59,7 @@ Always wait for the user's confirmation before pausing (partial `name`/`url` mat
 
 ## Step 3 — Record the IDs
 
-Before pausing anything, store the list of `monitorId`s somewhere retrievable (chat context or a local note file — not a third-party service) — you'll need it to resume. Don't rely on re-filtering later: the user may have added or renamed monitors in the interim, and a tag-based filter can quietly pick up unrelated monitors on resume. Store only the IDs you are about to pause (never ones that were already paused), and for a pause call that failed, check it with `get-monitor-details` (it may have landed anyway): keep the ID if it shows `PAUSED`, drop it only if it doesn't.
+Before pausing anything, store the list of `monitorId`s somewhere retrievable (chat context or a local note file — not a third-party service) — you'll need it to resume. Don't rely on re-filtering later: the user may have added or renamed monitors in the interim, and a tag-based filter can quietly pick up unrelated monitors on resume. Store only the IDs you are about to pause (never ones that were already paused), and for a pause call that failed (other than a rate-limited call, which never ran), check it with `get-monitor-details` (it may have landed anyway): keep the ID if it shows `PAUSED`, drop it only if it doesn't.
 
 ## Step 4 — Pause each monitor
 
@@ -67,7 +67,7 @@ Before pausing anything, store the list of `monitorId`s somewhere retrievable (c
 { "monitorId": 800123456, "status": "PAUSED" }
 ```
 
-Loop over the collected IDs. If a call is rate-limited (see [`errors`](../errors/SKILL.md)), wait as it says, retry **that same monitor**, and only then move to the next ID. Pace long lists.
+Loop over the collected IDs. If a call is rate-limited (see [`errors`](../errors/SKILL.md)), wait as it says, retry **that same monitor**, and only then move to the next ID. If you give up on a rate-limited call, that call never ran: on pause, drop the ID and tell the user this run didn't pause that monitor; on resume, keep the ID and tell the user that monitor wasn't resumed. If it was a retry of an earlier call that failed another way, first check that earlier call as above. Pace long lists.
 
 Then wait a few seconds (reads can lag) and confirm by ID. For a handful of monitors, call `get-monitor-details` on each stored ID and check `status`. For many, call `list-monitors` with only `filter: ["PAUSED"]` and `limit: 100` (paginate while `hasMore` is true; an account can have hundreds of paused monitors) and check every stored ID is in it. Report any that aren't paused.
 

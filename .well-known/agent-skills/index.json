@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Pause (or resume) many UptimeRobot monitors at once — by tag, name, URL, or state — around a deployment or maintenance window.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/bulk-pause/SKILL.md",
-      "digest": "sha256:0e71b6d15c38fe915367f98f7a0d94f8bdbbba3a1494cad94fa0492e455b24aa"
+      "digest": "sha256:107b971f3f1269310b011a02d6084508846c3343ae8210583b7ba53244873182"
     },
     {
       "name": "conventions",
@@ -76,14 +76,14 @@
       "type": "skill-md",
       "description": "The single source for UptimeRobot MCP errors, retries and write verification — what each plain-text error message means, when to retry (including rate limits), how to verify a write, and how to check whether a failed write landed.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/errors/SKILL.md",
-      "digest": "sha256:186c12afd3f8e0508ba3b901eba136d9444fde1960bccade94b639284b8f9c38"
+      "digest": "sha256:2a8cab44882e3dd3392f6f7b671a6dc9c868c37a2562941b7ccfdceff85e90fe"
     },
     {
       "name": "incident-response",
       "type": "skill-md",
       "description": "End-to-end incident workflow — find what's down, diagnose it, pause flapping monitors, and verify recovery.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/incident-response/SKILL.md",
-      "digest": "sha256:7be06d8cd6d682924b3ea06e093e7eee60e4e5982fb1629da063aa10977dfcfa"
+      "digest": "sha256:e1fac7040f287fc2e79fa191fe18301486f698906bca9f71e40e5e5e2f2050a9"
     },
     {
       "name": "incidents",
@@ -146,14 +146,14 @@
       "type": "skill-md",
       "description": "Generate a per-monitor SLA report for a time range — uptime percentage, total downtime, and incident count per monitor — formatted as Markdown for sharing in Confluence, Slack, or post-mortem docs.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/sla-report/SKILL.md",
-      "digest": "sha256:a30d586096d793fdd814db4ffe37ac68ead422a71e29d490a19e2906efbfedd4"
+      "digest": "sha256:41404a5fa71a0f5bb4ac07c3b8351e63e99fe79369dae0121bce5ca1661665e3"
     },
     {
       "name": "stats",
       "type": "skill-md",
       "description": "Read account-wide monitor statistics (up/down/paused counts, uptime, incident totals) and per-monitor response-time series, and report the numbers in the right units.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/stats/SKILL.md",
-      "digest": "sha256:bee6aaac3d406b743ac80ad41956feb63b339c17ea044523d8cc16915448f20f"
+      "digest": "sha256:1d723abe894161204955ff35278e4c2c7256ea2f2b49e692884793a2fe55cfec"
     },
     {
       "name": "status-pages",

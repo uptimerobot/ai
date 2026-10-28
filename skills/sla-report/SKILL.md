@@ -72,7 +72,7 @@ Merge all results by incident `id`, clip each to the report range, and **drop an
 
 Only fetch response times if the user explicitly asks for latency data. For a standard stakeholder report, skip this step — response times add technical noise that non-engineering readers don't need.
 
-If requested, call `get-response-times` with the report's own range (not a relative one like `"30d"`). `summary` always covers the whole range; omit `bucketSize` and the server picks one:
+If requested, call `get-response-times` with the report's own range (not a relative one like `"30d"`). It can't span more than 90 days, and per-chunk `p95` values can't be combined into one figure — for a report longer than 90 days (most calendar quarters are), ask the user whether to show latency for the last 90 days of the range (and label it so) or leave latency out. `summary` always covers the whole `timeRange` you sent; omit `bucketSize` and the server picks one:
 
 ```json
 { "monitorId": 800123456, "timeRange": "2026-04-01T00:00:00Z/2026-05-01T00:00:00Z" }

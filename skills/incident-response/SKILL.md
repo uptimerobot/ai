@@ -46,12 +46,12 @@ Call `list-incidents` with `status: "open"` to get every ongoing incident with i
 For each down monitor that the user wants to dig into:
 
 ```json
-{ "monitorId": 800123456, "timeRange": "2026-04-29T14:00:00Z/2026-04-30T14:00:00Z", "limit": 20 }
+{ "monitorId": 800123456, "timeRange": "<start ISO>/<end ISO>", "limit": 20 }
 ```
 
 Returns a list of incidents (active and resolved). Each `id` is a **numeric string** such as `"123456789012345678"`, and `duration` is text such as `"15m 55s"`, not seconds.
 
-Use the last 24 hours as an absolute ISO interval (as above), so paging is stable; paginate while `hasMore` is true. This returns only incidents that started in that window. Take the active incident from Step 1's `status: "open"` results (it may have started earlier), then show these recently resolved ones as flap history.
+Compute the last 24 hours from the current UTC time and send them as an absolute ISO interval (e.g. `2026-04-29T14:00:00Z/2026-04-30T14:00:00Z` when it's 14:00 UTC on 30 April), so paging is stable — never copy the example dates. If you can't determine the current UTC time, use `"24h"` instead (paging may restart from the first page, so dedupe incidents by `id`). Paginate while `hasMore` is true. This returns only incidents that started in that window. Take the active incident from Step 1's `status: "open"` results (it may have started earlier), then show these recently resolved ones as flap history.
 
 ## Step 3 — Diagnose one incident
 
