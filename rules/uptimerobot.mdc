@@ -36,7 +36,7 @@ Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`
 
 ## Pagination
 
-- Paginated tools (`list-monitors`, `list-incidents`, `list-integrations`, `list-monitor-groups`, `list-psps`, `list-psp-announcements`, `list-maintenance-windows`, `list-incident-comments`, `list-tags`) return an `instructions` field with the exact next-call JSON. Follow it verbatim; cursor shape is opaque.
+- Paginated tools (`list-monitors`, `list-incidents`, `list-integrations`, `list-monitor-groups`, `list-psps`, `list-psp-announcements`, `list-maintenance-windows`, `list-incident-comments`, `list-tags`, `list-third-party-services`, `list-third-party-service-incidents`) return an `instructions` field with the exact next-call JSON. Follow it verbatim; cursor shape is opaque.
 
 ## Errors
 
