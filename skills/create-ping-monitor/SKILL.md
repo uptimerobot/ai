@@ -1,17 +1,16 @@
 ---
 name: create-ping-monitor
-description: Create a PING monitor that sends ICMP echo requests to a hostname or IP and alerts on packet loss / timeout.
+description: Create a PING monitor that sends ICMP echo requests to a hostname or IP and alerts when the host stops responding.
 tags: [monitoring, ping, icmp, create, uptimerobot]
 ---
 
 # Create a PING monitor
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
-Use when the user wants basic network reachability for a host. PING does not care about HTTP status or content — it just checks whether the host responds to ICMP within the timeout.
+Use for basic network reachability of a host or IP. PING checks nothing about HTTP status or content — use `HTTP` / `KEYWORD` / `API` for that, or `PORT` when ICMP is filtered but a TCP port is open.
 
-**Tool:** `create-monitor`
-**Required params:** `friendlyName`, `type: "PING"`, `url` (hostname or IP, **no scheme**).
+**Tool:** `create-monitor` with `type: "PING"`. The tool's own schema and description are the reference for every parameter — this page only covers what they don't say.
 
 ## Minimal call
 
@@ -23,45 +22,23 @@ Use when the user wants basic network reachability for a host. PING does not car
 }
 ```
 
-IP addresses work too:
+## Gotchas
 
-```json
-{
-  "friendlyName": "VPN endpoint",
-  "type": "PING",
-  "url": "203.0.113.42"
-}
-```
+- `url` is a bare hostname or IP (e.g. `"203.0.113.42"`) — no scheme, no path.
+- `config.ipVersion: "ipv4Only"` is accepted and stored on PING monitors. `"IPv4"` / `"IPv6"` are rejected.
+- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
 
-## Common optional params
+## Before creating
 
-- `interval`, `timeout`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds` — same as HTTP.
-- `config.ipVersion` — force `IPv4` or `IPv6`. Defaults to auto.
+Call `list-monitors` with the same `url`, `limit: 100`, paginating while `hasMore` is true, and keep the full result. If a monitor of the same type and target already exists, show it to the user and ask before creating (the server refuses an exact-target duplicate). The list also lets you tell a new monitor from an old one if the create fails (see [`errors`](../errors/SKILL.md)).
 
-## Example with IPv6
+## After creating
 
-```json
-{
-  "friendlyName": "Public DNS v6",
-  "type": "PING",
-  "url": "2001:4860:4860::8888",
-  "config": { "ipVersion": "IPv6" },
-  "interval": 120
-}
-```
-
-## Common mistakes
-
-- Passing `https://host.example.com` — PING requires a bare hostname or IP. Strip the scheme and path.
-- Expecting content or status code checks — PING cannot do those. Use HTTP / KEYWORD / API instead.
-- Hostname must resolve publicly. Internal-only hostnames will always be down; use a reachable public name or a public IP.
-- Some networks block ICMP. If the host is actually up but ICMP is filtered, consider a `PORT` monitor on a known open TCP port instead.
-
-## After creation
-
-Call `get-monitor-details` to confirm.
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (tags, timeout, `config.ipVersion`). For a `Monitor not found` read-back or a failed create, follow [`errors`](../errors/SKILL.md).
 
 ## Related
 
 - `create-port-monitor` — when ICMP is blocked but a TCP port is open.
-- `create-http-monitor` — when the user has an HTTP(S) URL, not a bare host.
+- `create-http-monitor` — when there is an HTTP(S) URL.
+- `update-monitor` — change an existing monitor.
+- `errors` — recovering from plan limits and invalid parameters.

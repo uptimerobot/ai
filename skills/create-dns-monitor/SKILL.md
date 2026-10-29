@@ -1,17 +1,16 @@
 ---
 name: create-dns-monitor
-description: Create a DNS monitor that resolves records for a domain and alerts when they change or the DNS server does not respond.
+description: Create a DNS monitor that queries a domain and alerts when the DNS server does not answer or, optionally, when records differ from expected values.
 tags: [monitoring, dns, create, uptimerobot]
 ---
 
 # Create a DNS monitor
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
-Use when the user wants to confirm a DNS server is answering queries for a domain and/or that specific record values (A, AAAA, MX, TXT, NS, CNAME, etc.) haven't drifted from the expected set.
+Use to confirm a DNS server answers for a domain and, with `config.dnsRecords`, that record values haven't drifted. It does not check web reachability — add an `HTTP` monitor for that.
 
-**Tool:** `create-monitor`
-**Required params:** `friendlyName`, `type: "DNS"`, `url` (domain, no scheme).
+**Tool:** `create-monitor` with `type: "DNS"`. The tool's own schema and description are the reference for every parameter — this page only covers what they don't say.
 
 ## Minimal call
 
@@ -23,44 +22,23 @@ Use when the user wants to confirm a DNS server is answering queries for a domai
 }
 ```
 
-## Common optional params
+## Gotchas
 
-- `port` — DNS server port. Defaults to `53` if omitted.
-- `config.dnsRecords` — object mapping record type to expected values. The monitor alerts when live values diverge.
-- `interval`, `timeout`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
+- `url` is a bare domain, no scheme.
+- When `port` is omitted, `get-monitor-details` reads back `port: null` (not `53`). `update-monitor` rejects `port` on DNS monitors, so set a non-standard port at creation.
+- `config.dnsRecords` values must match the domain's current records — look them up first (e.g. `dig +short A example.com`) or use values the user gives. A stale value makes the monitor go DOWN right away.
+- On `update-monitor`, `config.dnsRecords` replaces the expected records; `null` removes them.
 
-## Example: assert A and MX records
+## Before creating
 
-```json
-{
-  "friendlyName": "example.com records",
-  "type": "DNS",
-  "url": "example.com",
-  "config": {
-    "dnsRecords": {
-      "A": ["93.184.216.34"],
-      "MX": ["0 mail.example.com."]
-    }
-  },
-  "interval": 300,
-  "assignedAlertContacts": [
-    { "alertContactId": "10", "threshold": 0, "recurrence": 0 }
-  ]
-}
-```
+Call `list-monitors` with the same `url`, `limit: 100`, paginating while `hasMore` is true, and keep the full result. If a monitor of the same type and target already exists, show it to the user and ask before creating (the server refuses an exact-target duplicate). The list also lets you tell a new monitor from an old one if the create fails (see [`errors`](../errors/SKILL.md)).
 
-## Common mistakes
+## After creating
 
-- Passing `url` as `https://example.com` — DNS monitors take a bare domain.
-- Passing a non-standard `port` without understanding that it targets a DNS server listening on that port (not a monitored service port). Leave it out unless the user explicitly runs DNS on a custom port.
-- Assuming DNS monitors check web reachability — they don't. Use `HTTP` in addition for that.
-- Expected record values must match the authoritative server exactly, including trailing dots on MX/NS/CNAME where applicable.
-
-## After creation
-
-Call `get-monitor-details` to confirm stored records and port.
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (records and `port`). For a `Monitor not found` read-back or a failed create, follow [`errors`](../errors/SKILL.md).
 
 ## Related
 
-- `create-http-monitor` — to also check the service behind the DNS name.
-- `update-monitor` — retune interval, alert contacts, and tags on an existing DNS monitor. (Note: `dnsRecords` are set at creation and changing them requires creating a new monitor.)
+- `create-http-monitor` — also check the service behind the name.
+- `update-monitor` — change records, interval, contacts, tags.
+- `errors` — recovering from plan limits and invalid parameters.

@@ -1,6 +1,6 @@
 # Contributing
 
-This repo is a Claude Code + Cursor plugin. Most contributions add a new
+This repo is a Claude Code, Cursor and Codex plugin. Most contributions add a new
 **skill**, **command**, **agent**, or **rule**. Keep additions small and
 focused — one concept per file/directory.
 
@@ -20,11 +20,11 @@ reference files or scripts.
 
 ```markdown
 ---
-name: sync-timezones
-description: Synchronize DST offsets using the syncTimezones CLI in api-internal.
+name: weekly-report
+description: Summarise last week's uptime for every monitor tagged production.
 ---
 
-# Sync timezones
+# Weekly report
 
 Steps the agent should follow…
 ```
@@ -32,26 +32,44 @@ Steps the agent should follow…
 Optional supporting files:
 
 ```
-skills/sync-timezones/
+skills/weekly-report/
 ├── SKILL.md
 ├── reference.md          # extra context the model can open on demand
 └── scripts/
     └── run.sh            # invoked via ${CLAUDE_PLUGIN_ROOT}/skills/.../scripts/run.sh
 ```
 
+### What belongs in a skill
+
+The MCP server's tool schemas and descriptions already tell agents every
+parameter, and a live A/B evaluation showed agents complete single-tool tasks
+just as well without a skill. Write skills for:
+
+- **Multi-step workflows** (bulk pause around a deploy, SLA reports, incident
+  response).
+- **Behaviour the schemas don't state**, verified against the live server
+  (for example, `create-psp` ignoring `status: PAUSED`).
+
+Don't restate parameter lists or enums from the schemas: those copies are
+what drifted from the server before. If a behaviour belongs in a tool's
+description, raise it with the MCP server team instead.
+
+Skill files are published at `uptimerobot.com/skills/<name>/SKILL.md`, so
+don't delete or rename a skill without arranging a redirect.
+
 ## Commands (`commands/<command-name>.md`)
 
 A command is a single markdown file that becomes a slash command
-(e.g. `/uptimerobot-ai:deploy`). Frontmatter is optional; when present it
+(e.g. `/uptimerobot:deploy`). Frontmatter is optional; when present it
 mirrors the skill format.
 
 ```markdown
 ---
-description: Run the local UptimeRobot dev stack.
+description: Show monitors that are down right now.
 ---
 
-Run `cd ~/repos/dev-local && .bin/ur start` and wait for all services to be
-healthy before returning.
+Call `list-monitors` with `filter: ["DOWN", "LOOKS_DOWN"]` and list each monitor's
+name and how long it has been down.
 ```
 
 ## Agents (`agents/<agent-name>.md`)
@@ -75,9 +93,9 @@ apply.
 
 ```mdc
 ---
-description: Enforce TypeScript style across api-internal.
+description: Enforce JavaScript style in this repo's scripts.
 globs:
-  - "apps/api-internal/**/*.ts"
+  - "scripts/**/*.mjs"
 alwaysApply: false
 ---
 
@@ -93,16 +111,18 @@ hooks run on every matching event.
 
 ## MCP servers (`mcp.json` / `.mcp.json`)
 
-The UptimeRobot server is registered as an `mcp-remote` launcher that proxies to
-`https://mcp.uptimerobot.com/mcp` and authenticates via OAuth (browser flow on
-first use). No API key or env var is injected into the config — keep it that way:
+The UptimeRobot server is registered as a direct streamable-HTTP connection to
+`https://mcp.uptimerobot.com/mcp`; the client runs the OAuth browser flow itself.
+Nothing runs on the user's machine, and no API key, header, or env var is in the
+config — keep it that way. The plugin directory scan flags local package
+launchers, unpinned packages, and credential reads:
 
 ```json
 {
   "mcpServers": {
     "uptimerobot": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://mcp.uptimerobot.com/mcp"]
+      "type": "http",
+      "url": "https://mcp.uptimerobot.com/mcp"
     }
   }
 }
@@ -134,25 +154,36 @@ Deliberate omissions in `server.json` — please don't "fix" these:
   `Authorization` header as required would make every client prompt for an API key
   and bypass OAuth. The Bearer-token path stays a documented headless/CI escape
   hatch, not registry metadata.
-- **No `packages` array.** `mcp-remote` is a third-party shim, not our package.
+- **No `packages` array.** There is no package; the server is remote-only.
 
 ### Publishing an update
 
 Bump `version` in `server.json` first — reuse of a published version is rejected.
-Use `0.1.0-1`, `0.1.0-2`, … prerelease strings for registry-metadata-only changes so
-you don't burn a patch release on a typo. Keep `version` in step with the three
-`plugin.json` manifests (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`) —
-nothing in CI enforces this.
+For registry-metadata-only changes, use a prerelease of the *next* patch (after
+`0.1.1`: `0.1.2-1`, `0.1.2-2`, …) so you don't burn a patch release on a typo — a
+prerelease sorts below its release, so `0.1.1-1` would rank under `0.1.1`. Those
+suffixes go in `server.json` only.
+Otherwise keep `version` in step with the three `plugin.json` manifests
+(`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`) — nothing in CI enforces this.
 
 ```bash
 mcp-publisher validate
 
-MY_DOMAIN="uptimerobot.com"
-PRIVATE_KEY="$(openssl pkey -in key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n')"
-mcp-publisher login dns --domain "${MY_DOMAIN}" --private-key "${PRIVATE_KEY}"
+# Either paste the hex key at a silent prompt…
+read -rs MCP_KEY
+# …or derive it from key.pem (kept outside the repo) without printing it:
+# MCP_KEY="$(openssl pkey -in /path/outside/repo/key.pem -noout -text | grep -A3 'priv:' | tail -n +2 | tr -d ' :\n')"
+mcp-publisher login dns --domain uptimerobot.com --private-key "$MCP_KEY"
+unset MCP_KEY
 
 mcp-publisher publish
+mcp-publisher logout   # removes the saved token — run it even if publish fails
 ```
+
+`mcp-publisher` (1.8.1) only accepts the key as `--private-key` — no prompt, environment
+variable or key file — so never type it inline: it would land in your shell history. Run
+this on your own machine; the key is briefly visible in the process list while the login
+runs.
 
 Verify with:
 
@@ -165,15 +196,17 @@ curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=com.uptime
 The `com.uptimerobot/*` namespace is proven by an Ed25519 key whose public half is
 published as a TXT record on the `uptimerobot.com` apex
 (`v=MCPv1; k=ed25519; p=<public key>`, managed in Cloudflare). The private key
-(`key.pem`) is **gitignored and lives in the team password manager** — losing it
+(`key.pem`) **lives in the team password manager** — keep it outside the repo (`key.pem` is gitignored only as a safety net). Paste its hex
+form at the `read -rs` prompt above (or derive it as shown); never type the literal key into a command or commit it in a script. Losing it
 means losing the ability to publish updates under this namespace.
 
 ## Testing a change
 
 Before opening a PR:
 
-1. Lint the JSON: `python -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" .claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/hooks.json mcp.json .mcp.json codex.mcp.json server.json`.
+1. If you touched a `SKILL.md`, regenerate the skills index with `node scripts/generate-agent-skills-index.mjs` — the PR check fails on a stale index.
+2. Lint the JSON: `python -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" .claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/hooks.json mcp.json .mcp.json codex.mcp.json server.json .well-known/agent-skills/index.json .agents/plugins/marketplace.json`.
    If you touched `server.json`, also run `mcp-publisher validate`.
-2. Install the plugin locally in Claude Code and/or Cursor and verify the new
+3. Install the plugin locally in Claude Code and/or Cursor and verify the new
    skill/command/agent/rule loads and runs as expected.
-3. Update `README.md` if you added a new top-level directory or convention.
+4. Update `README.md` if you added a new top-level directory or convention.

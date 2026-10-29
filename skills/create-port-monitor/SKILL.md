@@ -1,17 +1,16 @@
 ---
 name: create-port-monitor
-description: Create a PORT monitor that opens a TCP connection to a host:port and alerts when the port is not accepting connections.
+description: "Create a PORT monitor that opens a TCP connection to a host and port and alerts when the port stops accepting connections (the default, `portAlertCondition: \"CLOSED\"`) or, with `\"OPEN\"`, when it starts accepting them."
 tags: [monitoring, port, tcp, create, uptimerobot]
 ---
 
 # Create a PORT monitor
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
-Use when the user wants to check that a specific TCP port is open on a host — databases, SSH, SMTP, custom services, etc.
+Use to check that a TCP port is open on a host — databases, SSH, SMTP, custom services. For UDP services use `create-udp-monitor`; for HTTP status or content use `HTTP` / `KEYWORD`.
 
-**Tool:** `create-monitor`
-**Required params:** `friendlyName`, `type: "PORT"`, `url` (host or IP, no scheme), `port` (1–65535).
+**Tool:** `create-monitor` with `type: "PORT"`. The tool's own schema and description are the reference for every parameter — this page only covers what they don't say.
 
 ## Minimal call
 
@@ -24,54 +23,23 @@ Use when the user wants to check that a specific TCP port is open on a host — 
 }
 ```
 
-## Common optional params
+## Gotchas
 
-- `timeout` — how long to wait for the TCP handshake (1–60s).
-- `interval`, `responseTimeThreshold`, `assignedAlertContacts`, `tagNames`, `maintenanceWindowsIds`.
-- `config.ipVersion` — `IPv4` or `IPv6`.
+- `url` is the bare host and `port` a separate integer — split `https://host:443` into `"url": "host"` and `"port": 443`.
+- `config.ipVersion: "ipv4Only"` is accepted and stored on PORT monitors (on create and on `update-monitor`). `"IPv4"` / `"IPv6"` are rejected.
+- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
 
-## Examples
+## Before creating
 
-SMTP over IPv4:
+Call `list-monitors` with the same `url`, `limit: 100`, paginating while `hasMore` is true, and keep the full result. If a monitor of the same type and target already exists, show it to the user and ask before creating (the server refuses an exact-target duplicate). The list also lets you tell a new monitor from an old one if the create fails (see [`errors`](../errors/SKILL.md)).
 
-```json
-{
-  "friendlyName": "Mail relay",
-  "type": "PORT",
-  "url": "smtp.example.com",
-  "port": 25,
-  "timeout": 15,
-  "interval": 300
-}
-```
+## After creating
 
-SSH with alert contacts:
-
-```json
-{
-  "friendlyName": "Bastion SSH",
-  "type": "PORT",
-  "url": "bastion.example.com",
-  "port": 22,
-  "assignedAlertContacts": [
-    { "alertContactId": "10", "threshold": 0, "recurrence": 0 }
-  ],
-  "tagNames": ["infra", "security"]
-}
-```
-
-## Common mistakes
-
-- Passing `https://host:443` as `url`. Split into `url: "host"` and `port: 443`.
-- Passing `port` as a string. It must be an integer 1–65535.
-- Passing `port` outside the valid range (e.g. 0 or 70000). The server rejects with `-29001`.
-- Using PORT for an HTTP health check where you actually want status code / body — prefer `HTTP` or `KEYWORD`.
-
-## After creation
-
-Call `get-monitor-details` to confirm host + port were stored.
+The create response already has the stored `id`, `name`, `type`, `url`, `interval` and `status`. Call `get-monitor-details` (integer `id`) only to confirm other fields you set (`port`, tags, timeout). For a `Monitor not found` read-back or a failed create, follow [`errors`](../errors/SKILL.md).
 
 ## Related
 
-- `create-udp-monitor` — for UDP services (DNS, NTP, QUIC, game servers).
-- `create-ping-monitor` — for reachability without a specific port.
+- `create-udp-monitor` — for UDP services.
+- `create-ping-monitor` — reachability without a specific port.
+- `update-monitor` — change an existing monitor.
+- `errors` — recovering from plan limits and invalid parameters.

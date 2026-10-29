@@ -6,30 +6,19 @@ tags: [maintenance-window, scheduled, downtime, alerts, uptimerobot]
 
 # Maintenance windows
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
-Requires the `maintenance-window` plan feature.
+Use this for planned or recurring downtime (deploys, patching). A window suppresses alerts while the monitors keep checking. For "stop this right now", use [`bulk-pause`](../bulk-pause/SKILL.md) instead. Needs the `maintenance-window` plan feature.
 
-## Decision: maintenance window vs. bulk-pause
+**Tools:** `create-maintenance-window`, `update-maintenance-window`, `get-maintenance-window`, `list-maintenance-windows`, `delete-maintenance-window`. The tools' own schemas and descriptions are the reference for parameters — this page only covers what they don't say.
 
-Both stop alert noise during planned downtime, but they work differently:
-
-| | Maintenance window | [`bulk-pause`](../bulk-pause/SKILL.md) |
-| -- | -- | -- |
-| What changes | Alerts only — monitor keeps checking and its state stays visible | Monitor itself stops checking (`status: PAUSED`) |
-| Timing | Scheduled in advance, can recur | Immediate, manual resume |
-| Resume cap risk | None — monitor was never paused | Resuming can hit `-28001 monitor_limit_exceeded` |
-| Best for | Known, recurring, or future-dated downtime (deploy windows, patching schedule) | Ad-hoc, right-now, or a monitor that needs to fully stop |
-
-Default to a maintenance window whenever the downtime is planned ahead of time or repeats. Use bulk-pause for "pause it right now" requests.
-
-## Creating a window
+`create-maintenance-window` — every Monday, 90 minutes from 02:00:
 
 ```json
 {
   "name": "Weekly DB patching",
   "interval": "weekly",
-  "date": "2026-07-06",
+  "date": "2026-12-07",
   "time": "02:00:00",
   "duration": 90,
   "days": [1],
@@ -37,42 +26,26 @@ Default to a maintenance window whenever the downtime is planned ahead of time o
 }
 ```
 
-- `date`/`time` are the **first** occurrence; `time` is UTC — confirm the user's intended timezone and convert before calling.
-- `days` is **required** for `weekly` (1–7, ISO weekday) and `monthly` (1–31, or `-1` for "last day of the month") recurrence. Omitting it on a recurring window is a validation error, not a silent default.
-- `duration` is minutes the window stays active from the daily start time — not an end date.
-- `autoAddMonitors: true` includes every monitor, including ones created later. Confirm with the user before using it — it's easy to end up suppressing alerts for something unrelated.
-
-## The monitor-linkage asymmetry
-
-Unlike tags, **the window owns the relationship, not the monitor.** `create-monitor` accepts `maintenanceWindowsIds` at creation time, but `update-monitor` has no equivalent field — you cannot attach an existing monitor to a window from the monitor side after creation.
-
-To add or remove monitors from an existing window, update the window instead:
-
-```json
-{ "maintenanceWindowId": 700123, "monitorIds": [800111, 800222, 800333] }
-```
-
-This is a **full replacement** of the window's monitor list (same pattern as `tagNames`/`assignedAlertContacts` elsewhere) — read the current list via `get-maintenance-window` first if you're adding one monitor rather than replacing the set.
-
-## Pausing / resuming a window without deleting it
+`update-maintenance-window` — pause a window without losing its schedule (`"active"` resumes it):
 
 ```json
 { "maintenanceWindowId": 700123, "status": "paused" }
 ```
 
-Use this when a scheduled window needs to be called off for one occurrence without losing the recurrence config. Flip back with `status: "active"`.
+## Gotchas
 
-## Common mistakes
-
-- Forgetting `days` on a `weekly`/`monthly` window.
-- Treating `time` as the user's local timezone — it's UTC.
-- Trying to attach a monitor to a window via `update-monitor` — that field doesn't exist there; update the window's `monitorIds` instead.
-- Sending a partial `monitorIds` array on `update-maintenance-window` expecting a merge — it replaces the full set.
-- Recommending a maintenance window to a plan that doesn't have the `maintenance-window` feature — check for `-28002 subscription_limit_exceeded` and suggest bulk-pause or a plan upgrade instead.
-- Using a maintenance window for "stop this monitor entirely" — it suppresses alerts, not checks. Use `update-monitor-status` if the user wants the monitor to actually stop.
+- **Weekly `days` are ISO weekdays: `1` = Monday … `7` = Sunday.** Monthly `days` are dates `1`–`31`, and `-1` means the last day of the month — use it for "last day" rather than `31` (which skips shorter months) or `28`–`31` (several windows a month).
+- `days` is required for `weekly` and `monthly`. Without it you get plain text with no code: `days is required and must be non-empty for "weekly" maintenance windows`.
+- `update-maintenance-window` replaces `days` and `monitorIds` with what you send. Send `interval` together with `days` (otherwise: `interval is required when days is provided`). Switching to weekly or monthly needs `days` and clears `date` unless you resend it; switching to `once` or `daily` clears the old `days` (and `daily` clears `date`). An explicit `monitorIds` turns auto-add off. A window that reads `[0]` has auto-add on: monitors created from now on join it, but which existing monitors it covers can't be read over MCP (one created with `autoAddMonitors: true` over MCP covers none). Don't claim a monitor is covered. With the user's OK, send `autoAddMonitors: false` (without `monitorIds`): auto-add turns off, the current links are kept, and `get-maintenance-window` then lists them. `autoAddMonitors: true` on update only sets the flag — it links no existing monitors. See [how updates treat lists](../../AGENTS.md#how-updates-treat-list-and-map-fields).
+- **New windows are always created active** (there is no `status` on create). If the user wants a draft, pause it right after creating.
+- **The timezone of `time` is unclear.** The schema says UTC, but the server's scheduling code reads `date`/`time` in the account's timezone. Before creating, tell the user exactly what you'll send (e.g. "`time: 02:00:00`, read in your account's timezone") and get their OK; afterwards, ask them to check the start time in the dashboard. `date`/`time` are the first occurrence; `duration` is minutes.
+- **`list-maintenance-windows` rejects `cursor: 0`** (other list tools accept it). Omit `cursor` on the first page.
+- The window owns the monitor list: `update-monitor` has no maintenance-window field and `get-monitor-details` doesn't show windows. Change a window's monitors with `update-maintenance-window` `monitorIds`, sending the complete list (read it first with `get-maintenance-window`).
+- **`autoAddMonitors: true` doesn't attach existing monitors over MCP** — the window reads back `monitorIds: [0]` (a marker, not a list — never merge IDs into it), and the server doesn't link the monitors you already have. Pass the IDs in `monitorIds` instead, and check the result with `get-maintenance-window`. Don't send `autoAddMonitors: true` together with `monitorIds` on create: the monitors are linked but auto-add stays on, so the window reads `[0]` and every future monitor joins it.
+- `delete-maintenance-window` is permanent; pausing is usually what the user wants. Call `get-user` and confirm before deleting.
 
 ## Related
 
-- [`bulk-pause`](../bulk-pause/SKILL.md) — the immediate/manual alternative.
-- [`status-pages`](../status-pages/SKILL.md) — pair a `Maintenance`-type announcement with the window.
-- [`errors`](../errors/SKILL.md) — `-28002` for plan gating, `-29001` for malformed recurrence params.
+- [`bulk-pause`](../bulk-pause/SKILL.md) — the immediate alternative.
+- [`status-pages`](../status-pages/SKILL.md) — post a `Maintenance` announcement alongside the window.
+- [`errors`](../errors/SKILL.md) — plan-feature and validation messages.
