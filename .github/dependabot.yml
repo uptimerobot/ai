@@ -1,0 +1,28 @@
+# Managed by dependabot-rollout. Grouping/cooldown standard v1.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Bratislava"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 5
+    groups:
+      security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      all:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
