@@ -29,7 +29,7 @@ Use for UDP services — NTP, game servers, QUIC, custom UDP endpoints. For TCP 
 - **Always set `config.udp` (with `packetLossThreshold`) at create.** A UDP monitor created without it can't take any later `config` change (even `ipVersion`) until a full `config.udp` is sent.
 - Whenever you send `config.udp` (e.g. to set a `payload`), on create or update, it must include `packetLossThreshold` — on update, read the stored one from `get-monitor-details`, or ask the user if none is stored. Without it the call is rejected: on create `[config.udp.packetLossThreshold]: Invalid input`, on update `Invalid UDP monitor configuration: config.udp.packetLossThreshold is required…`. See [how updates treat `config`](../../AGENTS.md#how-updates-treat-list-and-map-fields).
 - `url` is the bare host or IP and `port` a separate integer.
-- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
+- Every new monitor reads back `authType: "HTTP_BASIC"` in `get-monitor-details`. That is the stored default, not configured credentials.
 
 ## Before creating
 

@@ -32,7 +32,7 @@ Use when specific fields of a (usually JSON) response must hold — not just the
 
 - Assertions are stored verbatim and evaluated on every check: pointing a JSONPath check at a non-JSON page (e.g. an HTML homepage) creates the monitor but it goes DOWN. Confirm the endpoint's response shape first.
 - `config.ipVersion: "ipv4Only"` is accepted and stored alongside `config.apiAssertions`. `"IPv4"` / `"IPv6"` are rejected.
-- `get-monitor-details` returns `customHttpHeaders` unredacted. Don't echo header values (tokens, API keys) back to the user.
+- `get-monitor-details` lists only header names (`customHttpHeaderNames`), never values. Authentication headers (Authorization, cookies, API and access keys, tokens, secrets, signatures, sessions) and HTTP auth credentials can't be set or changed over MCP — the user sets them in the dashboard.
 
 ## Before creating
 

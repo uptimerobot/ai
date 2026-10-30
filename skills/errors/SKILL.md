@@ -33,7 +33,7 @@ Use this whenever an UptimeRobot tool call fails, and after every write. Other s
 
 - **`create-monitor`** returns the stored `id`, `name`, `type`, `url` (the push URL for HEARTBEAT), `interval` and `status`. Call `get-monitor-details` afterwards only to confirm other fields you set (tags, timeout, `config`, HTTP settings, …).
 - **`update-monitor`** returns only a success message — even for fields it ignores — so read the monitor back with `get-monitor-details`. After **`update-monitor-status`**, confirm the new `status` (a resumed monitor shows `STARTED` until its first check).
-- `get-monitor-details` can't show alert contacts, maintenance windows, group membership or `httpPassword` (the password or Bearer token). Say so instead of claiming they were verified; check groups with `list-monitors` + `groupId` and windows with `get-maintenance-window` (a window that reads `[0]` can't show which existing monitors it covers).
+- `get-monitor-details` can't show alert contacts, maintenance windows, group membership, header values or HTTP auth credentials. Say so instead of claiming they were verified; check groups with `list-monitors` + `groupId` and windows with `get-maintenance-window` (a window that reads `[0]` can't show which existing monitors it covers).
 - **Other resources** (status pages, maintenance windows, announcements, alert contacts, …): read them back with the matching `get-*` tool.
 - `Monitor not found` from `get-monitor-details` right after a **successful** create is replication lag: you have the `id`, so wait a few seconds and retry once. Never re-run `create-monitor` — the server refuses an identical monitor (`Duplicate monitor already exists.`), but if the target settings differ (URL, method, headers, body, regions, IP version, port, keyword) you get a second one.
 - `monitorId` is an integer. Pass the `id` exactly as returned; don't use IDs from dashboard URLs or memory without checking them with `get-monitor-details`.
@@ -48,7 +48,7 @@ A failed write may still have landed. Check before you resend:
 
 ## Gotchas
 
-- **A success message doesn't prove a change.** `update-monitor` returns `updated successfully` even for fields it ignores (`authType`, `keywordType`, `httpUsername`, `httpPassword`, `postValueData`, `postValueType`, `maintenanceWindowsIds`). Never resend because of those fields — they can't be changed with `update-monitor`.
+- **A success message doesn't prove a change** — verify with `get-monitor-details`. `update-monitor` can't change `authType`, HTTP auth credentials, `keywordType`, `postValueData`, `postValueType` or `maintenanceWindowsIds`, and authentication headers can't be set over MCP; never resend because of those.
 - **Report every failure**, including single failed calls inside a loop — the user needs to know which items didn't land.
 - **Some wrong inputs aren't errors at all.** An unknown parameter such as `search` on `list-monitors` is ignored silently and you get unfiltered results. If a result looks too broad, check your parameter names.
 - `get-incident-details` doesn't validate the ID format and just says `Incident not found`; the activity-log and alerts tools reject non-numeric IDs with `incidentId must be a numeric string`.

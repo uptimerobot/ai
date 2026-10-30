@@ -25,10 +25,10 @@ Use to check that a website or HTTP(S) endpoint responds with a success code. Pi
 ## Gotchas
 
 - A `url` without a scheme (`"example.com"`) is accepted and stored as-is. Always send the full URL with `https://`; use `PING` for a bare host.
-- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
+- Every new monitor reads back `authType: "HTTP_BASIC"` in `get-monitor-details`. That is the stored default, not configured credentials.
 - `config.ipVersion` takes `"ipv4Only"` / `"ipv6Only"`; `"IPv4"` / `"IPv6"` are rejected.
 - `responseTimeThreshold` must be 100–60000 on create; `0` is rejected. Omit it to leave slow-response alerts off.
-- `get-monitor-details` returns `customHttpHeaders` unredacted. Don't echo header values (tokens, API keys) back to the user.
+- `get-monitor-details` lists only header names (`customHttpHeaderNames`), never values. Authentication headers (Authorization, cookies, API and access keys, tokens, secrets, signatures, sessions) and HTTP auth credentials can't be set or changed over MCP — the user sets them in the dashboard.
 - Validation errors come back as plain text (`Invalid parameters: [field]: …`) with no numeric code — match on the message.
 
 ## Before creating

@@ -27,7 +27,7 @@ Use to check that a TCP port is open on a host — databases, SSH, SMTP, custom 
 
 - `url` is the bare host and `port` a separate integer — split `https://host:443` into `"url": "host"` and `"port": 443`.
 - `config.ipVersion: "ipv4Only"` is accepted and stored on PORT monitors (on create and on `update-monitor`). `"IPv4"` / `"IPv6"` are rejected.
-- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
+- Every new monitor reads back `authType: "HTTP_BASIC"` in `get-monitor-details`. That is the stored default, not configured credentials.
 
 ## Before creating
 

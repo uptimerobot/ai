@@ -26,7 +26,7 @@ Use this to find monitors, inspect one, or pause / resume one. For changing a mo
 - `totalCount` is only on the first page (it's `null` whenever `cursor` is passed).
 - Responses use `name`; `friendlyName` is only an input field on create/update.
 - `get-monitor-details` doesn't return the monitor's alert contacts, maintenance windows or group. For group membership use `list-monitors` with `groupId`.
-- `get-monitor-details` returns `customHttpHeaders` unredacted (bearer tokens, API keys). Don't echo header values to the user.
+- `get-monitor-details` lists only header names (`customHttpHeaderNames`), never values, and no HTTP auth username or password.
 - For a HEARTBEAT monitor `url` is only the bare hash; the full push URL is in `heartbeatUrl` from `get-monitor-details` (not in `list-monitors`).
 - Paused monitors still count toward the plan's monitor limit; resuming (`status: "STARTED"`) fails with a limit error only if the account is over its limit (e.g. after a downgrade). Pausing a monitor that is down resolves its open incident. After pausing or resuming, confirm with `get-monitor-details`.
 
