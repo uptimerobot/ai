@@ -60,6 +60,16 @@ for dir in skills/*/; do
   cp -R "$dir" "$stage/skills/$name"
 done
 
+# Drop list items that link to an excluded skill, in the packaged copy only.
+for excluded in "${EXCLUDED_SKILLS[@]}"; do
+  grep -rlF "](../${excluded}/SKILL.md)" "$stage/skills" | while read -r file; do
+    sed -i "\#^- .*](\.\./${excluded}/SKILL\.md)#d" "$file"
+  done
+  if grep -rnF "](../${excluded}/SKILL.md)" "$stage/skills"; then
+    fail "a packaged skill still links to the excluded ${excluded} skill"
+  fi
+done
+
 mkdir -p dist
 rm -f "$out"
 (cd "$stage" && zip -qrX - .) > "$out"
