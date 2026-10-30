@@ -30,7 +30,7 @@
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://uptimerobot.com",
-    "supportURL": "https://help.uptimerobot.com/",
+    "supportURL": "https://uptimerobot.com/contact/",
     "privacyPolicyURL": "https://uptimerobot.com/privacy/",
     "termsOfServiceURL": "https://uptimerobot.com/terms/",
     "defaultPrompt": [
