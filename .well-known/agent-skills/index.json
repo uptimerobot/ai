@@ -13,7 +13,7 @@
       "type": "skill-md",
       "description": "Conventions and gotchas for every UptimeRobot MCP tool call — monitor types, URL formats, HEARTBEAT URL handling, discovery-before-writes, pagination, time ranges, and output style (errors and retries live in the errors skill). Use whenever you call any UptimeRobot MCP tool.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/conventions/SKILL.md",
-      "digest": "sha256:3395e957a71f97078b0ee42ad124d9f42396292065c7ecffec9168fa7d6fa2e0"
+      "digest": "sha256:2d4ddca4972b2041b5b1619e8a9caf445d50e77961cbd0410cfe8ed1264121f6"
     },
     {
       "name": "create-api-monitor",

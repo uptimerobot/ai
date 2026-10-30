@@ -7,6 +7,8 @@ description: Conventions and gotchas for every UptimeRobot MCP tool call — mon
 
 Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`https://mcp.uptimerobot.com/mcp`).
 
+The user's explicit instructions take priority over the guidance in this and the other UptimeRobot skills. Two rules still hold when the user asks otherwise: mask secrets (see [Output style](#output-style)), and get the user's confirmation before any permanent delete.
+
 ## Monitor types
 
 - Always send `type` as a string enum — one of `HTTP`, `KEYWORD`, `PING`, `PORT`, `HEARTBEAT`, `DNS`, `API`, `UDP`. Do not pass numeric type codes; the MCP layer rejects them.
