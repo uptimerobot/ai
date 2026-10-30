@@ -204,13 +204,13 @@ means losing the ability to publish updates under this namespace.
 
 Build the ZIP for OpenAI's plugin portal with `scripts/build-openai-plugin-zip.sh`.
 It writes `dist/uptimerobot-openai-<version>.zip` (gitignored) with only
-`.codex-plugin/plugin.json`, `.mcp.json`, the skills (minus `setup`, which is
-written for Claude Code and Cursor), `assets/logo.png`, `AGENTS.md` and
-`LICENSE`, and fails on the listing limits that final submission enforces
-(30-character display name and subtitle, HTTPS listing URLs, at most three
-starter prompts). Don't add `.app.json`, `apps`, hooks or screenshots: OpenAI
-rejects the first three, and screenshots only when the MCP server returns
-custom UI. Test cases, the demo video and reviewer credentials go in the portal.
+`.codex-plugin/plugin.json`, `.mcp.json`, the skills, `assets/logo.png`,
+`AGENTS.md` and `LICENSE`, and fails on the listing limits that final
+submission enforces (30-character display name and subtitle, HTTPS listing
+URLs, at most three starter prompts) or when a skill refers to a skill that
+isn't packaged. Don't add `.app.json`, `apps`, hooks or screenshots: OpenAI
+rejects the first three, and screenshots unless the MCP server returns custom
+UI. Test cases, the demo video and reviewer credentials go in the portal.
 
 ## Testing a change
 
@@ -221,4 +221,7 @@ Before opening a PR:
    If you touched `server.json`, also run `mcp-publisher validate`.
 3. Install the plugin locally in Claude Code and/or Cursor and verify the new
    skill/command/agent/rule loads and runs as expected.
+   If you touched `.codex-plugin/`, `.mcp.json` or a skill, also run
+   `scripts/build-openai-plugin-zip.sh` — it fails on what OpenAI's plugin
+   submission rejects.
 4. Update `README.md` if you added a new top-level directory or convention.

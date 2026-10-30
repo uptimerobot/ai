@@ -51,7 +51,7 @@ On first connection a browser opens for the OAuth flow. Run `/plugin` to confirm
 
 #### MCP server only (scripted)
 
-If you just want the MCP tools without the rest of the plugin (dotfiles, CI bootstrap), see [skills/setup/SKILL.md](skills/setup/SKILL.md). Short version:
+If you just want the MCP tools without the rest of the plugin (dotfiles, CI bootstrap), register the server yourself:
 
 ```bash
 claude mcp add --transport http uptimerobot https://mcp.uptimerobot.com/mcp
