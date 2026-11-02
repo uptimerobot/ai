@@ -59,6 +59,8 @@ mkdir -p "$stage/.codex-plugin" "$stage/assets"
 cp .codex-plugin/plugin.json "$stage/.codex-plugin/"
 cp .mcp.json AGENTS.md LICENSE "$stage/"
 cp assets/logo.png "$stage/assets/"
+untracked="$(git ls-files --others -- skills)" || fail "could not list files under skills/"
+[ -z "$untracked" ] || fail "untracked files under skills/ would be packaged; commit or remove them: $untracked"
 cp -R skills "$stage/"
 
 mkdir -p dist

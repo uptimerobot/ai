@@ -167,7 +167,7 @@
       "type": "skill-md",
       "description": "Modify an existing UptimeRobot monitor — rename, change URL/interval, swap alert contacts, retag, move between groups, and tweak type-specific settings — without losing the lists it replaces.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/update-monitor/SKILL.md",
-      "digest": "sha256:9e3a16bdd4a5504dda4e82f8ff78b29063e4d8ec07489bdc5f7328703e29af32"
+      "digest": "sha256:56cc99de1a6366c2f65b2f1ab7f0de9a1d793dd58704a10dd4f4f17286318a07"
     }
   ]
 }

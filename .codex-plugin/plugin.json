@@ -69,8 +69,8 @@
             {
               "description": "Pause one monitor",
               "prompt": "Pause the UptimeRobot monitor for https://example.com.",
-              "tools_triggered": "list-monitors, update-monitor-status",
-              "expected_behavior": "Finds the monitor by URL, asks which one if several match, pauses it and confirms its status is now PAUSED."
+              "tools_triggered": "list-monitors, update-monitor-status, get-monitor-details",
+              "expected_behavior": "Finds the monitor by URL, asks which one if several match, pauses it, reads it back with get-monitor-details and confirms its status is now PAUSED."
             },
             {
               "description": "Schedule a maintenance window",
