@@ -62,7 +62,7 @@ Compute the last 24 hours from the current UTC time and send them as an absolute
 Returns:
 
 - `status` (`"Ongoing"` / `"Resolved"` — use this, not `endedAt`, to tell if it's over), `startedAt`, `endedAt` and `duration` (`null` while ongoing; `endedAt` is also `null` for a resolved incident with zero duration), `cause` (a number, e.g. `401`), `reason` — the readable cause.
-- `requestLogs[]` — the 10 newest checks (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, headers). `requestLogs[].timestamp` is usually not ISO 8601 (`"2026-09-30 14:44:48.587"`, UTC). Headers can carry tokens and API keys: never show header values to the user — not even when they ask for the full logs — and mask any secret-looking value in headers, request and response bodies, and URLs (e.g. `Authorization: Bearer ****`).
+- `requestLogs[]` — the 10 newest checks (per check: `timestamp`, `region`, `requestUrl`, `requestMethod`, `responseStatusCode`, `requestHeaderNames`, `responseHeaders`). `requestLogs[].timestamp` is usually not ISO 8601 (`"2026-09-30 14:44:48.587"`, UTC). Request headers come back as names only and credential response headers as `[REDACTED]`; still mask any secret-looking value in request and response bodies and URLs, even when the user asks for the full logs.
 
 `checkerLocations` is always empty and `errorDetails` is a placeholder (`"Unknown error"`) — use `reason` for the cause and `requestLogs[].region` for regions.
 

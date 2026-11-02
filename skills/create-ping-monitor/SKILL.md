@@ -26,7 +26,7 @@ Use for basic network reachability of a host or IP. PING checks nothing about HT
 
 - `url` is a bare hostname or IP (e.g. `"203.0.113.42"`) — no scheme, no path.
 - `config.ipVersion: "ipv4Only"` is accepted and stored on PING monitors. `"IPv4"` / `"IPv6"` are rejected.
-- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
+- Every new monitor reads back `authType: "HTTP_BASIC"` in `get-monitor-details`. That is the stored default, not configured credentials.
 
 ## Before creating
 
