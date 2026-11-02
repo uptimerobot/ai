@@ -9,7 +9,7 @@ Plan names change over time — read the active plan from `get-user` (`activeSub
 - [MCP server](https://mcp.uptimerobot.com/mcp): Remote streamable-HTTP MCP endpoint. Connect to the URL directly and authorize through the OAuth browser flow on first use — no API key to paste. (Headless/CI: see the README for a manual setup.)
 - [AGENTS.md](https://uptimerobot.com/AGENTS.md): Tool inventory, monitor types, time-range formats, errors, and agent conventions.
 - [Plugin repo](https://github.com/uptimerobot/ai): Source of truth for the Claude Code / Cursor / Codex plugin, skills, and this file.
-- [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): One-time steps to connect and authorize Claude Code with UptimeRobot via OAuth.
+- [Setup skill](https://uptimerobot.com/skills/setup/SKILL.md): What any agent needs to connect, authorize (OAuth) and troubleshoot the UptimeRobot MCP server.
 
 ## Quick Monitor Setup (no account)
 

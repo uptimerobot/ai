@@ -103,11 +103,11 @@ alwaysApply: false
 - …
 ```
 
-## Hooks (`hooks/hooks.json`)
+## Hooks
 
-Hooks wire commands or scripts to lifecycle events (`PreToolUse`,
-`PostToolUse`, `SessionStart`, `SessionEnd`). Keep the hook set minimal —
-hooks run on every matching event.
+The plugin ships no lifecycle hooks, and there is no `hooks/` directory. Keep it
+that way: OpenAI rejects plugin packages that contain hooks, and Codex and
+Claude Code both pick up `hooks/hooks.json` automatically.
 
 ## MCP servers (`mcp.json` / `.mcp.json`)
 
@@ -200,13 +200,28 @@ published as a TXT record on the `uptimerobot.com` apex
 form at the `read -rs` prompt above (or derive it as shown); never type the literal key into a command or commit it in a script. Losing it
 means losing the ability to publish updates under this namespace.
 
+## OpenAI plugin package (ChatGPT and Codex directory)
+
+Build the ZIP for OpenAI's plugin portal with `scripts/build-openai-plugin-zip.sh`.
+It writes `dist/uptimerobot-openai-<version>.zip` (gitignored) with only
+`.codex-plugin/plugin.json`, `.mcp.json`, the skills, `assets/logo.png`,
+`AGENTS.md` and `LICENSE`, and fails on the listing limits that final
+submission enforces (30-character display name and subtitle, HTTPS listing
+URLs, at most three starter prompts) or when a skill refers to a skill that
+isn't packaged. Don't add `.app.json`, `apps`, hooks or screenshots: OpenAI
+rejects the first three, and screenshots unless the MCP server returns custom
+UI. Test cases, the demo video and reviewer credentials go in the portal.
+
 ## Testing a change
 
 Before opening a PR:
 
 1. If you touched a `SKILL.md`, regenerate the skills index with `node scripts/generate-agent-skills-index.mjs` — the PR check fails on a stale index.
-2. Lint the JSON: `python -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" .claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/hooks.json mcp.json .mcp.json codex.mcp.json server.json .well-known/agent-skills/index.json .agents/plugins/marketplace.json`.
+2. Lint the JSON: `python -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" .claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json mcp.json .mcp.json server.json .well-known/agent-skills/index.json .agents/plugins/marketplace.json`.
    If you touched `server.json`, also run `mcp-publisher validate`.
 3. Install the plugin locally in Claude Code and/or Cursor and verify the new
    skill/command/agent/rule loads and runs as expected.
+   If you touched `.codex-plugin/`, `.mcp.json` or a skill, also run
+   `scripts/build-openai-plugin-zip.sh` — it fails on what OpenAI's plugin
+   submission rejects.
 4. Update `README.md` if you added a new top-level directory or convention.

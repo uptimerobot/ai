@@ -144,7 +144,7 @@ All `delete-*` tools are **permanent** — see convention 2 below.
 
 | `type` | Required | Notable optional |
 | -- | -- | -- |
-| `HTTP` | `friendlyName`, `url` (full URL) | `httpMethodType`, `authType`, `customHttpHeaders`, `successHttpResponseCodes`, `interval`, `timeout` |
+| `HTTP` | `friendlyName`, `url` (full URL) | `httpMethodType`, `customHttpHeaders`, `successHttpResponseCodes`, `interval`, `timeout` |
 | `KEYWORD` | `friendlyName`, `url` (full URL), `keywordValue`, `keywordType` (`ALERT_EXISTS` \| `ALERT_NOT_EXISTS`) | `keywordCaseType` (0=case-sensitive, 1=insensitive) |
 | `PING` | `friendlyName`, `url` (hostname or IP, **no scheme**) | — |
 | `PORT` | `friendlyName`, `url` (host), `port` (1–65535) | `portAlertCondition` (`CLOSED` \| `OPEN`) |
@@ -153,7 +153,7 @@ All `delete-*` tools are **permanent** — see convention 2 below.
 | `API` | `friendlyName`, `url` (full URL), `config.apiAssertions` (`{logic: AND\|OR, checks: [{property, comparison, target}]}`, 1–5 checks) | `httpMethodType`, `postValueData`, `postValueType` |
 | `UDP` | `friendlyName`, `url` (host), `port` | `config.udp` (set it at create with `packetLossThreshold` — see `create-udp-monitor`; optional `payload`), `keywordValue` |
 
-Common optional params on every type: `interval` (15–86400s; `HEARTBEAT` up to 2678400s — the plan sets the real minimum), `assignedAlertContacts` (each item needs `alertContactId`, `threshold` minutes 0–1440, `recurrence` minutes 0–10080), `tagNames`, `groupId` (`0` = no group), `timeout` (1–60s, not HEARTBEAT), `responseTimeThreshold`, `regionData` (`REGION`: `na`/`eu`/`as`/`oc`; optional per-region `THRESHOLD`), `customFields` (max 20 keys), `sslExpirationReminder`, `domainExpirationReminder`, `maintenanceWindowsIds`. HTTP, KEYWORD and API also take `checkSSLErrors`, `followRedirections`, `httpMethodType`, `authType`, `customHttpHeaders`, `successHttpResponseCodes` and `config.applicationErrorRetries` (0–3).
+Common optional params on every type: `interval` (15–86400s; `HEARTBEAT` up to 2678400s — the plan sets the real minimum), `assignedAlertContacts` (each item needs `alertContactId`, `threshold` minutes 0–1440, `recurrence` minutes 0–10080), `tagNames`, `groupId` (`0` = no group), `timeout` (1–60s, not HEARTBEAT), `responseTimeThreshold`, `regionData` (`REGION`: `na`/`eu`/`as`/`oc`; optional per-region `THRESHOLD`), `customFields` (max 20 keys), `sslExpirationReminder`, `domainExpirationReminder`, `maintenanceWindowsIds`. HTTP, KEYWORD and API also take `checkSSLErrors`, `followRedirections`, `httpMethodType`, `customHttpHeaders`, `successHttpResponseCodes` and `config.applicationErrorRetries` (0–3). Authentication headers (Authorization, cookies, API and access keys, tokens, secrets, signatures, sessions) and HTTP auth credentials can't be set or changed over MCP — the user sets them in the dashboard.
 
 `config.ipVersion` (`ipv4Only` \| `ipv6Only` — not `IPv4`/`IPv6`) is accepted on create and `update-monitor` for HTTP, KEYWORD, PING, PORT, API and UDP — not DNS or HEARTBEAT. `responseTimeThreshold` is 100–60000 ms on create; omit it rather than sending `0`. It reads back as `0` in `get-monitor-details` — the stored thresholds are in `regionData`. 
 
@@ -162,7 +162,8 @@ Common optional params on every type: `interval` (15–86400s; `HEARTBEAT` up to
 Updates are partial — fields you omit are kept — but a list or map you send **replaces** the stored value; it is not merged. To add or remove one entry, read the current value, change it, and send it in full:
 
 - **`update-monitor`:**
-  - `tagNames` (read `tags`), `customHttpHeaders`, `customFields`: replaced. Read them from `get-monitor-details` (never show header values to the user while doing so).
+  - `tagNames` (read `tags`), `customFields`: replaced. Read them from `get-monitor-details`.
+  - `customHttpHeaders`: merged by name (case-insensitive) — headers you omit are kept, and `null` removes one. Header values can't be read back (`get-monitor-details` lists only `customHttpHeaderNames`), and authentication headers can't be set or removed over MCP.
   - `assignedAlertContacts`: replaced, and it can't be read back — ask the user for the complete list. Without the `advanced-notifications` plan feature, `threshold`/`recurrence` are silently set to 0.
   - `successHttpResponseCodes`: replaced; `[]` resets it to the default `2xx`/`3xx`, and unknown codes are dropped silently.
   - `regionData.REGION`: replaced, and the thresholds of regions you leave out are deleted — omit `REGION` to keep them. `regionData.THRESHOLD` is set per region (others are kept), and is silently ignored without the `monitor-slow-response` feature.
@@ -207,4 +208,4 @@ Tool errors usually reach the client as plain text with no numeric code, and the
 5. **Don't send numeric `type` codes.** The MCP layer rejects them even though the underlying DB uses numeric codes.
 6. **Prefer `list-monitors` filters (`name`, `url`, `tags`, `groupId`, `filter`) over long traversals.** Accounts can have thousands of monitors.
 7. **Cite real uptime, not estimates.** If you need numbers, call `get-monitor-stats` (account-wide only) / `get-response-times` — don't infer. For per-monitor or SLA figures, follow [`skills/sla-report/SKILL.md`](skills/sla-report/SKILL.md).
-8. **Don't leak secrets.** `get-monitor-details` returns `customHttpHeaders` and `httpUsername` unredacted (headers may include `Authorization` tokens or API keys), and `list-alert-contacts` / `list-integrations` return email addresses and phone numbers in clear. Never echo usernames or contact values back to the user unless asked. The server returns header values unmasked (`customHttpHeaders` and incident `requestLogs` headers) — always mask them yourself (e.g. `Authorization: Bearer ****`), even when the user asks for full logs. Also mask secret-looking values in request and response bodies, URLs and query strings — except a HEARTBEAT push URL, which the user needs in full.
+8. **Don't leak secrets.** The server hides credentials: `get-monitor-details` lists only header names (`customHttpHeaderNames`) and no HTTP auth username or password, incident `requestLogs` give request header names only and show credential response headers as `[REDACTED]`, and webhook, chat and push contact values read `[REDACTED]`. `list-alert-contacts` / `list-integrations` return email addresses and phone numbers in clear — don't echo them back to the user unless asked. Also mask secret-looking values in request and response bodies, URLs and query strings — except a HEARTBEAT push URL, which the user needs in full.

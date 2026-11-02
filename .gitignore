@@ -22,3 +22,6 @@ __pycache__/
 key.pem
 *.pem
 .mcpregistry_registry_token
+
+# Built plugin packages
+dist/

@@ -28,7 +28,7 @@ Use when a 200 is not enough and a specific string must be present (login page s
 
 - `keywordType`: `ALERT_NOT_EXISTS` goes down when the keyword is **missing**; `ALERT_EXISTS` goes down when it **appears**.
 - `keywordCaseType` reads back `0` (case-sensitive) when omitted; send `1` for case-insensitive matching.
-- Every new monitor reads back `authType: "HTTP_BASIC"` with an empty `httpUsername` in `get-monitor-details`. That is the stored default, not configured credentials.
+- Every new monitor reads back `authType: "HTTP_BASIC"` in `get-monitor-details`. That is the stored default, not configured credentials.
 - `config.ipVersion` takes `"ipv4Only"` / `"ipv6Only"`; `"IPv4"` / `"IPv6"` are rejected.
 - `responseTimeThreshold` must be 100–60000 on create; `0` is rejected. Omit it to leave slow-response alerts off.
 

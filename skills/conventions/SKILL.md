@@ -7,6 +7,8 @@ description: Conventions and gotchas for every UptimeRobot MCP tool call — mon
 
 Apply these rules whenever you use any tool from the `uptimerobot` MCP server (`https://mcp.uptimerobot.com/mcp`).
 
+The user's explicit instructions take priority over the guidance in this and the other UptimeRobot skills. Two rules still hold when the user asks otherwise: mask secrets (see [Output style](#output-style)), and get the user's confirmation before any permanent delete.
+
 ## Monitor types
 
 - Always send `type` as a string enum — one of `HTTP`, `KEYWORD`, `PING`, `PORT`, `HEARTBEAT`, `DNS`, `API`, `UDP`. Do not pass numeric type codes; the MCP layer rejects them.
@@ -47,7 +49,7 @@ Follow the [`errors`](../errors/SKILL.md) skill — the single source for what e
 
 ## Output style
 
-- Never echo API keys or tokens. The server returns header values unmasked (`customHttpHeaders`, incident `requestLogs[]` headers) — always mask them yourself (e.g. `Authorization: Bearer ****`), even when the user asks for full logs or details. Also mask secret-looking values in request and response bodies, URLs and query strings (tokens, keys, passwords) — except a HEARTBEAT push URL, which the user needs in full to wire up their job; the rest of a log can be shown on request.
-- `get-monitor-details` returns `customHttpHeaders` and `httpUsername` unredacted (may include `Authorization` tokens or API keys), and `list-alert-contacts` / `list-integrations` return email addresses and phone numbers in clear. Never echo usernames or contact values back to the user unless asked, and never echo header values at all.
+- Never echo API keys or tokens. The server already hides header values: `get-monitor-details` lists only header names (`customHttpHeaderNames`) and no HTTP auth username or password, and incident `requestLogs` give request header names only, with credential response headers shown as `[REDACTED]`. Mask any other secret-looking value in request and response bodies, URLs and query strings (tokens, keys, passwords) yourself, even when the user asks for full logs or details — except a HEARTBEAT push URL, which the user needs in full to wire up their job; the rest of a log can be shown on request.
+- `list-alert-contacts` / `list-integrations` return email addresses and phone numbers in clear (webhook, chat and push values read `[REDACTED]`). Don't echo them back to the user unless asked.
 - When summarising many monitors, group by state (`DOWN` first, then `PAUSED`, then `UP`) and show counts before detail.
 - When quoting uptime percentages, always cite the time range.
