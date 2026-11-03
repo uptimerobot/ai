@@ -76,7 +76,7 @@
       "type": "skill-md",
       "description": "The single source for UptimeRobot MCP errors, retries and write verification — what each plain-text error message means, when to retry (including rate limits), how to verify a write, and how to check whether a failed write landed.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/errors/SKILL.md",
-      "digest": "sha256:277d8852d1227e27a971aaf97dce9dfc6e6fafc953405cae4ce5b54b5386783b"
+      "digest": "sha256:81e4b7010e6076d94738744ba41fc79726f9d8ddec322659e93cdc8cca068eae"
     },
     {
       "name": "incident-response",
