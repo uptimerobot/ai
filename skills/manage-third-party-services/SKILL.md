@@ -67,6 +67,18 @@ Call `get-third-party-service`. It returns the provider, `currentState`, `notify
 
 `list-third-party-service-incidents` lists incidents reported by the providers of tracked services, newest first. Pass `monitorId` to see one service only. Each incident has `title`, `severity` (`minor` or `major`), `resolved`, `startedAt`, `resolvedAt` and `providerIncidentUrl`.
 
+To open one incident, pass its `monitorId` and its `id` (a numeric string) to `get-third-party-service-incident`:
+
+```
+{"monitorId":800123456,"incidentId":"1234567890"}
+```
+
+It adds the `description`, the provider's status `updates` (often empty) and the `affectedComponents`, limited to the components the service tracks.
+
+To see who was told, pass the same two IDs to `get-third-party-service-incident-activity-log`. Each entry has `channel`, `channelIdentifier`, `alertContactName`, `status` (`SUCCESS` or `NOT_DELIVERED`) and `timestamp`. `channelIdentifier` is shown in full only for email, SMS and voice contacts; other types read `[REDACTED]`. The list is empty when nothing was sent.
+
+These incident IDs do not work with `get-incident-details` or `get-incident-activity-log`, and those tools' IDs do not work here.
+
 ## Step 5: Update
 
 ```

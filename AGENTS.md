@@ -116,6 +116,8 @@ Track the status pages of outside providers. Providers are identified by their n
 | `create-third-party-service` | Start tracking a provider by `providerId`, optionally limiting components, notification sensitivity and alert contacts. Tracking an already-tracked provider returns the existing service. |
 | `update-third-party-service` | Change tracked components (full replacement), notification sensitivity or maintenance notifications. |
 | `delete-third-party-service` | Permanently stop tracking a service. Irreversible. Confirm the account with `get-user` first. |
+| `get-third-party-service-incident` | One incident from `list-third-party-service-incidents`, by `monitorId` and `incidentId`: description, provider updates, affected tracked components. |
+| `get-third-party-service-incident-activity-log` | Notifications sent about that incident, by the same two IDs. Recipients other than email, SMS and voice read `[REDACTED]`. |
 
 ### Integrations & tags
 

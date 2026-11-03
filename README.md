@@ -214,6 +214,8 @@ Where the OAuth browser flow can't run, connect over plain HTTP with a Main API 
 | `create-third-party-service`         | Start tracking a provider, optionally limiting components and alerts     |
 | `update-third-party-service`         | Change tracked components, notification sensitivity, maintenance alerts  |
 | `delete-third-party-service`         | Permanently stop tracking a service                                      |
+| `get-third-party-service-incident`   | One provider incident by monitor ID and incident ID, with its updates    |
+| `get-third-party-service-incident-activity-log` | Notifications the account was sent about one provider incident |
 
 ### Integrations & tags
 
