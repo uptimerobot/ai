@@ -51,7 +51,7 @@ Call `create-third-party-service`.
 | `trackedComponentIds` | Component IDs from Step 2. Empty or `null` tracks every component. |
 | `notify.severity` | Which incidents notify: `all`, `major` (major only) or `none`. |
 | `notify.incrementalUpdates` | Also notify on every incident update. `severity` and `incrementalUpdates` are both required when `notify` is given. |
-| `assignedAlertContacts` | `[{alertContactId, threshold, recurrence}]`. Get IDs from `list-integrations`. Omit to use the account default contact. |
+| `assignedAlertContacts` | `[{alertContactId, threshold, recurrence}]`. Get IDs from both `list-integrations` and `list-alert-contacts`, deduped by `id`. Omit to use the account default contact. |
 
 Tracking a provider the account already tracks returns the existing service rather than creating a second one. The response has `success`, `message` and `thirdPartyService`, whose `monitorId` is the ID for every later call.
 
@@ -87,7 +87,7 @@ These incident IDs do not work with `get-incident-details` or `get-incident-acti
 
 Call `update-third-party-service`. Only the settings you pass change. Three things to know:
 
-- `trackedComponentIds` is a **full replacement**, not a merge. To add one component, read the current list with `get-third-party-service`, add to it, and send the whole list. An empty array or `null` switches back to tracking every component.
+- `trackedComponentIds` is a **full replacement**, not a merge. To add one component, read the current list with `get-third-party-service`, add to it, and send the whole list. If the current value is `null`, every component is already tracked: leave it unchanged and tell the user, because sending only the new component would stop alerts for all the others. An empty array or `null` switches back to tracking every component.
 - `notify` is replaced **as a whole**: send both `severity` and `incrementalUpdates`.
 - The tool does not change the provider or the alert contacts. To track a different provider, create a new service.
 

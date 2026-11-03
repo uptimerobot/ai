@@ -125,7 +125,7 @@
       "type": "skill-md",
       "description": "Track the status of third-party providers (cloud, payment and other services with public status pages) as third-party services, search the provider catalog, choose components, and update, inspect or delete what the account tracks.",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/manage-third-party-services/SKILL.md",
-      "digest": "sha256:87f47c834fd2df5d18ddb38127861566992e9e8be15f642edb96e23a7b767378"
+      "digest": "sha256:d65b646d86a636c12829ebe6c9e030ca41a8f722e7031b0a6d81983fea91b3f9"
     },
     {
       "name": "monitor-health-summary",
