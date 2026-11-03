@@ -3,7 +3,7 @@
   "name": "com.uptimerobot/uptimerobot",
   "title": "UptimeRobot",
   "description": "Monitor websites, APIs, and servers: create monitors, triage incidents, and query uptime stats.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "websiteUrl": "https://uptimerobot.com",
   "repository": {
     "url": "https://github.com/uptimerobot/ai",

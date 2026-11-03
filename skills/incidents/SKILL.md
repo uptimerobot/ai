@@ -1,83 +1,44 @@
 ---
 name: incidents
-description: List downtime incidents and fetch per-incident checker locations, IPs, logs, and traceroute data.
-tags: [incidents, downtime, logs, traceroute, uptimerobot]
+description: List downtime incidents (including ongoing ones) and read one incident's details, activity log, and sent alerts.
+tags: [incidents, downtime, logs, alerts, uptimerobot]
 ---
 
 # Incidents
 
-> **Preflight — read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured — `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
+> **Preflight — read first.** Look for UptimeRobot MCP tools: any tool whose name contains `uptimerobot` (case-insensitive) and ends in a tool name such as `list-monitors` — e.g. `mcp__uptimerobot__list-monitors`, `mcp__plugin_uptimerobot_uptimerobot__list-monitors`, or a claude.ai `UptimeRobot` connector. If your client lists tools by name and loads them on demand, load them with its tool search first. Only if none exist, invoke the `uptimerobot:setup` skill. Don't tell the user the MCP is misconfigured.
 
-Two tools:
+Use this for "what went down, when, why, and who was alerted". For working through a live outage see [`incident-response`](../incident-response/SKILL.md).
 
-- `list-incidents` — paginated incidents across the account or for one monitor.
-- `get-incident-details` — checker locations, IPs, logs, traceroute for one incident.
+**Tools:** `list-incidents`, `get-incident-details`, `get-incident-activity-log`, `get-incident-alerts`. The tools' own schemas and descriptions are the reference for parameters — this page only covers what they don't say.
 
-## List incidents
-
-```json
-{
-  "timeRange": "7d",
-  "limit": 25
-}
-```
-
-Parameters:
-
-- `timeRange` — `"24h"` / `"7d"` / `"30d"` (1h–90d), or ISO 8601 interval `"2024-01-01T00:00:00Z/2024-01-31T23:59:59Z"`. Defaults to `"7d"`.
-- `monitorId` — optional, restrict to one monitor.
-- `cursor`, `limit` — pagination (follow the `instructions` field for the next call).
-
-## Filter by monitor
+`list-incidents` — every ongoing incident right now (ignores `timeRange`, so an old one is still returned; filter on `type: "Downtime"` for outages, and paginate while `hasMore` is true):
 
 ```json
-{
-  "monitorId": 800123456,
-  "timeRange": "30d"
-}
+{ "status": "open" }
 ```
 
-## Absolute time range
+`list-incidents` — one monitor for April 2026 (a fixed range, so paging is stable):
 
 ```json
-{
-  "timeRange": "2025-04-01T00:00:00Z/2025-04-15T23:59:59Z"
-}
+{ "monitorId": 800123456, "timeRange": "2026-04-01T00:00:00Z/2026-05-01T00:00:00Z", "limit": 100 }
 ```
 
-## Get incident details
+## Gotchas
 
-```json
-{ "incidentId": "inc_abcdef1234567890" }
-```
-
-Note: `incidentId` is a **string**, not a number.
-
-Response includes:
-
-- Monitor id and friendly name.
-- Start / end timestamps, duration.
-- Root cause category (if assigned).
-- Per-checker probe results: checker location, IP, HTTP status code observed, error kind, response body snippet.
-- Traceroute hops where available.
-
-Use this to answer "why did this go down?" — show the user the checker locations first, then the error types, then (if asked) the verbose logs.
-
-## Common mistakes
-
-- Passing a numeric `incidentId`. It's always a string.
-- Requesting ranges longer than 90 days — the server rejects the call. For older data, the user needs to query it in the UptimeRobot dashboard.
-- Forgetting that `list-incidents` is paginated. Loop with the cursor from `instructions` until `hasMore: false`.
-- Inventing `incidentId`s. Always source them from `list-incidents`.
-
-## Output tips
-
-- Group incidents by monitor before summarising.
-- Lead with active (unresolved) incidents, then recent resolved, then older.
-- Surface total downtime duration, not just incident counts — the user usually cares about impact.
-- Don't paste raw log bodies unless the user asks. Summarise the error kind and HTTP status.
+- **Incident `id` is a numeric string** (`"123456789012345678"`). Pass it as-is; never invent `inc_...` IDs.
+- **`duration` is text** like `"15m 55s"`, not seconds. List items have no `endedAt` — get it from `get-incident-details`, or parse the text. `get-monitor-stats` `totalIncidentsDuration` (seconds) is account-wide only — for one monitor, build the total as [`sla-report`](../sla-report/SKILL.md) Step 3 does (range query, `status: "open"`, lookback, merge overlaps, clip) — the list includes regional sub-incidents that overlap their parent.
+- **Not every incident is downtime.** `type` is `Downtime`, `Slow Response` or `Visual Change` — filter on it before counting outages.
+- **`timeRange` matches incidents by start time.** An incident that started before the range isn't returned, even if it overlapped it; ongoing ones still show with `status: "open"`.
+- **`cause` is a number** (an HTTP status like `401`, or an internal code like `800001`); `reason` is the readable text.
+- **Pagination: never copy the call in `instructions`.** Its `timeRange` is a `{from, to}` object the tool rejects. While `hasMore` is true, repeat your own arguments with `cursor` set to `nextCursor`. `totalCount` is `null` after the first page.
+- Each call's range is capped at 90 days in length (not in age) — split longer periods into ≤90-day chunks.
+- `get-incident-details`: `checkerLocations` is always empty and `errorDetails` is a placeholder (`"Unknown error"`) — use `cause` / `reason`, and take regions from `requestLogs[].region`. `requestLogs` holds at most the 10 newest checks; their `timestamp` is usually `"YYYY-MM-DD HH:MM:SS.mmm"` (UTC, no `Z`), not ISO. `duration` is `null` while the incident is ongoing. There is no traceroute. Request logs include request and response headers, which can carry tokens — never show header values to the user, even if they ask for the full logs; mask secrets, including tokens in request and response bodies and URLs.
+- Unknown IDs: `get-incident-details` returns `Incident not found`; the activity-log and alerts tools return `Incident <id> not found` and reject non-numeric IDs.
+- `get-incident-alerts` and `get-incident-activity-log` show recipient values only for email, SMS and voice; others are `"[REDACTED]"`. Don't paste addresses or phone numbers unless asked.
 
 ## Related
 
-- `stats` — for aggregated downtime minutes across a time range.
-- `manage-monitors` — to pause a flapping monitor after confirming incidents.
+- [`incident-response`](../incident-response/SKILL.md) — triage an ongoing incident.
+- [`stats`](../stats/SKILL.md) — total downtime and uptime for a range.
+- [`errors`](../errors/SKILL.md) — what the error messages mean.

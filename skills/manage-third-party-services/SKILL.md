@@ -63,7 +63,7 @@ Tracking a provider the account already tracks returns the existing service rath
 
 Call `get-third-party-service`. It returns the provider, `currentState`, `notify`, `maintenanceNotificationsEnabled`, `trackedComponentIds` (`null` means every component), `needsReview`, and the provider's component list. Show the user this stored state rather than echoing what you sent.
 
-`list-third-party-services` (cursor-paginated, optional `search`, `sortField` of `name`, `state` or `createdAt`, `sortDirection` of `ASC` or `DESC`) lists everything the account tracks. Follow its `instructions` field verbatim for the next page.
+`list-third-party-services` (cursor-paginated, optional `search`, `sortField` of `name`, `state` or `createdAt`, `sortDirection` of `ASC` or `DESC`) lists everything the account tracks. While `hasMore` is true, repeat your arguments and pass `nextCursor` back as `cursor`; do not copy the `instructions` field.
 
 `list-third-party-service-incidents` lists incidents reported by the providers of tracked services, newest first. Pass `monitorId` to see one service only. Each incident has `title`, `severity` (`minor` or `major`), `resolved`, `startedAt`, `resolvedAt` and `providerIncidentUrl`.
 
