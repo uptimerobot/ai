@@ -219,7 +219,7 @@ Tool errors usually reach the client as plain text with no numeric code, and the
 
 ## Conventions for agents
 
-1. **Never guess IDs.** Call `list-monitors` (or `list-alert-contacts` / `list-integrations` for alert contacts) to discover IDs before calling write tools.
+1. **Never guess IDs.** Call `list-monitors` (or `list-alert-contacts` / `list-integrations` for alert contacts) to discover IDs before calling write tools. For third-party services, `list-monitors` does not return them: get a tracked service's ID from `list-third-party-services`, and a provider ID from `search-third-party-providers`.
 2. **Call `get-user` before any `delete-*`.** It names the session account and whether the session may write. Deletes are permanent — confirm the account and target with the user first.
 3. **Handle errors and verify writes as [`skills/errors/SKILL.md`](skills/errors/SKILL.md) says.** Never blind-retry a write — a retried create with different target settings makes a second monitor — and never retry plan-limit, not-found or bad-input errors unchanged.
 4. **Don't invent monitor types.** Use the 8 string enums above.
