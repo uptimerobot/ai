@@ -42,7 +42,7 @@ Run searches from the project root with Glob (file discovery) and Grep (content 
   ```
 
   Only hostnames, allowlisted region values and locations enter the tool output; every hostname is then checked against the anchored rule in Vendor map. Extract only:
-  1. Hostnames matching a vendor pattern, quoted as the map pattern itself with everything left of it dropped: `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `*.sentry.io` (not `*.ingest.sentry.io`), `api.openai.com`, never `abcd1234.supabase.co` or a full connection string.
+  1. Hostnames matching a vendor pattern, quoted as the map pattern itself with everything left of it dropped: `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `*.sentry.io` (quoted as the map pattern, never as the ingest host), `api.openai.com`, never `abcd1234.supabase.co` or a full connection string.
   2. The values of these non-secret region keys, reported in the proposal as a region signal and used when a large provider is scoped to components: `AWS_REGION`, `AWS_DEFAULT_REGION`, `GOOGLE_CLOUD_REGION`, `GCP_REGION`, `AZURE_REGION`, `AZURE_LOCATION`, `FLY_REGION`, `VERCEL_REGION`, `DD_SITE`. Quote a value only when it is made of lowercase letters, digits, dots and hyphens (`eu-central-1`, `datadoghq.eu`); discard anything else.
 
   Every other value, and any value that looks like a key, token, password or connection string, is never read into the reply.
@@ -66,6 +66,7 @@ Each hit gets one class. The class decides whether it lands in the proposal by d
 Rules of thumb:
 
 - The same vendor in both `dependencies` and `devDependencies` is runtime.
+- A registry host that belongs to a mapped cloud provider (`gcr.io`, `*.pkg.dev`, `*.dkr.ecr.amazonaws.com`) is evidence for that provider's row, not a registry of its own.
 - A vendor SDK only in test or tooling code is build-time even when it sits in `dependencies`; say why.
 - `pg`, `mysql2`, `ioredis`, `redis`, `celery`, `amqplib` and other protocol clients with no vendor hostname are self-hosted or unknown. Say so, do not guess a provider.
 
