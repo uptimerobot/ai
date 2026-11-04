@@ -52,14 +52,11 @@ Call `get-user`. The allowance is `dependencyMonitorLimit` minus `dependencyMoni
 
 AWS, Google Cloud, Microsoft Azure, Cloudflare and GitHub are noisy when tracked whole: every regional incident on any service alerts the account. For each of them that was resolved in Step 3 and will be proposed as track or update (build-time GitHub only after the user asked for it), read the component tree once with `get-third-party-provider` (one more call per provider against the rate limit) and match component names against the detected service words and region values listed under "Component scoping" in `reference.md`:
 
-- Match on the component name, never on an id typed from memory; the ids for `trackedComponentIds` come from this tree read.
-- AWS and Google Cloud: pick the regional child of each matched service (`Amazon Simple Storage Service (Frankfurt)` for S3 plus `eu-central-1`); with a service but no region, pick the service parent and say the region is unknown; with a region but no service, propose the whole provider and say why. A region code that matches no child name: show the region names from the tree and ask.
-- Microsoft Azure: the tree is region first, so pick the matched services under each detected region.
-- Cloudflare: pick the matched products under `Cloudflare Sites and Services`; regions are points of presence and are not scoped from repository signals.
-- GitHub: pick the matched products (`Actions` for a workflow, `Packages` for `ghcr.io`, `Git Operations` always when the remote is `github.com`).
-- Nothing matched: propose the whole provider and say that no service or region signal was found.
-
-The proposal row for a scoped provider names the components in the Provider cell (`AWS, S3 (Frankfurt), RDS (Frankfurt)`) and keeps the provider evidence in the Why cell; the component evidence goes in a short scoping list under the table, one line per component. For a provider the account already tracks, call `get-third-party-service` first and show its current components next to the proposed ones. The action becomes `update` with the union of the current list and the matched components, because `trackedComponentIds` replaces the whole list. A stored value of `null` means every component is tracked today: replacing it with the matched set narrows the alerts, so show it as "all components, narrowed to N" and treat a plain "yes" as not covering it; it needs to be named in the confirmation.
+- Match on the component name, never on an id typed from memory; the ids for `trackedComponentIds` come from this tree read. The tree shape and the per-provider matching rules are under "Component scoping" in `reference.md`.
+- A service with no region: pick the service parent and say the region is unknown. A region with no service, or nothing matched: propose the whole provider and say why. A region that matches no tree name: show the names from the tree and ask.
+- A **scoped** provider is one proposed with a component list chosen from the signals. Its row names the components in the Provider cell (`AWS, S3 (Frankfurt), RDS (Frankfurt)`) and keeps the provider evidence in the Why cell; the component evidence goes under the table, one line per component.
+- For a provider the account already tracks, call `get-third-party-service` first and show its current components next to the proposed ones. The action becomes `update` with the union of the current list and the matched components, because `trackedComponentIds` replaces the whole list.
+- A stored value of `null` means every component is tracked today. Replacing it with the matched set **narrows** the alerts: show it as "all components, narrowed to N", and a plain "yes" does not cover it; the user has to name it.
 
 ## Step 6: Propose, no writes
 

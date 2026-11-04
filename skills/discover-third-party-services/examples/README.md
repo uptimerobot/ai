@@ -15,4 +15,4 @@ Everything under `examples/` is test data. The planted text in `injected` (a `pa
 
 `injected` is a copy of `nextjs-vercel` with two edited files. When `nextjs-vercel` changes, change `injected` the same way.
 
-Not covered yet: region-split providers, scoping for Google Cloud, Azure, Cloudflare and GitHub, monorepo attribution, the unmapped-signal cap, hostname look-alikes, an ambiguous `Procfile`, already-tracked providers and the allowance cap. Add a fixture directory with an `expected.md` for any of these when a rule changes.
+Not covered yet: region-split providers, scoping for Google Cloud, Azure, Cloudflare and GitHub, the update path that narrows an already-tracked provider from all components, monorepo attribution, the unmapped-signal cap, hostname look-alikes, an ambiguous `Procfile`, already-tracked providers and the allowance cap. Add a fixture directory with an `expected.md` for any of these when a rule changes.

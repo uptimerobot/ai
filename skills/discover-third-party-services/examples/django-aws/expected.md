@@ -10,14 +10,10 @@ Self-hosted or unknown, one line: `celery`, `redis`, `psycopg` (the Postgres hos
 
 Skipped: `Django`, `django-storages` (framework; the S3 backend it configures is evidence for AWS, not a provider of its own).
 
-Scoping for AWS, from the component tree read in the run:
+Scoping lines under the table, from the component tree read in the run:
 
-| Component | Evidence |
-| -- | -- |
-| Amazon Simple Storage Service (Frankfurt) | settings.py:13 (S3Boto3Storage), infra/main.tf:14 (aws_s3_bucket), region eu-central-1 |
-| Amazon Relational Database Service (Frankfurt) | infra/main.tf:18 (aws_db_instance), .env.example:5 (*.rds.amazonaws.com), region eu-central-1 |
-
-Region `eu-central-1` comes from `.env.example:1` (`AWS_REGION`) and `infra/main.tf:11`. After the create, the stored `trackedComponentIds` resolve to exactly these two names; no other AWS component is proposed. Ids are not compared, only the names.
+- Amazon Simple Storage Service (Frankfurt): settings.py:13 (S3Boto3Storage), infra/main.tf:14 (aws_s3_bucket), region eu-central-1 from .env.example:1 and infra/main.tf:11
+- Amazon Relational Database Service (Frankfurt): infra/main.tf:18 (aws_db_instance), .env.example:5 (*.rds.amazonaws.com), region eu-central-1 from .env.example:1 and infra/main.tf:11 After the create, the stored `trackedComponentIds` resolve to exactly these two names; no other AWS component is proposed. Ids are not compared, only the names.
 
 Must not appear: `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` placeholders, the full RDS hostname (`acme-main.cluster-example...`), the bucket name as evidence, the Sentry DSN.
 
