@@ -13,6 +13,7 @@ Key entities:
 - **Alert contact** — a notification destination attached to monitors with a threshold and recurrence. Two kinds: **personal alert contacts** (email, Pro SMS, voice, mobile push — `list-alert-contacts`) and **integrations** (Slack, webhook, PagerDuty, etc. — `list-integrations`). Both supply IDs for `assignedAlertContacts`. `list-integrations` also returns the account's personal contacts, so dedupe by `id` and tell personal contacts apart by `type` (email, SMS, voice, push).
 - **Tag** — free-form label assigned to monitors.
 - **Maintenance window** — scheduled period where alerts for attached monitors are suppressed.
+- **Third-party service**, a tracked outside provider (cloud, payments, SaaS) whose public status page UptimeRobot watches. Not returned by `list-monitors`.
 
 Plans: don't hard-code plan names (live accounts report e.g. `Scale`) — read `activeSubscription.plan` from `get-user`. Availability of specific monitor types and minimum intervals depends on the active plan. The MCP server enforces all limits.
 
@@ -32,7 +33,7 @@ First-time setup (Claude Code, Cursor, or any MCP client): see [`skills/setup/SK
 
 If the user has no UptimeRobot account or API key, use the [`quick-monitor-setup`](skills/quick-monitor-setup/SKILL.md) skill instead of the MCP tools: it creates a free HTTPS monitor from just the owner's email (an unauthenticated proof-of-work flow; the owner confirms by clicking a link in an activation email). When the user is connected via MCP, use `create-monitor`.
 
-## Tools (all 50)
+## Tools (all 60)
 
 Grouped by resource. Tools marked **plan-gated** require a specific plan feature (`monitor-groups`, `maintenance-window`, `incident-comments`, `psp-subscribers`, or `notification-grouping`) and fail if the account's plan doesn't include it. Some params are gated by entitlement instead: `customFields` needs `custom-fields`, and `regionData.THRESHOLD` needs `monitor-slow-response`.
 
@@ -110,6 +111,23 @@ All `delete-*` tools are **permanent** — see convention 2 below.
 | `update-incident-comment` | Edit an existing comment's content. |
 | `list-incident-comments` | Cursor-paginated list of comments on an incident. |
 | `delete-incident-comment` | Permanently delete a comment. |
+
+### Third-party services
+
+Track the status pages of outside providers. Providers are identified by their numeric ID from `search-third-party-providers`, tracked services by monitor ID. These monitors are not returned by `list-monitors`, and they spend their own allowance (`dependencyMonitorsCount` / `dependencyMonitorLimit` from `get-user`), not a monitor slot. `create-third-party-service` fails with `monitor_limit_exceeded` when the plan does not allow third-party services or the limit is reached. A third-party service cannot be paused: `update-monitor-status` with `PAUSED` is refused with `invalid_parameters`. See [`skills/manage-third-party-services/SKILL.md`](skills/manage-third-party-services/SKILL.md).
+
+| Name | When to use |
+| -- | -- |
+| `search-third-party-providers` | Search the provider catalog by provider or component name. Returns provider `id`, state, matched component and whether the account already tracks it. |
+| `get-third-party-provider` | Fetch one provider by numeric `providerId`, with its component tree. Component IDs select what to track. |
+| `list-third-party-services` | Cursor-paginated list of the account's tracked services, with optional `search` and sorting. |
+| `get-third-party-service` | Full state of one tracked service by `monitorId`: notification settings, tracked components, provider components. |
+| `list-third-party-service-incidents` | Cursor-paginated provider incidents for tracked services, newest first. Pass `monitorId` for one service. |
+| `get-third-party-service-incident` | One incident from `list-third-party-service-incidents`, by `monitorId` and `incidentId`: description, provider updates, affected tracked components. Not for `get-incident-details` IDs. |
+| `get-third-party-service-incident-activity-log` | Notifications sent about that incident, by the same two IDs. Recipients other than email, SMS and voice read `[REDACTED]`. Not for `get-incident-activity-log` IDs. |
+| `create-third-party-service` | Start tracking a provider by `providerId`, optionally limiting components, notification sensitivity and alert contacts. Tracking an already-tracked provider returns the existing service. |
+| `update-third-party-service` | Change tracked components (full replacement), notification sensitivity or maintenance notifications. |
+| `delete-third-party-service` | Permanently stop tracking a service. Irreversible. Confirm the account with `get-user` first. |
 
 ### Alert contacts (personal)
 
@@ -201,7 +219,7 @@ Tool errors usually reach the client as plain text with no numeric code, and the
 
 ## Conventions for agents
 
-1. **Never guess IDs.** Call `list-monitors` (or `list-alert-contacts` / `list-integrations` for alert contacts) to discover IDs before calling write tools.
+1. **Never guess IDs.** Call `list-monitors` (or `list-alert-contacts` / `list-integrations` for alert contacts) to discover IDs before calling write tools. For third-party services, `list-monitors` does not return them: get a tracked service's ID from `list-third-party-services`, and a provider ID from `search-third-party-providers`.
 2. **Call `get-user` before any `delete-*`.** It names the session account and whether the session may write. Deletes are permanent — confirm the account and target with the user first.
 3. **Handle errors and verify writes as [`skills/errors/SKILL.md`](skills/errors/SKILL.md) says.** Never blind-retry a write — a retried create with different target settings makes a second monitor — and never retry plan-limit, not-found or bad-input errors unchanged.
 4. **Don't invent monitor types.** Use the 8 string enums above.
