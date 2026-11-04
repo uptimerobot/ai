@@ -50,16 +50,16 @@ Call `get-user`. The allowance is `dependencyMonitorLimit` minus `dependencyMoni
 
 ## Step 5: Scope large providers
 
-AWS, Google Cloud, Microsoft Azure, Cloudflare and GitHub are noisy when tracked whole: every regional incident on any service alerts the account. For each of them in the proposal, read the component tree once with `get-third-party-provider` and match component names against the detected service words and region values listed under "Component scoping" in `reference.md`:
+AWS, Google Cloud, Microsoft Azure, Cloudflare and GitHub are noisy when tracked whole: every regional incident on any service alerts the account. For each of them that was resolved in Step 3 and will be proposed as track or update (build-time GitHub only after the user asked for it), read the component tree once with `get-third-party-provider` (one more call per provider against the rate limit) and match component names against the detected service words and region values listed under "Component scoping" in `reference.md`:
 
 - Match on the component name, never on an id typed from memory; the ids for `trackedComponentIds` come from this tree read.
-- AWS and Google Cloud: pick the regional child of each matched service (`Amazon Simple Storage Service (Frankfurt)` for S3 plus `eu-central-1`); with a service but no region, pick the service parent; with a region but no service, propose the whole provider and say why.
+- AWS and Google Cloud: pick the regional child of each matched service (`Amazon Simple Storage Service (Frankfurt)` for S3 plus `eu-central-1`); with a service but no region, pick the service parent and say the region is unknown; with a region but no service, propose the whole provider and say why. A region code that matches no child name: show the region names from the tree and ask.
 - Microsoft Azure: the tree is region first, so pick the matched services under each detected region.
 - Cloudflare: pick the matched products under `Cloudflare Sites and Services`; regions are points of presence and are not scoped from repository signals.
 - GitHub: pick the matched products (`Actions` for a workflow, `Packages` for `ghcr.io`, `Git Operations` always when the remote is `github.com`).
 - Nothing matched: propose the whole provider and say that no service or region signal was found.
 
-The proposal row for a scoped provider names the components (`S3 (Frankfurt), RDS (Frankfurt)`), each with its evidence. For a provider the account already tracks, call `get-third-party-service` first and show its current components next to the proposed ones; the action becomes `update` with the full replacement list, because `trackedComponentIds` replaces the whole list.
+The proposal row for a scoped provider names the components (`S3 (Frankfurt), RDS (Frankfurt)`), each with its evidence. For a provider the account already tracks, call `get-third-party-service` first and show its current components next to the proposed ones. The action becomes `update` with the union of the current list and the matched components, because `trackedComponentIds` replaces the whole list. A stored value of `null` means every component is tracked today: replacing it with the matched set narrows the alerts, so show it as "all components, narrowed to N" and treat a plain "yes" as not covering it; it needs to be named in the confirmation.
 
 ## Step 6: Propose, no writes
 
@@ -68,7 +68,7 @@ One table, then a question. Nothing is created in this step. The `Stripe` and `S
 ```
 | Provider | Why | Class | Catalog | Action |
 | -- | -- | -- | -- | -- |
-| AWS, S3 (Frankfurt), RDS (Frankfurt) | boto3@1.35.80, settings.py:13 (S3Boto3Storage), .env.example:5 (*.rds.amazonaws.com), .env.example:1 (AWS_REGION) | runtime | 248, operational, https://status.aws.amazon.com/ | track, 2 components |
+| AWS, S3 (Frankfurt), RDS (Frankfurt) | boto3@1.35.80, infra/main.tf:10, .env.example:5 (*.amazonaws.com) | runtime | 248, operational, https://status.aws.amazon.com/ | track, 2 components |
 | Stripe | stripe@17.4.0 | runtime | 801, operational, https://status.stripe.com/ | track |
 | Supabase | @supabase/supabase-js@2.47.0, .env.example:1 (*.supabase.co) | runtime | 1124, operational, https://status.supabase.io/ | already tracked |
 | Vercel | vercel.json | runtime | 861, operational, https://www.vercel-status.com/ | track |
@@ -87,7 +87,7 @@ What counts as confirmation:
 
 ## Step 7: Create, verify, summarise
 
-For each confirmed provider, call `create-third-party-service` with `providerId`, leaving notify and alert contacts on the account defaults unless the user asked otherwise. Pass `trackedComponentIds` with the ids matched in Step 5 for a scoped provider; leave it out to track every component. For a scoped provider the account already tracks, call `update-third-party-service` with the full replacement list instead, after the user saw the current list. An already-tracked provider is reported as "already tracked", not created again; the same applies when a create returns an existing service for a provider the proposal called untracked (another session got there first, or the tracked list was partial), and it spends no slot in the summary.
+For each confirmed provider, call `create-third-party-service` with `providerId`, leaving notify and alert contacts on the account defaults unless the user asked otherwise. Pass `trackedComponentIds` with the ids matched in Step 5 for a scoped provider; leave it out to track every component. For a scoped provider the account already tracks, call `update-third-party-service` with the list from Step 5 instead, after the user saw the current list. An already-tracked provider is reported as "already tracked", not created again; the same applies when a create returns an existing service for a provider the proposal called untracked (another session got there first, or the tracked list was partial), and it spends no slot in the summary.
 
 Then call `get-third-party-service` for every created or updated service and report the stored state, not what you sent: compare its `trackedComponentIds` with the confirmed set and report any mismatch by component name. Creates and verifies count against the same rate limit as the searches (see Limits and refusals); pace them and finish the confirmed set. End with a summary split into created (with monitor ids), already tracked, not created (with the reason), skipped, and not in the catalog, plus the CLI equivalents for anyone who wants to repeat it outside the agent. After a failure mid-run, offer to resume with the remainder only; never re-run the whole set.
 
@@ -108,7 +108,7 @@ Then call `get-third-party-service` for every created or updated service and rep
 - Proposing `Procfile` as Heroku without a corroborating Heroku signal.
 - Searching build-time providers and every unmapped `devDependency` up front and burning the rate limit before the proposal is shown.
 - Refusing a scoped update at the allowance cap; the cap applies to creates only.
-- Scoping from memory ("S3 is id 51019") instead of from the component tree read in the same run, or sending a partial `trackedComponentIds` list to an update and dropping the components the user already tracks.
+- Scoping from memory ("S3 is id 51019") instead of from the component tree read in the same run, or sending only the new components to an update and dropping the ones the user already tracks.
 
 ## Related
 

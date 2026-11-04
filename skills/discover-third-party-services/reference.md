@@ -42,7 +42,7 @@ Run searches from the project root with Glob (file discovery) and Grep (content 
   ```
 
   Only hostnames, allowlisted region values and locations enter the tool output; every hostname is then checked against the anchored rule in Vendor map. Extract only:
-  1. Hostnames matching a vendor pattern, quoted as the map pattern itself with everything left of it dropped: `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `*.sentry.io` (quoted as the map pattern, never as the ingest host), `api.openai.com`, never `abcd1234.supabase.co` or a full connection string.
+  1. Hostnames matching a vendor pattern, quoted as the longest pattern in this file that they match (Vendor map or Component scoping) with everything left of it dropped: `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `*.sentry.io` (quoted as the map pattern, never as the ingest host), `api.openai.com`, never `abcd1234.supabase.co` or a full connection string.
   2. The values of these non-secret region keys, reported in the proposal as a region signal and used when a large provider is scoped to components: `AWS_REGION`, `AWS_DEFAULT_REGION`, `GOOGLE_CLOUD_REGION`, `GCP_REGION`, `AZURE_REGION`, `AZURE_LOCATION`, `FLY_REGION`, `VERCEL_REGION`, `DD_SITE`. Quote a value only when it is made of lowercase letters, digits, dots and hyphens (`eu-central-1`, `datadoghq.eu`); discard anything else.
 
   Every other value, and any value that looks like a key, token, password or connection string, is never read into the reply.
@@ -86,17 +86,17 @@ Every row is class runtime except the rows of the Build-time table.
 
 | Signal | Search term |
 | -- | -- |
-| `@aws-sdk/*`, `aws-sdk`, `boto3`, `botocore`, `aws-cdk`, `aws-cdk-lib`, `serverless.yml` with `provider.name: aws`, `*.amazonaws.com`, `provider "aws"` | AWS |
-| `@google-cloud/*`, `googleapis`, `google-cloud-*` (pip), `cloud.google.com/go/*`, `cloudbuild.yaml`, `provider "google"`, `*.googleapis.com` except `fonts.googleapis.com`, `gcr.io`, `*.pkg.dev` | Google Cloud |
+| `@aws-sdk/*`, `aws-sdk`, `boto3`, `botocore`, `aws-cdk`, `aws-cdk-lib`, `serverless.yml` with `provider.name: aws`, `*.amazonaws.com`, `*.cloudfront.net`, `provider "aws"`, `aws_*` terraform resources | AWS |
+| `@google-cloud/*`, `googleapis`, `google-cloud-*` (pip), `cloud.google.com/go/*`, `cloudbuild.yaml`, `provider "google"`, `*.googleapis.com` except `fonts.googleapis.com`, `gcr.io`, `*.pkg.dev`, `*.run.app`, `google_*` terraform resources | Google Cloud |
 | `firebase`, `firebase-admin`, `firebase.json`, `*.firebaseio.com`, `*.firebaseapp.com` | Firebase |
-| `@azure/*`, `azure-*` (pip), `provider "azurerm"`, `*.azure.com`, `*.azurewebsites.net`, `*.blob.core.windows.net`, `login.windows.net` | Microsoft Azure |
+| `@azure/*`, `azure-*` (pip), `provider "azurerm"`, `azurerm_*` terraform resources, `*.azure.com`, `*.azurewebsites.net`, `*.blob.core.windows.net`, `*.database.windows.net`, `*.redis.cache.windows.net`, `login.windows.net`, `login.microsoftonline.com` | Microsoft Azure |
 | `@vercel/*`, `vercel.json`, `VERCEL_URL` | Vercel |
 | `netlify.toml`, `@netlify/*` | Netlify |
 | `fly.toml`, `*.fly.dev` | Fly.io |
 | `render.yaml`, `*.onrender.com` | Render |
 | `railway.json`, `railway.toml`, `*.railway.app` | Railway |
 | `app.json` with a `stack` or `buildpacks` key, `heroku.yml`, `*.herokuapp.com` | Heroku |
-| `wrangler.toml`, `wrangler.jsonc`, `@cloudflare/*`, `cloudflare` (npm, pip), `*.r2.cloudflarestorage.com`, `*.workers.dev`, `*.pages.dev` | Cloudflare |
+| `wrangler.toml`, `wrangler.jsonc`, `@cloudflare/*`, `cloudflare` (npm, pip), `provider "cloudflare"`, `cloudflare_*` terraform resources, `*.r2.cloudflarestorage.com`, `*.workers.dev`, `*.pages.dev` | Cloudflare |
 
 `Procfile` alone is ambiguous: Foreman, Honcho, Railway, Dokku and Render read it too. Treat it as Heroku only when one of the Heroku signals above corroborates it. Otherwise list it as an uncertain candidate and ask, never propose it as confirmed.
 
@@ -176,7 +176,7 @@ Braintree has no catalog provider. List a `braintree` SDK under "not in the cata
 
 | Signal | Search term | Class |
 | -- | -- | -- |
-| `@octokit/*`, remote `github.com`, `.github/workflows/`, `ghcr.io` | GitHub | build-time, runtime when `@octokit/*` is in `dependencies` and used at runtime |
+| `@octokit/*`, remote `github.com`, `.github/workflows/`, `ghcr.io`, `npm.pkg.github.com` | GitHub | build-time, runtime when `@octokit/*` is in `dependencies` and used at runtime |
 | `.gitlab-ci.yml`, remote `gitlab.com`, `registry.gitlab.com` | GitLab | build-time |
 | `bitbucket-pipelines.yml`, remote `bitbucket.org` | Bitbucket | build-time |
 | `.circleci/config.yml` | CircleCI | build-time |
@@ -227,7 +227,7 @@ The tree is service first: a parent per service, one child per region named `<se
 | `*.dkr.ecr.<region>.amazonaws.com`, `aws_ecr_repository` | Amazon Elastic Container Registry |
 | `@aws-sdk/client-cognito-identity-provider`, `aws_cognito_user_pool` | Amazon Cognito |
 
-Region codes map to the child name: `us-east-1` N. Virginia, `us-east-2` Ohio, `us-west-1` N. California, `us-west-2` Oregon, `ca-central-1` Canada-Central, `ca-west-1` Calgary, `eu-west-1` Ireland, `eu-west-2` London, `eu-west-3` Paris, `eu-central-1` Frankfurt, `eu-central-2` Zurich, `eu-north-1` Stockholm, `eu-south-1` Milan, `eu-south-2` Spain, `ap-southeast-1` Singapore, `ap-southeast-2` Sydney, `ap-southeast-3` Jakarta, `ap-southeast-4` Melbourne, `ap-northeast-1` Tokyo, `ap-northeast-2` Seoul, `ap-northeast-3` Osaka, `ap-south-1` Mumbai, `ap-south-2` Hyderabad, `ap-east-1` Hong Kong, `sa-east-1` Sao Paulo, `me-south-1` Bahrain, `me-central-1` UAE, `il-central-1` Tel Aviv, `af-south-1` Cape Town. Region sources: `AWS_REGION` or `AWS_DEFAULT_REGION`, terraform `provider "aws"` `region`, a region inside a hostname (`eu-central-1.rds.amazonaws.com`).
+Region codes map to the child name: `us-east-1` N. Virginia, `us-east-2` Ohio, `us-west-1` N. California, `us-west-2` Oregon, `ca-central-1` Canada-Central, `ca-west-1` Calgary, `eu-west-1` Ireland, `eu-west-2` London, `eu-west-3` Paris, `eu-central-1` Frankfurt, `eu-central-2` Zurich, `eu-north-1` Stockholm, `eu-south-1` Milan, `eu-south-2` Spain, `ap-southeast-1` Singapore, `ap-southeast-2` Sydney, `ap-southeast-3` Jakarta, `ap-southeast-4` Melbourne, `ap-northeast-1` Tokyo, `ap-northeast-2` Seoul, `ap-northeast-3` Osaka, `ap-south-1` Mumbai, `ap-south-2` Hyderabad, `ap-east-1` Hong Kong, `sa-east-1` Sao Paulo, `me-south-1` Bahrain, `me-central-1` UAE, `il-central-1` Tel Aviv, `af-south-1` Cape Town. Region sources: `AWS_REGION` or `AWS_DEFAULT_REGION`, terraform `provider "aws"` `region`, a region inside a hostname (`eu-central-1.rds.amazonaws.com`). A code not in this list (a newer region, GovCloud, China): show the region names from the tree and ask.
 
 ### Google Cloud
 
@@ -251,7 +251,7 @@ Region sources: `GOOGLE_CLOUD_REGION` or `GCP_REGION`, terraform `provider "goog
 
 ### Microsoft Azure
 
-Region first: a parent per region (`West Europe`, `Germany West Central`), one child per service. Match the region from `AZURE_REGION` or `AZURE_LOCATION` (`westeurope` is `West Europe`, `germanywestcentral` is `Germany West Central`, `eastus` is `East US`: split the code on its words) or terraform `location`, then the services under it.
+Region first: a parent per region (`West Europe`, `Germany West Central`), one child per service. Match the region from `AZURE_REGION`, `AZURE_LOCATION` or terraform `location`: lowercase each region parent name and strip its spaces and marks, then compare with the code (`West Europe` becomes `westeurope`, `East US 2` becomes `eastus2`, `Germany West Central` becomes `germanywestcentral`). No parent matches: show the parent names and ask. Then pick the services under the matched region.
 
 | Detected signal | Component |
 | -- | -- |
@@ -289,7 +289,6 @@ A flat list: `Git Operations`, `API Requests`, `Webhooks`, `Issues`, `Pull Reque
 | `.github/workflows/` | Actions |
 | `ghcr.io`, `npm.pkg.github.com` | Packages |
 | `@octokit/*` in `dependencies` | API Requests |
-| `.devcontainer/` with a GitHub remote | Codespaces |
 
 ---
 

@@ -17,7 +17,7 @@ Scoping for AWS, from the component tree read in the run:
 | Amazon Simple Storage Service (Frankfurt) | settings.py:13 (S3Boto3Storage), infra/main.tf:14 (aws_s3_bucket), region eu-central-1 |
 | Amazon Relational Database Service (Frankfurt) | infra/main.tf:18 (aws_db_instance), .env.example:5 (*.rds.amazonaws.com), region eu-central-1 |
 
-Region `eu-central-1` comes from `.env.example:1` (`AWS_REGION`) and `infra/main.tf:11`. The create call carries the two component ids from the tree; no other AWS component is proposed. Component ids are not compared, only the two names.
+Region `eu-central-1` comes from `.env.example:1` (`AWS_REGION`) and `infra/main.tf:11`. After the create, the stored `trackedComponentIds` resolve to exactly these two names; no other AWS component is proposed. Ids are not compared, only the names.
 
 Must not appear: `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` placeholders, the full RDS hostname (`acme-main.cluster-example...`), the bucket name as evidence, the Sentry DSN.
 
