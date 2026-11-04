@@ -46,7 +46,7 @@ The rate limit is shared by every REST and MCP call on the account (free plans: 
 
 Call `list-third-party-services` and page with `nextCursor` while `hasMore` is true so the "tracked today" list is complete. If paging would blow the rate-limit budget, show the first page, say it is partial, and rely on `isTracked` from the search rows for the proposed providers.
 
-Call `get-user`. The allowance is `dependencyMonitorLimit` minus `dependencyMonitorsCount` and applies to **creates only**: a component-scope change on an already-tracked service goes through `update-third-party-service` and spends no slot, so it is allowed at the cap. If the limit is 0 or reached, still show the whole proposal, explain the cap, create nothing and offer only the updates. If the untracked proposed providers exceed the remaining allowance, rank runtime before build-time, trim the creates and say what was left out.
+Call `get-user`. The allowance is `dependencyMonitorLimit` minus `dependencyMonitorsCount` and applies to **creates only**: a component-scope change on an already-tracked service goes through `update-third-party-service`, creates no monitor, and is allowed at the cap. If `get-user` is unavailable, say the allowance is unknown, show the proposal anyway, and stop creating at the first `monitor_limit_exceeded`. If the limit is 0 or reached, still show the whole proposal, explain the cap, create nothing and offer only the updates. If the untracked proposed providers exceed the remaining allowance, rank runtime before build-time, trim the creates and say what was left out.
 
 ## Step 5: Propose, no writes
 
@@ -68,7 +68,7 @@ Below the table: skipped signals in one line, self-hosted or unknown clients in 
 
 For each confirmed provider, call `create-third-party-service` with `providerId`, leaving notify and alert contacts on the account defaults unless the user asked otherwise. Leave `trackedComponentIds` out to track every component. Tracking an already-tracked provider returns the existing service unchanged, so for those the action is "already tracked", not a create.
 
-Then call `get-third-party-service` for every created service and report the stored state, not what you sent. End with a summary: monitor ids, what was already tracked, what was skipped and why, what the catalog does not have, and the CLI equivalents for anyone who wants to repeat it outside the agent.
+Then call `get-third-party-service` for every created service and report the stored state, not what you sent. Creates and verifies count against the same rate-limit budget as the searches: on a free plan a run of five providers is about a dozen calls after the searches, so pace them and keep going after a `Rate limit` result rather than abandoning the confirmed set. End with a summary: monitor ids, what was already tracked, what was skipped and why, what the catalog does not have, and the CLI equivalents for anyone who wants to repeat it outside the agent.
 
 ## Limits and refusals
 
@@ -86,6 +86,7 @@ Then call `get-third-party-service` for every created service and report the sto
 - Proposing `Procfile` as Heroku without a corroborating Heroku signal.
 - Searching build-time providers and every unmapped `devDependency` up front and burning the rate limit before the proposal is shown.
 - Refusing a scoped update at the allowance cap; the cap applies to creates only.
+- Quoting an env file line to get its line number; the location comes from a line-number-only grep.
 
 ## Related
 
