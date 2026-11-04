@@ -56,13 +56,13 @@ One table, then a question. Nothing is created in this step.
 | Provider | Why | Class | Catalog | Action |
 | -- | -- | -- | -- | -- |
 | Stripe | stripe@14.5.0 | runtime | 801, operational, https://status.stripe.com/ | track |
-| Supabase | @supabase/supabase-js@2.45.0, .env.example:3 (*.supabase.co) | runtime | 1124, operational | already tracked |
-| Vercel | vercel.json:1 | runtime | 861, operational | track |
-| GitHub | git remote: github.com, .github/workflows/ci.yml | build-time | not resolved yet | optional, say if you want it |
+| Supabase | @supabase/supabase-js@2.45.0, .env.example:3 (*.supabase.co) | runtime | 1124, operational, https://status.supabase.io/ | already tracked |
+| Vercel | vercel.json | runtime | 861, operational, https://www.vercel-status.com/ | track |
+| GitHub | git remote: github.com, .github/workflows/ci.yml | build-time | not searched yet | optional, say if you want it |
 | Braintree | braintree@3.20.0 | runtime | not in the catalog | none |
 ```
 
-Below the table: skipped signals in one line, self-hosted or unknown clients in one line, and the allowance ("3 of 10 slots used, 2 proposed"). Then ask the user to confirm the exact set, by provider name. A partial answer ("only Stripe and Vercel") replaces the set; a new scan needs a new confirmation.
+Below the table: skipped signals in one line, self-hosted or unknown clients in one line, the Catalog column as `id, state, statusPageUrl`, and the allowance ("3 of 10 slots used, 2 proposed", or "allowance unknown" when `get-user` was unavailable). Then ask the user to confirm the exact set, by provider name. A partial answer ("only Stripe and Vercel") replaces the set; a new scan needs a new confirmation.
 
 ## Step 6: Create, verify, summarise
 

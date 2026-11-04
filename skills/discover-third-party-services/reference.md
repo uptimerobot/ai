@@ -12,10 +12,10 @@ Run searches from the project root with Glob (file discovery) and Grep (content 
 
 | Source | Files | What it yields |
 | -- | -- | -- |
-| Package manifests | `package.json` (`dependencies` as runtime, `devDependencies` as build-time), `requirements*.txt`, `pyproject.toml`, `Pipfile`, `go.mod`, `Gemfile`, `composer.json`, `Cargo.toml`, `*.csproj`, `pom.xml`, `build.gradle*`, `pubspec.yaml`, `mix.exs` | Vendor SDKs |
+| Package manifests | `package.json` (`dependencies` as runtime, `devDependencies` as build-time), `requirements*.txt` (`requirements-dev.txt` and `[dev]` extras as build-time), `pyproject.toml`, `Pipfile`, `go.mod`, `Gemfile`, `composer.json`, `Cargo.toml`, `*.csproj`, `pom.xml`, `build.gradle*`, `pubspec.yaml`, `mix.exs` | Vendor SDKs |
 | Deploy and platform config | `vercel.json`, `netlify.toml`, `fly.toml`, `render.yaml`, `railway.json`, `railway.toml`, `Procfile`, `app.json`, `heroku.yml`, `wrangler.toml`, `wrangler.jsonc`, `serverless.yml`, `amplify.yml`, `firebase.json`, `cloudbuild.yaml`, `supabase/`, `*.tf` (`provider "aws"`, `provider "google"`, `provider "azurerm"`), `Pulumi.yaml`, `docker-compose*.yml` (external hostnames and image registries), `Dockerfile` (registry hosts in `FROM`) | Hosting, cloud and infrastructure providers |
 | CI | `.github/workflows/*.yml`, `.gitlab-ci.yml`, `.circleci/config.yml`, `bitbucket-pipelines.yml` | CI provider (build-time) |
-| Code host | Git remotes, reduced to the hostname (`github.com`, `gitlab.com`, `bitbucket.org`), see "Secret handling" | Code host (build-time) |
+| Code host | Git remotes of the project root itself (`git rev-parse --show-toplevel` equals the project root; a parent repository's remote is not a signal), reduced to the hostname (`github.com`, `gitlab.com`, `bitbucket.org`), see "Secret handling" | Code host (build-time) |
 | Env examples and config | `.env.example`, `.env.sample`, `.env*.example`, then `.env*` | Vendor hostnames in values, and the region keys listed below |
 | Monorepos | Every manifest under every workspace or app directory | The proposal names the app that uses each vendor |
 
@@ -28,14 +28,21 @@ Run searches from the project root with Glob (file discovery) and Grep (content 
   ```
 
   Keep a result only when it looks like a hostname (letters, digits, dots, hyphens). No remote, a local path or junk means no code host signal, move on. A host not in the map (`git.corp.example`) is an unmapped build-time signal. Without a POSIX shell, read the `url =` lines of `.git/config` and apply the same reduction by hand before anything is quoted. The evidence line reads `git remote: github.com`.
-- **Env files.** Never read whole lines from `.env*` files, not into the reply and not into tool output: grep for the hostname or region-key pattern with match-only output (`-o`), never for the line. Extract only:
-  1. Hostnames matching a vendor pattern, with the account-specific label dropped: quote `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `api.openai.com`, `hooks.slack.com`, never `abcd1234.supabase.co` or a full connection string.
+- **Env files.** Never read whole lines from `.env*` files, not into the reply and not into tool output: grep for the hostname or region-key pattern with match-only output, never for the line. Two commands cover it:
+
+  ```
+  grep -ohE '([a-z0-9-]+\.)+[a-z]{2,}' .env* | sort -u
+  grep -ohE '^(AWS_REGION|AWS_DEFAULT_REGION|GOOGLE_CLOUD_REGION|GCP_REGION|AZURE_REGION|AZURE_LOCATION|FLY_REGION|VERCEL_REGION|DD_SITE)=[a-z0-9.-]+' .env*
+  ```
+
+  Only hostnames and allowlisted region values enter the tool output; every hostname is then checked against the anchored rule in Vendor map. Extract only:
+  1. Hostnames matching a vendor pattern, quoted as the map pattern itself with everything left of it dropped: `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `*.sentry.io` (not `*.ingest.sentry.io`), `api.openai.com`, never `abcd1234.supabase.co` or a full connection string.
   2. The values of these non-secret region keys, used to scope large providers to components and regions (see `SKILL.md`): `AWS_REGION`, `AWS_DEFAULT_REGION`, `GOOGLE_CLOUD_REGION`, `GCP_REGION`, `AZURE_REGION`, `AZURE_LOCATION`, `FLY_REGION`, `VERCEL_REGION`, `DD_SITE`. Quote a value only when it is made of lowercase letters, digits, dots and hyphens (`eu-central-1`, `datadoghq.eu`); discard anything else.
 
   Every other value, and any value that looks like a key, token, password or connection string, is never read into the reply.
 - **Evidence format.** Nothing else from the repository is repeated back.
-  - Config, CI and env files: `path:line`. For env files the path and line number only, never the line's content.
-  - Manifests: `package@version`. Quote the version only when it is a plain version or range; a spec that is a URL, a git reference or carries an index URL is quoted as the package name alone.
+  - Config, CI and env files: `path:line`. For env files the path and line number only, never the line's content. A signal that is the file's existence (`vercel.json`, `cloudbuild.yaml`, `.github/workflows/ci.yml`) is quoted as the path alone.
+  - Manifests: `package@version` (`stripe@17.4.0`, `sentry-sdk@2.19.2` from a pip `==` pin with extras dropped, `github.com/stripe/stripe-go/v81@v81.1.0` for a Go module). Quote the version only when it is a plain version or range; a spec that is a URL, a git reference or carries an index URL is quoted as the package name alone. A Go module path or a `go.mod` `module` line is a name, not code-host evidence.
   - Code host: `git remote: <host>`.
 
 ---
@@ -73,7 +80,7 @@ Every row is class runtime except the rows of the Build-time table.
 | Signal | Search term |
 | -- | -- |
 | `@aws-sdk/*`, `aws-sdk`, `boto3`, `botocore`, `aws-cdk`, `aws-cdk-lib`, `serverless.yml` with `provider.name: aws`, `*.amazonaws.com`, `provider "aws"` | AWS |
-| `@google-cloud/*`, `googleapis`, `google-cloud-*` (pip), `cloud.google.com/go/*`, `cloudbuild.yaml`, `provider "google"`, `*.googleapis.com` except `fonts.googleapis.com` | Google Cloud |
+| `@google-cloud/*`, `googleapis`, `google-cloud-*` (pip), `cloud.google.com/go/*`, `cloudbuild.yaml`, `provider "google"`, `*.googleapis.com` except `fonts.googleapis.com`, `gcr.io`, `*.pkg.dev` | Google Cloud |
 | `firebase`, `firebase-admin`, `firebase.json`, `*.firebaseio.com`, `*.firebaseapp.com` | Firebase |
 | `@azure/*`, `azure-*` (pip), `provider "azurerm"`, `*.azure.com`, `*.azurewebsites.net`, `*.blob.core.windows.net`, `login.windows.net` | Microsoft Azure |
 | `@vercel/*`, `vercel.json`, `VERCEL_URL` | Vercel |
@@ -104,7 +111,7 @@ The catalog's `MongoDB` provider tracks `status.cloud.mongodb.com`, the Atlas st
 
 | Signal | Search term |
 | -- | -- |
-| `stripe` (npm, pip, gem, go), `api.stripe.com` | Stripe |
+| `stripe` (npm, pip, gem), `github.com/stripe/stripe-go`, `api.stripe.com` | Stripe |
 | `@paypal/*`, `paypal-rest-sdk`, `paypalrestsdk`, `api-m.paypal.com`, `api.paypal.com` (sandbox hosts do not count) | PayPal |
 | `plaid`, `plaid-python`, `*.plaid.com` | Plaid |
 | `@shopify/shopify-api`, `@shopify/shopify-app-*`, `*.myshopify.com` (`@shopify/polaris` and `@shopify/hydrogen` are UI, skip) | Shopify |
@@ -115,7 +122,7 @@ Braintree has no catalog provider. List a `braintree` SDK under "not in the cata
 
 | Signal | Search term |
 | -- | -- |
-| `twilio`, `twilio-go`, `api.twilio.com` | Twilio |
+| `twilio`, `github.com/twilio/twilio-go`, `api.twilio.com` | Twilio |
 | `@sendgrid/*`, `sendgrid`, `api.sendgrid.com` | SendGrid |
 | `mailgun.js`, `mailgun-js`, `api.mailgun.net` | Mailgun |
 | `postmark`, `api.postmarkapp.com` | Postmark |
@@ -169,7 +176,7 @@ Braintree has no catalog provider. List a `braintree` SDK under "not in the cata
 
 ### Skip
 
-`react`, `vue`, `jquery`, `tailwindcss`, Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`), Font Awesome, Google Analytics, Google Tag Manager, Hotjar, Meta Pixel. Mention them in one line, do not propose them.
+Frameworks, runtimes, ORMs, build tools and type packages (`next`, `react`, `react-dom`, `vue`, `django`, `django-storages`, `flask`, `rails`, `express`, `prisma`, `sqlalchemy`, `typescript`, `eslint`, `@types/*`), `jquery`, `tailwindcss`, Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`), Font Awesome, Google Analytics, Google Tag Manager, Hotjar, Meta Pixel. Mention them in one line, do not propose them. The unmapped-signal rule below is for names that look like a hosted product or company, never for a framework or a library.
 
 ---
 
