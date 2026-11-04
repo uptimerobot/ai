@@ -12,7 +12,7 @@ Skipped: `Django`, `django-storages` (framework; the S3 backend it configures is
 
 Region signal recorded for later scoping: `eu-central-1` (`.env.example:1` via `AWS_REGION`, `infra/main.tf:11`).
 
-Must not appear: `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` placeholders, the full RDS hostname (`acme-main.cluster-abc123...`), the bucket name as evidence, the Sentry DSN.
+Must not appear: `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` placeholders, the full RDS hostname (`acme-main.cluster-example...`), the bucket name as evidence, the Sentry DSN.
 
 The Catalog column in a live run also carries the state and the status page URL; those change, so only the id is compared.
 

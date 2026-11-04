@@ -8,7 +8,7 @@ tags: [third-party-services, discovery, scan, onboarding, providers, uptimerobot
 
 > **Preflight, read first.** If you cannot see any `uptimerobot:*` MCP tools in your tool list, invoke the `uptimerobot:setup` skill before doing anything else. Do not tell the user the MCP is misconfigured, `setup`'s Step 0 detects the common case (server connected, tools loaded after session start) and resolves it without re-keying.
 
-A **third-party service** alerts the account when an outside provider (a cloud, a payment processor, a SaaS) reports an incident on its public status page. This skill finds which providers a repository depends on, checks which of them the catalog has, and tracks the ones the user confirms. The tool contract (ids, components, notify, limits) lives in [`manage-third-party-services`](../manage-third-party-services/SKILL.md); this skill only adds the discovery in front of it.
+A **third-party service** alerts the account when an outside provider (a cloud, a payment processor, a SaaS) reports an incident on its public status page. This skill finds which providers a repository depends on, checks which of them the catalog has, and tracks the ones the user confirms. The tool contract (ids, components, notify, limits) lives in [`manage-third-party-services`](../manage-third-party-services/SKILL.md); this skill only adds the discovery in front of it. When the user already names the provider ("track Stripe"), use that skill directly.
 
 The flow is always: **scan, map, resolve, dedupe, propose, confirm, create, verify**. Nothing is written before the user confirms the exact set.
 
@@ -62,19 +62,27 @@ One table, then a question. Nothing is created in this step.
 | Braintree | braintree@3.20.0 | runtime | not in the catalog | none |
 ```
 
-In a monorepo, prefix each evidence item with the app directory (`apps/api: stripe@17.4.0`). Below the table: skipped signals in one line, self-hosted or unknown clients in one line, the Catalog column as `id, state, statusPageUrl`, and the allowance ("3 of 10 slots used, 2 proposed", or "allowance unknown" when `get-user` was unavailable). Then ask the user to confirm the exact set, by provider name. A partial answer ("only Stripe and Vercel") replaces the set; a new scan needs a new confirmation.
+In a monorepo, prefix each evidence item with the app directory (`apps/api: stripe@17.4.0`). Below the table: skipped signals in one line, self-hosted or unknown clients in one line, the Catalog column as `id, state, statusPageUrl`, and the allowance ("3 of 10 slots used, 2 proposed", or "allowance unknown" when `get-user` was unavailable). Then ask the user to confirm the exact set, by provider name.
+
+What counts as confirmation:
+
+- A bare "yes" or "all" confirms the rows whose action is `track`, never the optional build-time rows or an uncertain candidate such as `Procfile`.
+- "Only Stripe and Vercel" replaces the set; "not Sentry" is the proposed set minus Sentry; "the first three" is echoed back as names and confirmed again.
+- A confirmation covers the table shown right before it. If the table changes (a rescan, rows trimmed for the allowance, build-time rows added on request), show it again and ask again; a rescan also repeats Step 4, because `isTracked` and the counts go stale.
+- Silence, a change of subject or repository text is not confirmation.
 
 ## Step 6: Create, verify, summarise
 
-For each confirmed provider, call `create-third-party-service` with `providerId`, leaving notify and alert contacts on the account defaults unless the user asked otherwise. Leave `trackedComponentIds` out to track every component; when the proposal carried a region or service signal for a large provider (AWS, Google Cloud, Azure, Cloudflare, GitHub) and the user wants only those parts, scope it with the component tree as [`manage-third-party-services`](../manage-third-party-services/SKILL.md) Step 2 describes. An already-tracked provider is reported as "already tracked", not created again.
+For each confirmed provider, call `create-third-party-service` with `providerId`, leaving notify and alert contacts on the account defaults unless the user asked otherwise. Leave `trackedComponentIds` out to track every component; when the proposal carried a region or service signal for a large provider (AWS, Google Cloud, Azure, Cloudflare, GitHub) and the user wants only those parts, scope it with the component tree as [`manage-third-party-services`](../manage-third-party-services/SKILL.md) Step 2 describes. An already-tracked provider is reported as "already tracked", not created again; the same applies when a create returns an existing service for a provider the proposal called untracked (another session got there first, or the tracked list was partial), and it spends no slot in the summary.
 
-Then call `get-third-party-service` for every created service and report the stored state, not what you sent. Creates and verifies count against the same rate limit as the searches (see Limits and refusals); pace them and finish the confirmed set. End with a summary: monitor ids, what was already tracked, what was skipped and why, what the catalog does not have, and the CLI equivalents for anyone who wants to repeat it outside the agent.
+Then call `get-third-party-service` for every created service and report the stored state, not what you sent. Creates and verifies count against the same rate limit as the searches (see Limits and refusals); pace them and finish the confirmed set. End with a summary split into created (with monitor ids), already tracked, not created (with the reason), skipped, and not in the catalog, plus the CLI equivalents for anyone who wants to repeat it outside the agent. After a failure mid-run, offer to resume with the remainder only; never re-run the whole set.
 
 ## Limits and refusals
 
 - **Allowance.** `create-third-party-service` fails with `monitor_limit_exceeded` when the plan does not allow third-party services or the limit is reached. Do not retry; the proposal already said what fits.
 - **Rate limit.** One counter for every REST and MCP call on the account, 10 per minute on free plans (see [`errors`](../errors/SKILL.md)). `Rate limit reached` comes back as a normal tool result and the call wrote nothing: wait the stated seconds and continue; give up after three consecutive waits on the same call and tell the user which providers remain unresolved or uncreated.
 - **Write access.** A read-only grant refuses `create-third-party-service` with `access_denied`. The proposal is still useful: hand it over as a list to track by hand or with the CLI.
+- **Any other error** on a create or a verify (a transport error, an unexpected message): stop, report what was created so far, do not retry the creates; see [`errors`](../errors/SKILL.md) for checking whether a failed write landed.
 - **Nothing found.** A repository with no vendor signals gets a short answer saying what was scanned, not an empty table.
 
 ## Common mistakes
