@@ -35,10 +35,10 @@ A signal the map does not know becomes a search term by the rule under "Unmapped
 ## Step 3: Resolve against the catalog
 
 ```
-{"search":"stripe","limit":5}
+{"search":"stripe","limit":10}
 ```
 
-One `search-third-party-providers` call per distinct search term, runtime providers first. Accept a row only when its name matches the search term by the name test under "Vendor map" in `reference.md`; several matching rows means show them and ask; no row means "not in the catalog", except for the providers under "Region-split providers", which have one row per region and no plain-name row. Never guess an id. The `isTracked` flag on a row means the account already tracks that provider.
+One `search-third-party-providers` call per distinct search term, runtime providers first, with `limit` 10 so a region-split provider's rows (Datadog has eight) all come back. Accept a row only when its name matches the search term by the name test under "Vendor map" in `reference.md`; several matching rows means show them and ask; no row means "not in the catalog", except for the providers under "Region-split providers", which have one row per region and no plain-name row. Never guess an id. The `isTracked` flag on a row means the account already tracks that provider.
 
 Every call counts against the account's shared rate limit (see Limits and refusals). Search the runtime providers, propose, and search build-time providers only when the user asks for them.
 
