@@ -32,16 +32,16 @@ Run searches from the project root with Glob (file discovery) and Grep (content 
 
   ```
   grep -ohE '([a-z0-9-]+\.)+[a-z]{2,}' .env* | sort -u
-  grep -ohE '^(AWS_REGION|AWS_DEFAULT_REGION|GOOGLE_CLOUD_REGION|GCP_REGION|AZURE_REGION|AZURE_LOCATION|FLY_REGION|VERCEL_REGION|DD_SITE)=[a-z0-9.-]+' .env*
+  grep -ohHE '^(AWS_REGION|AWS_DEFAULT_REGION|GOOGLE_CLOUD_REGION|GCP_REGION|AZURE_REGION|AZURE_LOCATION|FLY_REGION|VERCEL_REGION|DD_SITE)=[a-z0-9.-]+' .env*
   ```
 
   For the `path:line` evidence of a match, print the location only, never the text:
 
   ```
-  grep -nE '<pattern>' .env* | cut -d: -f1,2
+  grep -nHE '<pattern>' .env* | cut -d: -f1,2
   ```
 
-  Only hostnames, allowlisted region values and locations enter the tool output; every hostname is then checked against the anchored rule in Vendor map. Extract only:
+  (`-H` keeps the filename even when the glob matches one file; without it `cut` keeps the line text.) Only hostnames, allowlisted region values and locations enter the tool output, and only the reduced patterns and locations reach the reply; every hostname is then checked against the anchored rule in Vendor map. Extract only:
   1. Hostnames matching a vendor pattern, quoted as the longest pattern in this file that they match (Vendor map or Component scoping) with everything left of it dropped: `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `*.sentry.io` (quoted as the map pattern, never as the ingest host), `api.openai.com`, never `abcd1234.supabase.co` or a full connection string.
   2. The values of these non-secret region keys, reported in the proposal as a region signal and used when a large provider is scoped to components: `AWS_REGION`, `AWS_DEFAULT_REGION`, `GOOGLE_CLOUD_REGION`, `GCP_REGION`, `AZURE_REGION`, `AZURE_LOCATION`, `FLY_REGION`, `VERCEL_REGION`, `DD_SITE`. Quote a value only when it is made of lowercase letters, digits, dots and hyphens (`eu-central-1`, `datadoghq.eu`); discard anything else.
 

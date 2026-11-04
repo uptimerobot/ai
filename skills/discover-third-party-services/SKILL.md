@@ -59,7 +59,7 @@ AWS, Google Cloud, Microsoft Azure, Cloudflare and GitHub are noisy when tracked
 - GitHub: pick the matched products (`Actions` for a workflow, `Packages` for `ghcr.io`, `Git Operations` always when the remote is `github.com`).
 - Nothing matched: propose the whole provider and say that no service or region signal was found.
 
-The proposal row for a scoped provider names the components (`S3 (Frankfurt), RDS (Frankfurt)`), each with its evidence. For a provider the account already tracks, call `get-third-party-service` first and show its current components next to the proposed ones. The action becomes `update` with the union of the current list and the matched components, because `trackedComponentIds` replaces the whole list. A stored value of `null` means every component is tracked today: replacing it with the matched set narrows the alerts, so show it as "all components, narrowed to N" and treat a plain "yes" as not covering it; it needs to be named in the confirmation.
+The proposal row for a scoped provider names the components in the Provider cell (`AWS, S3 (Frankfurt), RDS (Frankfurt)`) and keeps the provider evidence in the Why cell; the component evidence goes in a short scoping list under the table, one line per component. For a provider the account already tracks, call `get-third-party-service` first and show its current components next to the proposed ones. The action becomes `update` with the union of the current list and the matched components, because `trackedComponentIds` replaces the whole list. A stored value of `null` means every component is tracked today: replacing it with the matched set narrows the alerts, so show it as "all components, narrowed to N" and treat a plain "yes" as not covering it; it needs to be named in the confirmation.
 
 ## Step 6: Propose, no writes
 
@@ -76,7 +76,7 @@ One table, then a question. Nothing is created in this step. The `Stripe` and `S
 | Braintree | braintree@3.20.0 | runtime | not in the catalog | none |
 ```
 
-In a monorepo, prefix each evidence item with the app directory (`apps/api: stripe@17.4.0`). Below the table: skipped signals in one line, self-hosted or unknown clients in one line, the Catalog column as `id, state, statusPageUrl`, and the allowance ("3 of 10 slots used, 2 proposed", or "allowance unknown" when `get-user` was unavailable). Then ask the user to confirm the exact set, by provider name.
+In a monorepo, prefix each evidence item with the app directory (`apps/api: stripe@17.4.0`). Below the table: one line per scoped component (`S3 (Frankfurt): settings.py:13 (S3Boto3Storage), infra/main.tf:14 (aws_s3_bucket), region eu-central-1 from .env.example:1`), skipped signals in one line, self-hosted or unknown clients in one line, the Catalog column as `id, state, statusPageUrl`, and the allowance ("3 of 10 slots used, 2 proposed", or "allowance unknown" when `get-user` was unavailable). Then ask the user to confirm the exact set, by provider name.
 
 What counts as confirmation:
 
