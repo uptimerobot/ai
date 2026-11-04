@@ -72,6 +72,13 @@
       "digest": "sha256:abc520df3233fb7e9dcb9df1df1110ea05cd816aac75450d203ea84a9914c42f"
     },
     {
+      "name": "discover-third-party-services",
+      "type": "skill-md",
+      "description": "Scan the current repository for the third-party providers it depends on (cloud, hosting, payments, email, auth, AI APIs), resolve them against the provider catalog, and track their status pages as third-party services after confirmation. Use when someone asks \"which third-party services should I track\", \"set up third-party monitoring for this project\" or \"what does this repo depend on\".",
+      "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/discover-third-party-services/SKILL.md",
+      "digest": "sha256:dfeb734c78d7d082cc261ad77a3ae6d3094e8e7f9f011319f9f9fdaa61198c12"
+    },
+    {
       "name": "errors",
       "type": "skill-md",
       "description": "The single source for UptimeRobot MCP errors, retries and write verification — what each plain-text error message means, when to retry (including rate limits), how to verify a write, and how to check whether a failed write landed.",
