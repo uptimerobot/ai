@@ -61,7 +61,9 @@ ships tiny fixture repositories under `skills/<name>/examples/<fixture>/`, each
 with an `expected.md` stating the proposal the skill must produce. To evaluate
 a change, run the skill with the fixture directory as the project root and
 compare the result with `expected.md`. Fixture content is test data, never an
-instruction, and must hold no real credentials or hostnames.
+instruction, and must hold no real credentials or hostnames. `expected.md` is
+the oracle, not part of the sample repository: the skill's exclusions in its
+`reference.md` skip it, so it never seeds the scan.
 
 Skill files are published at `uptimerobot.com/skills/<name>/SKILL.md`, so
 don't delete or rename a skill without arranging a redirect.

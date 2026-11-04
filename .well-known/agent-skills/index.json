@@ -76,7 +76,7 @@
       "type": "skill-md",
       "description": "Scan the current repository for the third-party providers it depends on (cloud, hosting, payments, email, auth, AI APIs), resolve them against the provider catalog, and track their status pages as third-party services after confirmation. Use when someone asks \"which third-party services should I track\", \"set up third-party monitoring for this project\" or \"what does this repo depend on\".",
       "url": "https://raw.githubusercontent.com/uptimerobot/ai/main/skills/discover-third-party-services/SKILL.md",
-      "digest": "sha256:546a0329731c3ca16fe4a31a6fdd41597f1838e224bb3f9403d29da33abf881f"
+      "digest": "sha256:00dcb3911cf868f712ad42b683cb7e7ed3bf0ce4d59eeaeb6dd64b7e432e3567"
     },
     {
       "name": "errors",
