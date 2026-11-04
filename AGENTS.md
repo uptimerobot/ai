@@ -114,7 +114,7 @@ All `delete-*` tools are **permanent** — see convention 2 below.
 
 ### Third-party services
 
-Track the status pages of outside providers. Providers are identified by their numeric ID from `search-third-party-providers`, tracked services by monitor ID. These monitors are not returned by `list-monitors`, and they spend their own allowance (`dependencyMonitorsCount` / `dependencyMonitorLimit` from `get-user`), not a monitor slot. `create-third-party-service` fails with `monitor_limit_exceeded` when the plan does not allow third-party services or the limit is reached. A third-party service cannot be paused: `update-monitor-status` with `PAUSED` is refused with `invalid_parameters`. See [`skills/manage-third-party-services/SKILL.md`](skills/manage-third-party-services/SKILL.md).
+Track the status pages of outside providers. Providers are identified by their numeric ID from `search-third-party-providers`, tracked services by monitor ID. These monitors are not returned by `list-monitors`, and they spend their own allowance (`dependencyMonitorsCount` / `dependencyMonitorLimit` from `get-user`), not a monitor slot. `create-third-party-service` fails with `monitor_limit_exceeded` when the plan does not allow third-party services or the limit is reached. A third-party service cannot be paused: `update-monitor-status` with `PAUSED` is refused with `invalid_parameters`. See [`skills/manage-third-party-services/SKILL.md`](skills/manage-third-party-services/SKILL.md). To find which providers a repository depends on before tracking them, see [`skills/discover-third-party-services/SKILL.md`](skills/discover-third-party-services/SKILL.md).
 
 | Name | When to use |
 | -- | -- |
