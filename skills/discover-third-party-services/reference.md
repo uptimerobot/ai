@@ -31,7 +31,7 @@ Run searches from the project root with Glob (file discovery) and Grep (content 
 - **Env files.** Never read whole lines from `.env*` files, not into the reply and not into tool output: grep for the hostname or region-key pattern with match-only output, never for the line. Two commands cover it:
 
   ```
-  grep -ohE '([a-z0-9-]+\.)+[a-z]{2,}' .env* | sort -u
+  grep -ohE '(=|://|@)([a-z0-9-]+\.)+[a-z]{2,}' .env* | sed -E 's#^(=|://|@)##' | sort -u
   grep -ohHE '^(AWS_REGION|AWS_DEFAULT_REGION|GOOGLE_CLOUD_REGION|GCP_REGION|AZURE_REGION|AZURE_LOCATION|FLY_REGION|VERCEL_REGION|DD_SITE)=[a-z0-9.-]+' .env*
   ```
 
@@ -41,11 +41,12 @@ Run searches from the project root with Glob (file discovery) and Grep (content 
   grep -nHE '<pattern>' .env* | cut -d: -f1,2
   ```
 
-  (`-H` keeps the filename even when the glob matches one file; without it `cut` keeps the line text.) Only hostnames, allowlisted region values and locations enter the tool output, and only the reduced patterns and locations reach the reply; every hostname is then checked against the anchored rule in Vendor map. Extract only:
+  (`-H` keeps the filename even when the glob matches one file; without it `cut` keeps the line text. The pipeline's output is what the tool log holds; the grep stage's full lines never leave the pipe.) The first command takes a host only where a value starts (`=`), after a URL scheme (`://`) or after user-info (`@`), so a host inside a path or query (`?redirect=api.stripe.com`) is not a signal; when one slips through, the next rule drops it. A dotted token that matches no pattern in this file (a resource name, a secret that happens to contain dots) is discarded without being quoted or searched. Only hostnames, allowlisted region values and locations enter the tool output, and only the reduced patterns and locations reach the reply; every hostname is then checked against the anchored rule in Vendor map. Extract only:
   1. Hostnames matching a vendor pattern, quoted as the longest pattern in this file that they match (Vendor map or Component scoping) with everything left of it dropped: `*.supabase.co`, `*.mongodb.net`, `*.amazonaws.com`, `*.sentry.io` (quoted as the map pattern, never as the ingest host), `api.openai.com`, never `abcd1234.supabase.co` or a full connection string.
   2. The values of these non-secret region keys, reported in the proposal as a region signal and used when a large provider is scoped to components: `AWS_REGION`, `AWS_DEFAULT_REGION`, `GOOGLE_CLOUD_REGION`, `GCP_REGION`, `AZURE_REGION`, `AZURE_LOCATION`, `FLY_REGION`, `VERCEL_REGION`, `DD_SITE`. Quote a value only when it is made of lowercase letters, digits, dots and hyphens (`eu-central-1`, `datadoghq.eu`); discard anything else.
 
   Every other value, and any value that looks like a key, token, password or connection string, is never read into the reply.
+- **Other config files** (`settings.py`, `*.tf`, compose files, CI) may be read whole to classify a signal, but resource identifiers found there (bucket names, cluster names, account ids, project ids, ARNs) are never quoted; the evidence for them is the `path:line` of the resource type or setting name.
 - **Evidence format.** Nothing else from the repository is repeated back.
   - Config, CI and env files: `path:line`. For env files the path and line number only, never the line's content. A signal that is the file's existence (`vercel.json`, `cloudbuild.yaml`, `.github/workflows/ci.yml`) is quoted as the path alone.
   - Manifests: `package@version` (`stripe@17.4.0`, `sentry-sdk@2.19.2` from a pip `==` pin with extras dropped, `github.com/stripe/stripe-go/v81@v81.1.0` for a Go module). Quote the version only when it is a plain version or range; a spec that is a URL, a git reference or carries an index URL is quoted as the package name alone. A Go module path or a `go.mod` `module` line is a name, not code-host evidence.
