@@ -285,7 +285,7 @@ Region sources: `GOOGLE_CLOUD_REGION` or `GCP_REGION`, terraform `provider "goog
 
 ### Microsoft Azure
 
-Region first: a parent per region (`West Europe`, `Germany West Central`), one child per service. Match the region from `AZURE_REGION`, `AZURE_LOCATION` or terraform `location`: lowercase each region parent name and strip its spaces and marks, then compare with the code (`West Europe` becomes `westeurope`, `East US 2` becomes `eastus2`, `Germany West Central` becomes `germanywestcentral`). No parent matches: show the parent names and ask. Then pick the services under the matched region.
+Region first: a parent per region (`West Europe`, `Germany West Central`), one child per service. Match the region from `AZURE_REGION`, `AZURE_LOCATION` or terraform `location` (a variable reference such as `var.location` is not a region: ask): lowercase both the value and each parent name and strip every character that is not a letter or digit, then compare for equality (`West Europe` and `westeurope` both become `westeurope`, `‡West US 3` becomes `westus3`, `East US 2` stays distinct from `East US`). Parents that equal no region code (`*Non-Regional`, product groups) are never chosen from a region signal. No parent matches: show the parent names and ask. Then pick the mapped services under the matched region; a mapped service with no child under that region is reported as not found there and left out.
 
 | Detected signal | Component |
 | -- | -- |
