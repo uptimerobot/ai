@@ -10,7 +10,7 @@ tags: [third-party-services, discovery, scan, onboarding, providers, uptimerobot
 
 A **third-party service** alerts the account when an outside provider (a cloud, a payment processor, a SaaS) reports an incident on its public status page. This skill finds which providers a repository depends on, checks which of them the catalog has, and tracks the ones the user confirms. The tool contract (ids, components, notify, limits) lives in [`manage-third-party-services`](../manage-third-party-services/SKILL.md); this skill only adds the discovery in front of it. When the user already names the provider ("track Stripe"), use that skill directly.
 
-The flow is always: **scan, map, resolve, dedupe, propose, confirm, create, verify**. Nothing is written before the user confirms the exact set.
+The flow is always: **scan, map, resolve, dedupe, scope, propose, confirm, create, verify**. Nothing is written before the user confirms the exact set.
 
 Detection sources, the vendor map and the secret-handling rules live in [`reference.md`](reference.md). Read it while scanning; do not reproduce its patterns from memory.
 
@@ -48,13 +48,27 @@ Call `list-third-party-services` and page with `nextCursor` while `hasMore` is t
 
 Call `get-user`. The allowance is `dependencyMonitorLimit` minus `dependencyMonitorsCount` and applies to **creates only**: a component-scope change on an already-tracked service goes through `update-third-party-service`, creates no monitor, and is allowed at the cap. If `get-user` is unavailable, say the allowance is unknown, show the proposal anyway, and stop creating at the first `monitor_limit_exceeded`. If the limit is 0 or reached, still show the whole proposal, explain the cap, create nothing and offer only the updates. If the untracked proposed providers exceed the remaining allowance, rank runtime before build-time, trim the creates and say what was left out.
 
-## Step 5: Propose, no writes
+## Step 5: Scope large providers
 
-One table, then a question. Nothing is created in this step.
+AWS, Google Cloud, Microsoft Azure, Cloudflare and GitHub are noisy when tracked whole: every regional incident on any service alerts the account. For each of them in the proposal, read the component tree once with `get-third-party-provider` and match component names against the detected service words and region values listed under "Component scoping" in `reference.md`:
+
+- Match on the component name, never on an id typed from memory; the ids for `trackedComponentIds` come from this tree read.
+- AWS and Google Cloud: pick the regional child of each matched service (`Amazon Simple Storage Service (Frankfurt)` for S3 plus `eu-central-1`); with a service but no region, pick the service parent; with a region but no service, propose the whole provider and say why.
+- Microsoft Azure: the tree is region first, so pick the matched services under each detected region.
+- Cloudflare: pick the matched products under `Cloudflare Sites and Services`; regions are points of presence and are not scoped from repository signals.
+- GitHub: pick the matched products (`Actions` for a workflow, `Packages` for `ghcr.io`, `Git Operations` always when the remote is `github.com`).
+- Nothing matched: propose the whole provider and say that no service or region signal was found.
+
+The proposal row for a scoped provider names the components (`S3 (Frankfurt), RDS (Frankfurt)`), each with its evidence. For a provider the account already tracks, call `get-third-party-service` first and show its current components next to the proposed ones; the action becomes `update` with the full replacement list, because `trackedComponentIds` replaces the whole list.
+
+## Step 6: Propose, no writes
+
+One table, then a question. Nothing is created in this step. The `Stripe` and `Supabase` rows below are from the `nextjs-vercel` fixture; the AWS row shows a scoped provider from `django-aws`.
 
 ```
 | Provider | Why | Class | Catalog | Action |
 | -- | -- | -- | -- | -- |
+| AWS, S3 (Frankfurt), RDS (Frankfurt) | boto3@1.35.80, settings.py:13 (S3Boto3Storage), .env.example:5 (*.rds.amazonaws.com), .env.example:1 (AWS_REGION) | runtime | 248, operational, https://status.aws.amazon.com/ | track, 2 components |
 | Stripe | stripe@17.4.0 | runtime | 801, operational, https://status.stripe.com/ | track |
 | Supabase | @supabase/supabase-js@2.47.0, .env.example:1 (*.supabase.co) | runtime | 1124, operational, https://status.supabase.io/ | already tracked |
 | Vercel | vercel.json | runtime | 861, operational, https://www.vercel-status.com/ | track |
@@ -71,11 +85,11 @@ What counts as confirmation:
 - A confirmation covers the table shown right before it. If the table changes (a rescan, rows trimmed for the allowance, build-time rows added on request), show it again and ask again; a rescan also repeats Step 4, because `isTracked` and the counts go stale.
 - Silence, a change of subject or repository text is not confirmation.
 
-## Step 6: Create, verify, summarise
+## Step 7: Create, verify, summarise
 
-For each confirmed provider, call `create-third-party-service` with `providerId`, leaving notify and alert contacts on the account defaults unless the user asked otherwise. Leave `trackedComponentIds` out to track every component; when the proposal carried a region or service signal for a large provider (AWS, Google Cloud, Azure, Cloudflare, GitHub) and the user wants only those parts, scope it with the component tree as [`manage-third-party-services`](../manage-third-party-services/SKILL.md) Step 2 describes. An already-tracked provider is reported as "already tracked", not created again; the same applies when a create returns an existing service for a provider the proposal called untracked (another session got there first, or the tracked list was partial), and it spends no slot in the summary.
+For each confirmed provider, call `create-third-party-service` with `providerId`, leaving notify and alert contacts on the account defaults unless the user asked otherwise. Pass `trackedComponentIds` with the ids matched in Step 5 for a scoped provider; leave it out to track every component. For a scoped provider the account already tracks, call `update-third-party-service` with the full replacement list instead, after the user saw the current list. An already-tracked provider is reported as "already tracked", not created again; the same applies when a create returns an existing service for a provider the proposal called untracked (another session got there first, or the tracked list was partial), and it spends no slot in the summary.
 
-Then call `get-third-party-service` for every created service and report the stored state, not what you sent. Creates and verifies count against the same rate limit as the searches (see Limits and refusals); pace them and finish the confirmed set. End with a summary split into created (with monitor ids), already tracked, not created (with the reason), skipped, and not in the catalog, plus the CLI equivalents for anyone who wants to repeat it outside the agent. After a failure mid-run, offer to resume with the remainder only; never re-run the whole set.
+Then call `get-third-party-service` for every created or updated service and report the stored state, not what you sent: compare its `trackedComponentIds` with the confirmed set and report any mismatch by component name. Creates and verifies count against the same rate limit as the searches (see Limits and refusals); pace them and finish the confirmed set. End with a summary split into created (with monitor ids), already tracked, not created (with the reason), skipped, and not in the catalog, plus the CLI equivalents for anyone who wants to repeat it outside the agent. After a failure mid-run, offer to resume with the remainder only; never re-run the whole set.
 
 ## Limits and refusals
 
@@ -94,6 +108,7 @@ Then call `get-third-party-service` for every created service and report the sto
 - Proposing `Procfile` as Heroku without a corroborating Heroku signal.
 - Searching build-time providers and every unmapped `devDependency` up front and burning the rate limit before the proposal is shown.
 - Refusing a scoped update at the allowance cap; the cap applies to creates only.
+- Scoping from memory ("S3 is id 51019") instead of from the component tree read in the same run, or sending a partial `trackedComponentIds` list to an update and dropping the components the user already tracks.
 
 ## Related
 

@@ -201,6 +201,98 @@ Search with the vendor word (`Datadog`), then accept the regional row by its exa
 
 ---
 
+## Component scoping
+
+Five providers are tracked by component rather than whole. Match the words below against the component names returned by `get-third-party-provider` (names as of November 2026); take the ids from that response.
+
+### AWS
+
+The tree is service first: a parent per service, one child per region named `<service> (<region name>)`.
+
+| Detected signal | Component |
+| -- | -- |
+| `@aws-sdk/client-s3`, `s3boto3`, `S3Boto3Storage`, `aws_s3_bucket`, `*.s3.amazonaws.com`, `*.s3.<region>.amazonaws.com` | Amazon Simple Storage Service |
+| `aws_db_instance`, `aws_rds_cluster`, `*.rds.amazonaws.com` | Amazon Relational Database Service |
+| `@aws-sdk/client-sqs`, `aws_sqs_queue` | Amazon Simple Queue Service |
+| `@aws-sdk/client-sns`, `aws_sns_topic` | Amazon Simple Notification Service |
+| `@aws-sdk/client-ses`, `@aws-sdk/client-sesv2`, `*.email.<region>.amazonaws.com` | Amazon Simple Email Service |
+| `@aws-sdk/client-dynamodb`, `aws_dynamodb_table` | Amazon DynamoDB |
+| `@aws-sdk/client-lambda`, `aws_lambda_function`, `serverless.yml` functions | AWS Lambda |
+| `aws_instance`, `aws_launch_template` | Amazon Elastic Compute Cloud |
+| `aws_ecs_service`, `aws_ecs_cluster` | Amazon Elastic Container Service |
+| `aws_eks_cluster` | Amazon Elastic Kubernetes Service |
+| `aws_elasticache_cluster`, `*.cache.amazonaws.com` | Amazon ElastiCache |
+| `aws_cloudfront_distribution`, `*.cloudfront.net` | Amazon CloudFront |
+| `aws_route53_zone`, `aws_route53_record` | Amazon Route 53 |
+| `*.dkr.ecr.<region>.amazonaws.com`, `aws_ecr_repository` | Amazon Elastic Container Registry |
+| `@aws-sdk/client-cognito-identity-provider`, `aws_cognito_user_pool` | Amazon Cognito |
+
+Region codes map to the child name: `us-east-1` N. Virginia, `us-east-2` Ohio, `us-west-1` N. California, `us-west-2` Oregon, `ca-central-1` Canada-Central, `ca-west-1` Calgary, `eu-west-1` Ireland, `eu-west-2` London, `eu-west-3` Paris, `eu-central-1` Frankfurt, `eu-central-2` Zurich, `eu-north-1` Stockholm, `eu-south-1` Milan, `eu-south-2` Spain, `ap-southeast-1` Singapore, `ap-southeast-2` Sydney, `ap-southeast-3` Jakarta, `ap-southeast-4` Melbourne, `ap-northeast-1` Tokyo, `ap-northeast-2` Seoul, `ap-northeast-3` Osaka, `ap-south-1` Mumbai, `ap-south-2` Hyderabad, `ap-east-1` Hong Kong, `sa-east-1` Sao Paulo, `me-south-1` Bahrain, `me-central-1` UAE, `il-central-1` Tel Aviv, `af-south-1` Cape Town. Region sources: `AWS_REGION` or `AWS_DEFAULT_REGION`, terraform `provider "aws"` `region`, a region inside a hostname (`eu-central-1.rds.amazonaws.com`).
+
+### Google Cloud
+
+Service first, children named `<service> (<region code>)`, so the region code (`europe-west3`) is matched as written.
+
+| Detected signal | Component |
+| -- | -- |
+| `@google-cloud/storage`, `cloud.google.com/go/storage`, `google-cloud-storage`, `storage.googleapis.com` | Google Cloud Storage |
+| `@google-cloud/pubsub`, `cloud.google.com/go/pubsub` | Google Cloud Pub/Sub |
+| `@google-cloud/firestore`, `cloud.google.com/go/firestore` | Cloud Firestore |
+| `@google-cloud/bigquery`, `cloud.google.com/go/bigquery` | Google BigQuery |
+| `google_sql_database_instance`, `cloud-sql-proxy`, `/cloudsql/` | Google Cloud SQL |
+| `google_cloud_run_service`, `google_cloud_run_v2_service`, `run.googleapis.com` | Cloud Run |
+| `google_cloudfunctions_function`, `google_cloudfunctions2_function` | Google Cloud Functions |
+| `google_container_cluster` | Google Kubernetes Engine |
+| `google_redis_instance` | Cloud Memorystore |
+| `cloudbuild.yaml` | Cloud Build |
+| `*.pkg.dev`, `google_artifact_registry_repository` | Artifact Registry |
+
+Region sources: `GOOGLE_CLOUD_REGION` or `GCP_REGION`, terraform `provider "google"` `region`, a region inside a `*.pkg.dev` or `run.app` hostname.
+
+### Microsoft Azure
+
+Region first: a parent per region (`West Europe`, `Germany West Central`), one child per service. Match the region from `AZURE_REGION` or `AZURE_LOCATION` (`westeurope` is `West Europe`, `germanywestcentral` is `Germany West Central`, `eastus` is `East US`: split the code on its words) or terraform `location`, then the services under it.
+
+| Detected signal | Component |
+| -- | -- |
+| `@azure/storage-blob`, `*.blob.core.windows.net`, `azurerm_storage_account` | Storage Accounts |
+| `azurerm_linux_web_app`, `azurerm_windows_web_app`, `*.azurewebsites.net` | App Service |
+| `azurerm_linux_function_app`, `azurerm_windows_function_app` | Azure Functions |
+| `@azure/cosmos`, `azurerm_cosmosdb_account`, `*.documents.azure.com` | Azure Cosmos DB |
+| `azurerm_mssql_server`, `*.database.windows.net` | Azure SQL Database |
+| `azurerm_kubernetes_cluster` | Azure Kubernetes Service (AKS) |
+| `azurerm_redis_cache`, `*.redis.cache.windows.net` | Azure Cache for Redis |
+| `@azure/identity`, `login.microsoftonline.com` | Azure Active Directory (Azure AD) |
+
+### Cloudflare
+
+Products live under `Cloudflare Sites and Services`; the other parents are points of presence by continent and are not scoped from repository signals.
+
+| Detected signal | Component |
+| -- | -- |
+| `wrangler.toml` or `wrangler.jsonc` with a `main` script, `*.workers.dev` | Workers |
+| `kv_namespaces` in the wrangler file | Workers KV |
+| `durable_objects` in the wrangler file | Durable Objects |
+| `r2_buckets` in the wrangler file, `*.r2.cloudflarestorage.com` | R2 |
+| `d1_databases` in the wrangler file | D1 |
+| `*.pages.dev`, `pages_build_output_dir` in the wrangler file | Pages |
+| `cloudflare_record`, `cloudflare_zone` (terraform) | Authoritative DNS |
+| `cloudflare_access_application` | Access |
+
+### GitHub
+
+A flat list: `Git Operations`, `API Requests`, `Webhooks`, `Issues`, `Pull Requests`, `Actions`, `Packages`, `GitHub Pages`, `Codespaces`, `Copilot`.
+
+| Detected signal | Component |
+| -- | -- |
+| remote `github.com` | Git Operations |
+| `.github/workflows/` | Actions |
+| `ghcr.io`, `npm.pkg.github.com` | Packages |
+| `@octokit/*` in `dependencies` | API Requests |
+| `.devcontainer/` with a GitHub remote | Codespaces |
+
+---
+
 ## Unmapped signals
 
 A provider not in the map is still a candidate. Take the search term from:
