@@ -1,0 +1,8 @@
+Django==5.1.4
+boto3==1.35.80
+django-storages==1.14.4
+sendgrid==6.11.0
+sentry-sdk==2.19.2
+celery==5.4.0
+redis==5.2.1
+psycopg[binary]==3.2.3

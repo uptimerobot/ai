@@ -127,5 +127,6 @@ The tool only removes third-party services. It is a write tool, so a read-only g
 ## Related
 
 - [`list-integrations`](../list-integrations/SKILL.md), find `alertContactId` values for `assignedAlertContacts`.
+- [`discover-third-party-services`](../discover-third-party-services/SKILL.md): find which providers a repository depends on before tracking them.
 - [`errors`](../errors/SKILL.md): error codes and recovery.
 - [`manage-monitors`](../manage-monitors/SKILL.md), every other monitor type.
